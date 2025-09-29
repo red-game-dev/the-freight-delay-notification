@@ -13,25 +13,38 @@ import type {
   SendNotificationInput,
   NotificationResult,
 } from './types';
+import { TrafficService } from '../infrastructure/adapters/traffic/TrafficService';
 
 // Step 1: Check Traffic Conditions
 export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
   console.log(`[Step 1] Checking traffic from ${input.origin.address} to ${input.destination.address}`);
 
-  // TODO: Implement actual traffic check using Google Maps or Mapbox
-  // For now, return mock data
-  return {
-    provider: 'google',
-    delayMinutes: 45, // Mock delay for testing
-    trafficCondition: 'heavy',
-    estimatedDurationMinutes: 75,
-    normalDurationMinutes: 30,
-    distance: {
-      value: 25.5,
-      unit: 'km',
-    },
-    timestamp: new Date().toISOString(),
-  };
+  // Use TrafficService which handles all adapters and fallback
+  const trafficService = new TrafficService();
+
+  const result = await trafficService.getTrafficData({
+    origin: input.origin.address,
+    destination: input.destination.address,
+    originCoords: input.origin.coordinates,
+    destinationCoords: input.destination.coordinates,
+    departureTime: input.departureTime ? new Date(input.departureTime) : undefined,
+  });
+
+  if (result.success) {
+    const data = result.value;
+    return {
+      provider: data.provider,
+      delayMinutes: data.delayMinutes,
+      trafficCondition: data.trafficCondition,
+      estimatedDurationMinutes: Math.round(data.estimatedDuration / 60),
+      normalDurationMinutes: Math.round(data.normalDuration / 60),
+      distance: data.distance || { value: 0, unit: 'km' },
+      timestamp: data.fetchedAt.toISOString(),
+    };
+  }
+
+  // This shouldn't happen with MockTrafficAdapter as last resort
+  throw new Error(`Traffic data fetch failed: ${result.error.message}`);
 }
 
 // Step 2: Evaluate Delay Against Threshold
