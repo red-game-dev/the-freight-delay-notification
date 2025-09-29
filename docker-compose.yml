@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  temporal:
+    container_name: temporal-dev-server
+    image: temporalio/temporal:latest
+    # Use this command for WSL/Linux (with persistent storage)
+    # command: server start-dev --ui-port 8233 --db-filename /temporal-data/temporal.db --ip 0.0.0.0
+    # Use this command for Windows Git Bash (in-memory storage)
+    command: server start-dev --ui-port 8233 --ip 0.0.0.0
+    ports:
+      - "7233:7233"  # Temporal gRPC endpoint
+      - "8233:8233"  # Temporal Web UI
+    # Uncomment for WSL/Linux to enable persistent storage
+    # volumes:
+    #   - temporal-data:/temporal-data
+    environment:
+      - LOG_LEVEL=info
+      - TEMPORAL_CLI_ADDRESS=0.0.0.0:7233
+    healthcheck:
+      test: ["CMD", "temporal", "workflow", "list", "--address", "localhost:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Uncomment for WSL/Linux
+# volumes:
+#   temporal-data:
+#     driver: local
