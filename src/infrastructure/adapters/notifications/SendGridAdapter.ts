@@ -7,10 +7,10 @@ import sgMail from '@sendgrid/mail';
 import { env } from '../../config/EnvValidator';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { INotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
+import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
 import { EmailBlacklistChecker } from '../../../core/shared/constants/email-blacklist';
 
-export class SendGridAdapter implements INotificationAdapter {
+export class SendGridAdapter implements NotificationAdapter {
   public readonly providerName = 'SendGrid';
   public readonly priority = 1; // Email has higher priority than SMS
   public readonly channel = 'email' as const;

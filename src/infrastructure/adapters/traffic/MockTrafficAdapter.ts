@@ -3,11 +3,11 @@
  * Fallback for testing when no API keys are configured
  */
 
-import { ITrafficAdapter } from './TrafficAdapter.interface';
+import { TrafficAdapter } from './TrafficAdapter.interface';
 import { Result, success } from '../../../core/base/utils/Result';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 
-export class MockTrafficAdapter implements ITrafficAdapter {
+export class MockTrafficAdapter implements TrafficAdapter {
   public readonly providerName = 'Mock Data';
   public readonly priority = 999; // Lowest priority (last resort)
 

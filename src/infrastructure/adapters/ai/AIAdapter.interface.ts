@@ -24,7 +24,7 @@ export interface GeneratedMessage {
   generatedAt: Date;
 }
 
-export interface IAIAdapter {
+export interface AIAdapter {
   /**
    * Provider name for logging and tracking
    */

@@ -7,9 +7,9 @@ import OpenAI from 'openai';
 import { env } from '../../config/EnvValidator';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { IAIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
+import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
 
-export class OpenAIAdapter implements IAIAdapter {
+export class OpenAIAdapter implements AIAdapter {
   public readonly providerName = 'OpenAI';
   public readonly priority = 1; // Primary AI provider
 

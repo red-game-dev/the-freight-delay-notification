@@ -6,7 +6,7 @@
 import { Result } from '../../../core/base/utils/Result';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 
-export interface ITrafficAdapter {
+export interface TrafficAdapter {
   /**
    * Provider name for logging and tracking
    */

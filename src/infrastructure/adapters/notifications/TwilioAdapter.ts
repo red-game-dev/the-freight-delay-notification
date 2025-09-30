@@ -7,9 +7,9 @@ import { Twilio } from 'twilio';
 import { env } from '../../config/EnvValidator';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { INotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
+import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
 
-export class TwilioAdapter implements INotificationAdapter {
+export class TwilioAdapter implements NotificationAdapter {
   public readonly providerName = 'Twilio';
   public readonly priority = 2; // SMS has lower priority than email
   public readonly channel = 'sms' as const;

@@ -22,7 +22,7 @@ export interface NotificationResult {
   channel: NotificationChannel;
 }
 
-export interface INotificationAdapter {
+export interface NotificationAdapter {
   /**
    * Provider name for logging and tracking
    */

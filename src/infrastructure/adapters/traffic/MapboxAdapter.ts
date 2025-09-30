@@ -3,13 +3,13 @@
  * Secondary traffic data provider
  */
 
-import { ITrafficAdapter } from './TrafficAdapter.interface';
+import { TrafficAdapter } from './TrafficAdapter.interface';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 import { env } from '../../config/EnvValidator';
 
-export class MapboxAdapter implements ITrafficAdapter {
+export class MapboxAdapter implements TrafficAdapter {
   public readonly providerName = 'Mapbox';
   public readonly priority = 2; // Second priority
 

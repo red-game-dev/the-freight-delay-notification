@@ -3,7 +3,7 @@
  * Automatically falls back through all available adapters
  */
 
-import { ITrafficAdapter } from './TrafficAdapter.interface';
+import { TrafficAdapter } from './TrafficAdapter.interface';
 import { GoogleMapsAdapter } from './GoogleMapsAdapter';
 import { MapboxAdapter } from './MapboxAdapter';
 import { MockTrafficAdapter } from './MockTrafficAdapter';
@@ -12,7 +12,7 @@ import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 
 export class TrafficService {
-  private adapters: ITrafficAdapter[] = [];
+  private adapters: TrafficAdapter[] = [];
 
   constructor() {
     // Initialize all adapters in priority order

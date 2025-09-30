@@ -6,12 +6,12 @@
 
 import { Result, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { IAIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
+import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
 import { OpenAIAdapter } from './OpenAIAdapter';
 import { MockAIAdapter } from './MockAIAdapter';
 
 export class AIService {
-  private adapters: IAIAdapter[] = [];
+  private adapters: AIAdapter[] = [];
 
   constructor() {
     this.initializeAdapters();
@@ -21,7 +21,7 @@ export class AIService {
    * Initialize all AI adapters and sort by priority
    */
   private initializeAdapters(): void {
-    const allAdapters: IAIAdapter[] = [
+    const allAdapters: AIAdapter[] = [
       new OpenAIAdapter(),
       new MockAIAdapter(),
     ];

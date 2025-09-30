@@ -7,7 +7,7 @@
 import { Result, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import {
-  INotificationAdapter,
+  NotificationAdapter,
   NotificationInput,
   NotificationResult,
   NotificationChannel,
@@ -18,8 +18,8 @@ import { MockEmailAdapter } from './MockEmailAdapter';
 import { MockSMSAdapter } from './MockSMSAdapter';
 
 export class NotificationService {
-  private emailAdapters: INotificationAdapter[] = [];
-  private smsAdapters: INotificationAdapter[] = [];
+  private emailAdapters: NotificationAdapter[] = [];
+  private smsAdapters: NotificationAdapter[] = [];
 
   constructor() {
     this.initializeAdapters();
@@ -29,7 +29,7 @@ export class NotificationService {
    * Initialize all notification adapters and sort by priority
    */
   private initializeAdapters(): void {
-    const allAdapters: INotificationAdapter[] = [
+    const allAdapters: NotificationAdapter[] = [
       new SendGridAdapter(),
       new TwilioAdapter(),
       new MockEmailAdapter(),

@@ -1,0 +1,619 @@
+/**
+ * Supabase Database Adapter
+ * Implementation of DatabaseAdapter using Supabase
+ */
+
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Result, success, failure } from '../../../core/base/utils/Result';
+import { InfrastructureError } from '../../../core/base/errors/BaseError';
+import { DatabaseAdapter } from './DatabaseAdapter.interface';
+import {
+  Customer,
+  CreateCustomerInput,
+  Route,
+  CreateRouteInput,
+  Delivery,
+  CreateDeliveryInput,
+  UpdateDeliveryInput,
+  Notification,
+  CreateNotificationInput,
+  UpdateNotificationInput,
+  TrafficSnapshot,
+  CreateTrafficSnapshotInput,
+  WorkflowExecution,
+  CreateWorkflowExecutionInput,
+  UpdateWorkflowExecutionInput,
+  Coordinates,
+} from '../types/database.types';
+
+export class SupabaseDatabaseAdapter implements DatabaseAdapter {
+  public readonly name = 'Supabase';
+
+  constructor(private client: SupabaseClient) {}
+
+  isAvailable(): boolean {
+    return !!this.client;
+  }
+
+  // ===== Helper: Convert POINT to Coordinates =====
+  private pointToCoordinates(point: string): Coordinates {
+    // PostgreSQL POINT format: "(lng,lat)" or "lng,lat"
+    const cleaned = point.replace(/[()]/g, '');
+    const [lng, lat] = cleaned.split(',').map(Number);
+    return { lat, lng };
+  }
+
+  // ===== Helper: Convert Coordinates to POINT =====
+  private coordinatesToPoint(coords: Coordinates): string {
+    return `(${coords.lng},${coords.lat})`;
+  }
+
+  // ===== Customer Operations =====
+  async getCustomerById(id: string): Promise<Result<Customer | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Not found
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+      }
+
+      return success(data as Customer);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+    }
+  }
+
+  async getCustomerByEmail(email: string): Promise<Result<Customer | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('customers')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+      }
+
+      return success(data as Customer);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+    }
+  }
+
+  async createCustomer(input: CreateCustomerInput): Promise<Result<Customer>> {
+    try {
+      const { data, error } = await this.client
+        .from('customers')
+        .insert(input)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to create customer: ${error.message}`, { error }));
+      }
+
+      return success(data as Customer);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to create customer: ${error.message}`, { error }));
+    }
+  }
+
+  async listCustomers(limit = 10, offset = 0): Promise<Result<Customer[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('customers')
+        .select('*')
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list customers: ${error.message}`, { error }));
+      }
+
+      return success((data as Customer[]) || []);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list customers: ${error.message}`, { error }));
+    }
+  }
+
+  // ===== Route Operations =====
+  async getRouteById(id: string): Promise<Result<Route | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('routes')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get route: ${error.message}`, { error }));
+      }
+
+      // Convert POINT to Coordinates
+      const route: Route = {
+        ...data,
+        origin_coords: this.pointToCoordinates(data.origin_coords),
+        destination_coords: this.pointToCoordinates(data.destination_coords),
+      };
+
+      return success(route);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get route: ${error.message}`, { error }));
+    }
+  }
+
+  async createRoute(input: CreateRouteInput): Promise<Result<Route>> {
+    try {
+      const dbInput = {
+        ...input,
+        origin_coords: this.coordinatesToPoint(input.origin_coords),
+        destination_coords: this.coordinatesToPoint(input.destination_coords),
+      };
+
+      const { data, error } = await this.client
+        .from('routes')
+        .insert(dbInput)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to create route: ${error.message}`, { error }));
+      }
+
+      const route: Route = {
+        ...data,
+        origin_coords: this.pointToCoordinates(data.origin_coords),
+        destination_coords: this.pointToCoordinates(data.destination_coords),
+      };
+
+      return success(route);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to create route: ${error.message}`, { error }));
+    }
+  }
+
+  async listRoutes(limit = 10, offset = 0): Promise<Result<Route[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('routes')
+        .select('*')
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list routes: ${error.message}`, { error }));
+      }
+
+      const routes = (data || []).map(route => ({
+        ...route,
+        origin_coords: this.pointToCoordinates(route.origin_coords),
+        destination_coords: this.pointToCoordinates(route.destination_coords),
+      }));
+
+      return success(routes as Route[]);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list routes: ${error.message}`, { error }));
+    }
+  }
+
+  // ===== Delivery Operations =====
+  async getDeliveryById(id: string): Promise<Result<Delivery | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('deliveries')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+      }
+
+      const delivery: Delivery = {
+        ...data,
+        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
+      };
+
+      return success(delivery);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+    }
+  }
+
+  async getDeliveryByTrackingNumber(trackingNumber: string): Promise<Result<Delivery | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('deliveries')
+        .select('*')
+        .eq('tracking_number', trackingNumber)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+      }
+
+      const delivery: Delivery = {
+        ...data,
+        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
+      };
+
+      return success(delivery);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+    }
+  }
+
+  async createDelivery(input: CreateDeliveryInput): Promise<Result<Delivery>> {
+    try {
+      const { data, error } = await this.client
+        .from('deliveries')
+        .insert(input)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to create delivery: ${error.message}`, { error }));
+      }
+
+      const delivery: Delivery = {
+        ...data,
+        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
+      };
+
+      return success(delivery);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to create delivery: ${error.message}`, { error }));
+    }
+  }
+
+  async updateDelivery(id: string, input: UpdateDeliveryInput): Promise<Result<Delivery>> {
+    try {
+      const dbInput: any = { ...input };
+      if (input.current_location) {
+        dbInput.current_location = this.coordinatesToPoint(input.current_location);
+      }
+
+      const { data, error } = await this.client
+        .from('deliveries')
+        .update(dbInput)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to update delivery: ${error.message}`, { error }));
+      }
+
+      const delivery: Delivery = {
+        ...data,
+        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
+      };
+
+      return success(delivery);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to update delivery: ${error.message}`, { error }));
+    }
+  }
+
+  async listDeliveries(limit = 10, offset = 0): Promise<Result<Delivery[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('deliveries')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+      }
+
+      const deliveries = (data || []).map(delivery => ({
+        ...delivery,
+        current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+      }));
+
+      return success(deliveries as Delivery[]);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+    }
+  }
+
+  async listDeliveriesByCustomer(customerId: string, limit = 10): Promise<Result<Delivery[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('deliveries')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+      }
+
+      const deliveries = (data || []).map(delivery => ({
+        ...delivery,
+        current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+      }));
+
+      return success(deliveries as Delivery[]);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+    }
+  }
+
+  async listDeliveriesByStatus(status: string, limit = 10): Promise<Result<Delivery[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('deliveries')
+        .select('*')
+        .eq('status', status)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+      }
+
+      const deliveries = (data || []).map(delivery => ({
+        ...delivery,
+        current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+      }));
+
+      return success(deliveries as Delivery[]);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+    }
+  }
+
+  // ===== Notification Operations =====
+  async getNotificationById(id: string): Promise<Result<Notification | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('notifications')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get notification: ${error.message}`, { error }));
+      }
+
+      return success(data as Notification);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get notification: ${error.message}`, { error }));
+    }
+  }
+
+  async createNotification(input: CreateNotificationInput): Promise<Result<Notification>> {
+    try {
+      const { data, error } = await this.client
+        .from('notifications')
+        .insert(input)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to create notification: ${error.message}`, { error }));
+      }
+
+      return success(data as Notification);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to create notification: ${error.message}`, { error }));
+    }
+  }
+
+  async updateNotification(id: string, input: UpdateNotificationInput): Promise<Result<Notification>> {
+    try {
+      const { data, error } = await this.client
+        .from('notifications')
+        .update(input)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to update notification: ${error.message}`, { error }));
+      }
+
+      return success(data as Notification);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to update notification: ${error.message}`, { error }));
+    }
+  }
+
+  async listNotificationsByDelivery(deliveryId: string): Promise<Result<Notification[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('notifications')
+        .select('*')
+        .eq('delivery_id', deliveryId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+      }
+
+      return success((data as Notification[]) || []);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+    }
+  }
+
+  async listNotificationsByCustomer(customerId: string, limit = 10): Promise<Result<Notification[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('notifications')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+      }
+
+      return success((data as Notification[]) || []);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+    }
+  }
+
+  // ===== Traffic Snapshot Operations =====
+  async createTrafficSnapshot(input: CreateTrafficSnapshotInput): Promise<Result<TrafficSnapshot>> {
+    try {
+      const { data, error } = await this.client
+        .from('traffic_snapshots')
+        .insert(input)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to create traffic snapshot: ${error.message}`, { error }));
+      }
+
+      return success(data as TrafficSnapshot);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to create traffic snapshot: ${error.message}`, { error }));
+    }
+  }
+
+  async listTrafficSnapshotsByRoute(routeId: string, limit = 10): Promise<Result<TrafficSnapshot[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('traffic_snapshots')
+        .select('*')
+        .eq('route_id', routeId)
+        .order('snapshot_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list traffic snapshots: ${error.message}`, { error }));
+      }
+
+      return success((data as TrafficSnapshot[]) || []);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list traffic snapshots: ${error.message}`, { error }));
+    }
+  }
+
+  // ===== Workflow Execution Operations =====
+  async getWorkflowExecutionById(id: string): Promise<Result<WorkflowExecution | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('workflow_executions')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+      }
+
+      return success(data as WorkflowExecution);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+    }
+  }
+
+  async getWorkflowExecutionByWorkflowId(workflowId: string): Promise<Result<WorkflowExecution | null>> {
+    try {
+      const { data, error } = await this.client
+        .from('workflow_executions')
+        .select('*')
+        .eq('workflow_id', workflowId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+      }
+
+      return success(data as WorkflowExecution);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+    }
+  }
+
+  async createWorkflowExecution(input: CreateWorkflowExecutionInput): Promise<Result<WorkflowExecution>> {
+    try {
+      const { data, error } = await this.client
+        .from('workflow_executions')
+        .insert(input)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to create workflow execution: ${error.message}`, { error }));
+      }
+
+      return success(data as WorkflowExecution);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to create workflow execution: ${error.message}`, { error }));
+    }
+  }
+
+  async updateWorkflowExecution(id: string, input: UpdateWorkflowExecutionInput): Promise<Result<WorkflowExecution>> {
+    try {
+      const { data, error } = await this.client
+        .from('workflow_executions')
+        .update(input)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to update workflow execution: ${error.message}`, { error }));
+      }
+
+      return success(data as WorkflowExecution);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to update workflow execution: ${error.message}`, { error }));
+    }
+  }
+
+  async listWorkflowExecutionsByDelivery(deliveryId: string): Promise<Result<WorkflowExecution[]>> {
+    try {
+      const { data, error } = await this.client
+        .from('workflow_executions')
+        .select('*')
+        .eq('delivery_id', deliveryId)
+        .order('started_at', { ascending: false });
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list workflow executions: ${error.message}`, { error }));
+      }
+
+      return success((data as WorkflowExecution[]) || []);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list workflow executions: ${error.message}`, { error }));
+    }
+  }
+}

@@ -4,9 +4,9 @@
  */
 
 import { Result, success } from '../../../core/base/utils/Result';
-import { IAIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
+import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
 
-export class MockAIAdapter implements IAIAdapter {
+export class MockAIAdapter implements AIAdapter {
   public readonly providerName = 'Mock AI';
   public readonly priority = 999; // Lowest priority - only used as last resort
 

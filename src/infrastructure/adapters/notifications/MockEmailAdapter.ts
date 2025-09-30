@@ -4,9 +4,9 @@
  */
 
 import { Result, success } from '../../../core/base/utils/Result';
-import { INotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
+import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
 
-export class MockEmailAdapter implements INotificationAdapter {
+export class MockEmailAdapter implements NotificationAdapter {
   public readonly providerName = 'Mock Email';
   public readonly priority = 999; // Lowest priority - only used as last resort
   public readonly channel = 'email' as const;

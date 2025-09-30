@@ -4,13 +4,13 @@
  */
 
 import { Client, TrafficModel, TravelMode } from '@googlemaps/google-maps-services-js';
-import { ITrafficAdapter } from './TrafficAdapter.interface';
+import { TrafficAdapter } from './TrafficAdapter.interface';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 import { env } from '../../config/EnvValidator';
 
-export class GoogleMapsAdapter implements ITrafficAdapter {
+export class GoogleMapsAdapter implements TrafficAdapter {
   public readonly providerName = 'Google Maps';
   public readonly priority = 1; // Highest priority
 
