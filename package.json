@@ -23,6 +23,12 @@
     "temporal:logs": "docker logs -f temporal-dev-server",
     "temporal:test": "tsx scripts/test-temporal-connection.ts",
     "temporal:worker": "tsx src/workflows/worker.ts",
+    "test:traffic": "tsx scripts/test-traffic-api.ts",
+    "test:workflow": "tsx scripts/test-complete-workflow.ts",
+    "test:workflow:custom": "tsx scripts/test-complete-workflow.ts --",
+    "test:route:la": "tsx scripts/test-complete-workflow.ts -- --origin \"Downtown Los Angeles, CA\" --destination \"LAX Airport, CA\" --threshold 30",
+    "test:route:ny": "tsx scripts/test-complete-workflow.ts -- --origin \"Times Square, Manhattan, NY\" --destination \"JFK Airport, Queens, NY\" --threshold 30",
+    "test:route:sf": "tsx scripts/test-complete-workflow.ts -- --origin \"Downtown San Francisco, CA\" --destination \"San Jose, CA\" --threshold 45",
     "temporal:dev": "concurrently \"pnpm run dev\" \"pnpm run temporal:worker\""
   },
   "dependencies": {
@@ -38,6 +44,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.395.0",
     "next": "15.5.4",
+    "next-themes": "^0.4.6",
     "openai": "^4.52.0",
     "pino": "^9.2.0",
     "pino-pretty": "^11.2.0",
@@ -66,6 +73,7 @@
     "@types/react-dom": "^19.1.9",
     "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.2",
+    "dotenv": "^17.2.2",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.5.6",
