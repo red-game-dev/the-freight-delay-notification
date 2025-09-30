@@ -89,7 +89,7 @@ async function testCompleteWorkflow() {
     console.log('🚀 Starting DelayNotificationWorkflow...\n');
 
     const handle = await client.workflow.start('DelayNotificationWorkflow', {
-      taskQueue: 'freight-delay-notifications',
+      taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',
       workflowId: workflowInput.deliveryId,
       args: [workflowInput],
     });
