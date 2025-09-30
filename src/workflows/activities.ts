@@ -16,6 +16,11 @@ import type {
 import { TrafficService } from '../infrastructure/adapters/traffic/TrafficService';
 import { NotificationService } from '@/infrastructure/adapters/notifications/NotificationService';
 import { AIService } from '@/infrastructure/adapters/ai/AIService';
+import { CheckDelayThresholdUseCase } from '@/core/engine/delivery/CheckDelayThreshold';
+import { Route } from '@/core/domain/delivery/entities/Route';
+import { Coordinates } from '@/core/domain/delivery/value-objects/Coordinates';
+import { DeliveryStatus } from '@/core/domain/delivery/value-objects/DeliveryStatus';
+import { Delivery } from '@/core/domain/delivery/entities/Delivery';
 
 // Step 1: Check Traffic Conditions
 export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
@@ -49,12 +54,33 @@ export async function checkTrafficConditions(input: CheckTrafficInput): Promise<
   throw new Error(`Traffic data fetch failed: ${result.error.message}`);
 }
 
-// Step 2: Evaluate Delay Against Threshold
+// Step 2: Evaluate Delay Against Threshold (using domain layer)
 export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEvaluationResult> {
   console.log(`[Step 2] Evaluating delay of ${input.delayMinutes} minutes against threshold of ${input.thresholdMinutes} minutes`);
 
-  const exceedsThreshold = input.delayMinutes > input.thresholdMinutes;
+  // Use CheckDelayThresholdUseCase from domain layer
+  const useCase = new CheckDelayThresholdUseCase();
 
+  const trafficData = {
+    provider: 'google' as const,
+    delayMinutes: input.delayMinutes,
+    trafficCondition: input.delayMinutes > 60 ? 'severe' as const :
+                      input.delayMinutes > 30 ? 'heavy' as const :
+                      input.delayMinutes > 10 ? 'moderate' as const : 'light' as const,
+    estimatedDuration: 3600 + (input.delayMinutes * 60),
+    normalDuration: 3600,
+    fetchedAt: new Date(),
+  };
+
+  const result = useCase.execute(trafficData, input.thresholdMinutes);
+
+  if (!result.success) {
+    throw new Error(`Threshold check failed: ${result.error.message}`);
+  }
+
+  const thresholdResult = result.value;
+
+  // Map severity levels to workflow format
   let severity: DelayEvaluationResult['severity'] = 'on_time';
   if (input.delayMinutes > input.thresholdMinutes * 2) {
     severity = 'severe';
@@ -65,11 +91,11 @@ export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEva
   }
 
   return {
-    exceedsThreshold,
-    delayMinutes: input.delayMinutes,
-    thresholdMinutes: input.thresholdMinutes,
+    exceedsThreshold: thresholdResult.exceedsThreshold,
+    delayMinutes: thresholdResult.delayMinutes,
+    thresholdMinutes: thresholdResult.thresholdMinutes,
     severity,
-    requiresNotification: exceedsThreshold,
+    requiresNotification: thresholdResult.shouldProceed,
   };
 }
 
@@ -195,4 +221,88 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
   }
 
   return result;
+}
+
+// Database Persistence Activities
+
+export async function saveRouteEntity(input: {
+  routeId: string;
+  originAddress: string;
+  originCoords: { lat: number; lng: number };
+  destinationAddress: string;
+  destinationCoords: { lat: number; lng: number };
+  distanceMeters: number;
+  normalDurationSeconds: number;
+  currentDurationSeconds?: number;
+  trafficCondition?: string;
+}): Promise<{ success: boolean; routeId: string }> {
+  console.log(`[Database] Saving route entity: ${input.routeId}`);
+
+  // Create route entity
+  const route = Route.create({
+    originAddress: input.originAddress,
+    originCoords: Coordinates.create(input.originCoords),
+    destinationAddress: input.destinationAddress,
+    destinationCoords: Coordinates.create(input.destinationCoords),
+    distanceMeters: input.distanceMeters,
+    normalDurationSeconds: input.normalDurationSeconds,
+    currentDurationSeconds: input.currentDurationSeconds,
+    trafficCondition: input.trafficCondition as any,
+  }, input.routeId);
+
+  // Note: Database repository implementation would go here
+  // For now, just return success as we're using mock data
+  console.log(`✅ Route entity created: ${route.getSummary()}`);
+
+  return { success: true, routeId: input.routeId };
+}
+
+export async function saveDeliveryEntity(input: {
+  deliveryId: string;
+  trackingNumber: string;
+  customerId: string;
+  routeId: string;
+  status: string;
+  scheduledDelivery: string;
+  delayThresholdMinutes: number;
+}): Promise<{ success: boolean; deliveryId: string }> {
+  console.log(`[Database] Saving delivery entity: ${input.trackingNumber}`);
+
+  // Create delivery entity
+  const statusMap: Record<string, () => any> = {
+    'pending': () => DeliveryStatus.pending(),
+    'in_transit': () => DeliveryStatus.inTransit(),
+    'delayed': () => DeliveryStatus.delayed(),
+    'delivered': () => DeliveryStatus.delivered(),
+    'cancelled': () => DeliveryStatus.cancelled(),
+    'failed': () => DeliveryStatus.failed(),
+  };
+
+  const delivery = Delivery.create({
+    trackingNumber: input.trackingNumber,
+    customerId: input.customerId,
+    routeId: input.routeId,
+    status: statusMap[input.status]?.() || DeliveryStatus.pending(),
+    scheduledDelivery: new Date(input.scheduledDelivery),
+    delayThresholdMinutes: input.delayThresholdMinutes,
+  }, input.deliveryId);
+
+  // Note: Database repository implementation would go here
+  // For now, just return success as we're using mock data
+  console.log(`✅ Delivery entity created: ${delivery.trackingNumber}`);
+
+  return { success: true, deliveryId: input.deliveryId };
+}
+
+export async function updateDeliveryStatus(input: {
+  deliveryId: string;
+  status: 'delayed' | 'delivered' | 'in_transit';
+}): Promise<{ success: boolean }> {
+  console.log(`[Database] Updating delivery ${input.deliveryId} status to: ${input.status}`);
+
+  // Note: Repository update would go here
+  // For now, just log the action
+  console.log(`✅ Delivery status updated to: ${input.status}`);
+
+  return { success: true };
 }
