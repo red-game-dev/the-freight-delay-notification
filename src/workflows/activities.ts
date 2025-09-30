@@ -14,6 +14,8 @@ import type {
   NotificationResult,
 } from './types';
 import { TrafficService } from '../infrastructure/adapters/traffic/TrafficService';
+import { NotificationService } from '@/infrastructure/adapters/notifications/NotificationService';
+import { AIService } from '@/infrastructure/adapters/ai/AIService';
 
 // Step 1: Check Traffic Conditions
 export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
@@ -75,57 +77,121 @@ export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEva
 export async function generateAIMessage(input: GenerateMessageInput): Promise<MessageGenerationResult> {
   console.log(`[Step 3] Generating AI message for delivery ${input.deliveryId}`);
 
-  // TODO: Implement actual OpenAI GPT-4o-mini integration
-  // For now, return a mock message
-  const message = `Dear Customer,
+  const aiService = new AIService();
 
-Your delivery from ${input.origin} to ${input.destination} is experiencing a delay of approximately ${input.delayMinutes} minutes due to ${input.trafficCondition} traffic conditions.
+  const result = await aiService.generateMessage({
+    deliveryId: input.deliveryId,
+    customerId: input.customerId,
+    origin: input.origin,
+    destination: input.destination,
+    delayMinutes: input.delayMinutes,
+    trafficCondition: input.trafficCondition,
+    estimatedArrival: input.estimatedArrival,
+    originalArrival: input.originalArrival,
+  });
 
-The new estimated arrival time is ${input.estimatedArrival}.
+  if (result.success) {
+    return {
+      message: result.value.message,
+      subject: result.value.subject || `Delivery Update: ${input.delayMinutes}-minute delay`,
+      model: result.value.model,
+      tokens: result.value.tokens,
+      generatedAt: result.value.generatedAt.toISOString(),
+      fallbackUsed: result.value.model === 'mock-template' || result.value.model === 'fallback-template',
+    };
+  }
 
-We apologize for any inconvenience and appreciate your patience.
-
-Delivery ID: ${input.deliveryId}`;
-
-  return {
-    message,
-    subject: `Delivery Update: ${input.delayMinutes}-minute delay expected`,
-    model: 'gpt-4o-mini',
-    generatedAt: new Date().toISOString(),
-    fallbackUsed: false,
-  };
+  // This shouldn't happen with MockAIAdapter as last resort
+  throw new Error(`AI message generation failed: ${result.error.message}`);
 }
 
 // Step 4: Send Notification
 export async function sendNotification(input: SendNotificationInput): Promise<NotificationResult> {
   console.log(`[Step 4] Sending notification for delivery ${input.deliveryId}`);
 
-  // TODO: Implement actual SendGrid/Twilio integration
-  // For now, return mock success
+  const notificationService = new NotificationService();
+
   const result: NotificationResult = {
-    sent: true,
+    sent: false,
     channel: 'none',
     timestamp: new Date().toISOString(),
   };
 
+  // Prepare notification input
+  const notificationInput = {
+    deliveryId: input.deliveryId,
+    message: input.message,
+    subject: input.subject || 'Delivery Update',
+    to: '', // Will be set per channel
+  };
+
+  let emailSent = false;
+  let smsSent = false;
+
+  // Try to send email
   if (input.recipientEmail) {
-    console.log(`   - Sending email to: ${input.recipientEmail}`);
-    result.channel = 'email';
-    result.emailResult = {
-      success: true,
-      messageId: `email-${Date.now()}`,
-      provider: 'sendgrid',
-    };
+    const emailResult = await notificationService.send(
+      { ...notificationInput, to: input.recipientEmail },
+      'email'
+    );
+
+    if (emailResult.success) {
+      emailSent = true;
+      // Map provider to expected workflow type
+      const provider = emailResult.value.channel === 'email' ? 'sendgrid' as const : 'fallback' as const;
+      result.emailResult = {
+        success: true,
+        messageId: emailResult.value.messageId,
+        provider,
+      };
+    } else {
+      result.emailResult = {
+        success: false,
+        error: emailResult.error.message,
+        provider: 'fallback',
+      };
+    }
   }
 
+  // Try to send SMS
   if (input.recipientPhone) {
-    console.log(`   - Sending SMS to: ${input.recipientPhone}`);
-    result.channel = result.channel === 'email' ? 'both' : 'sms';
-    result.smsResult = {
-      success: true,
-      messageId: `sms-${Date.now()}`,
-      provider: 'twilio',
-    };
+    const smsResult = await notificationService.send(
+      { ...notificationInput, to: input.recipientPhone },
+      'sms'
+    );
+
+    if (smsResult.success) {
+      smsSent = true;
+      // Map provider to expected workflow type
+      const provider = smsResult.value.channel === 'sms' ? 'twilio' as const : 'fallback' as const;
+      result.smsResult = {
+        success: true,
+        messageId: smsResult.value.messageId,
+        provider,
+      };
+    } else {
+      result.smsResult = {
+        success: false,
+        error: smsResult.error.message,
+        provider: 'fallback',
+      };
+    }
+  }
+
+  // Determine channel and overall success
+  if (emailSent && smsSent) {
+    result.channel = 'both';
+    result.sent = true;
+  } else if (emailSent) {
+    result.channel = 'email';
+    result.sent = true;
+  } else if (smsSent) {
+    result.channel = 'sms';
+    result.sent = true;
+  } else {
+    result.channel = 'none';
+    result.sent = false;
+    console.log('⚠️ No notifications sent - all channels failed');
   }
 
   return result;

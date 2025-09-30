@@ -3,6 +3,7 @@
  * Tests the adapter chain with automatic fallback
  */
 
+import { checkTrafficConditions } from '@/workflows/activities';
 import { TrafficService } from '../src/infrastructure/adapters/traffic/TrafficService';
 import { RouteInput } from '../src/types/shared/traffic.types';
 
@@ -68,7 +69,6 @@ async function testTrafficAPIs() {
 
   // Test Temporal Activity
   console.log('📍 Testing Temporal Activity...');
-  const { checkTrafficConditions } = await import('../src/workflows/activities');
 
   const activityResult = await checkTrafficConditions({
     origin: {

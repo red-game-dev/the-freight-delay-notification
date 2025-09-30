@@ -38,9 +38,16 @@ const envSchema = z.object({
 
 export type EnvConfig = z.infer<typeof envSchema>;
 
+let cachedEnv: EnvConfig | null = null;
+
 function validateEnv(): EnvConfig {
+  if (cachedEnv) {
+    return cachedEnv;
+  }
+
   try {
-    return envSchema.parse(process.env);
+    cachedEnv = envSchema.parse(process.env);
+    return cachedEnv;
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.errors.map(e => e.path.join('.')).join(', ');
@@ -52,4 +59,10 @@ function validateEnv(): EnvConfig {
   }
 }
 
-export const env = validateEnv();
+// Use a Proxy to lazily validate env on first access
+export const env = new Proxy({} as EnvConfig, {
+  get(_target, prop) {
+    const validated = validateEnv();
+    return validated[prop as keyof EnvConfig];
+  }
+});
