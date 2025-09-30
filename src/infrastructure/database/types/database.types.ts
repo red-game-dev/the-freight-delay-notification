@@ -85,6 +85,7 @@ export interface CreateDeliveryInput {
   tracking_number: string;
   customer_id: string;
   route_id: string;
+  status?: DeliveryStatus;
   scheduled_delivery: Date;
   delay_threshold_minutes?: number;
   metadata?: Record<string, any>;

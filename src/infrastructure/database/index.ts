@@ -6,7 +6,7 @@
 export { DatabaseService, getDatabaseService, resetDatabaseService } from './DatabaseService';
 
 // Adapters
-export { DatabaseAdapter } from './adapters/DatabaseAdapter.interface';
+export type { DatabaseAdapter } from './adapters/DatabaseAdapter.interface';
 export { SupabaseDatabaseAdapter } from './adapters/SupabaseDatabaseAdapter';
 export { MockDatabaseAdapter } from './adapters/MockDatabaseAdapter';
 
@@ -37,6 +37,3 @@ export type {
   NotificationChannel,
   NotificationStatus,
 } from './types/database.types';
-
-// Clients (for advanced usage)
-export { supabase, supabaseAdmin, isSupabaseConfigured } from './supabase/SupabaseClient';

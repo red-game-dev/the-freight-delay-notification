@@ -1,12 +1,14 @@
 /**
  * Supabase Database Adapter
  * Implementation of DatabaseAdapter using Supabase
+ * Initializes client internally following adapter pattern
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { DatabaseAdapter } from './DatabaseAdapter.interface';
+import { env } from '../../config/EnvValidator';
 import {
   Customer,
   CreateCustomerInput,
@@ -28,11 +30,57 @@ import {
 
 export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   public readonly name = 'Supabase';
+  private client: SupabaseClient | null = null;
 
-  constructor(private client: SupabaseClient) {}
+  constructor() {
+    this.initializeClient();
+  }
+
+  /**
+   * Initialize Supabase client with admin privileges
+   * Uses service role key to bypass RLS (for server-side operations)
+   */
+  private initializeClient(): void {
+    if (!this.isConfigured()) {
+      return;
+    }
+
+    try {
+      this.client = createClient(
+        env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error('Failed to initialize Supabase client:', error.message);
+      this.client = null;
+    }
+  }
+
+  /**
+   * Check if Supabase is properly configured
+   */
+  private isConfigured(): boolean {
+    return !!(env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  }
 
   isAvailable(): boolean {
     return !!this.client;
+  }
+
+  /**
+   * Ensure client is initialized before use
+   */
+  private ensureClient(): SupabaseClient {
+    if (!this.client) {
+      throw new InfrastructureError('Supabase client not initialized');
+    }
+    return this.client;
   }
 
   // ===== Helper: Convert POINT to Coordinates =====
@@ -51,7 +99,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   // ===== Customer Operations =====
   async getCustomerById(id: string): Promise<Result<Customer | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('customers')
         .select('*')
         .eq('id', id)
@@ -73,7 +121,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async getCustomerByEmail(email: string): Promise<Result<Customer | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('customers')
         .select('*')
         .eq('email', email)
@@ -94,7 +142,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async createCustomer(input: CreateCustomerInput): Promise<Result<Customer>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('customers')
         .insert(input)
         .select()
@@ -112,7 +160,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listCustomers(limit = 10, offset = 0): Promise<Result<Customer[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('customers')
         .select('*')
         .range(offset, offset + limit - 1);
@@ -130,7 +178,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   // ===== Route Operations =====
   async getRouteById(id: string): Promise<Result<Route | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('routes')
         .select('*')
         .eq('id', id)
@@ -164,7 +212,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         destination_coords: this.coordinatesToPoint(input.destination_coords),
       };
 
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('routes')
         .insert(dbInput)
         .select()
@@ -188,7 +236,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listRoutes(limit = 10, offset = 0): Promise<Result<Route[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('routes')
         .select('*')
         .range(offset, offset + limit - 1);
@@ -212,7 +260,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   // ===== Delivery Operations =====
   async getDeliveryById(id: string): Promise<Result<Delivery | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('deliveries')
         .select('*')
         .eq('id', id)
@@ -238,7 +286,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async getDeliveryByTrackingNumber(trackingNumber: string): Promise<Result<Delivery | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('deliveries')
         .select('*')
         .eq('tracking_number', trackingNumber)
@@ -264,7 +312,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async createDelivery(input: CreateDeliveryInput): Promise<Result<Delivery>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('deliveries')
         .insert(input)
         .select()
@@ -292,7 +340,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         dbInput.current_location = this.coordinatesToPoint(input.current_location);
       }
 
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('deliveries')
         .update(dbInput)
         .eq('id', id)
@@ -316,7 +364,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listDeliveries(limit = 10, offset = 0): Promise<Result<Delivery[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('deliveries')
         .select('*')
         .order('created_at', { ascending: false })
@@ -339,7 +387,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listDeliveriesByCustomer(customerId: string, limit = 10): Promise<Result<Delivery[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('deliveries')
         .select('*')
         .eq('customer_id', customerId)
@@ -363,7 +411,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listDeliveriesByStatus(status: string, limit = 10): Promise<Result<Delivery[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('deliveries')
         .select('*')
         .eq('status', status)
@@ -388,7 +436,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   // ===== Notification Operations =====
   async getNotificationById(id: string): Promise<Result<Notification | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('notifications')
         .select('*')
         .eq('id', id)
@@ -409,7 +457,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async createNotification(input: CreateNotificationInput): Promise<Result<Notification>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('notifications')
         .insert(input)
         .select()
@@ -427,7 +475,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async updateNotification(id: string, input: UpdateNotificationInput): Promise<Result<Notification>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('notifications')
         .update(input)
         .eq('id', id)
@@ -446,7 +494,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listNotificationsByDelivery(deliveryId: string): Promise<Result<Notification[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('notifications')
         .select('*')
         .eq('delivery_id', deliveryId)
@@ -464,7 +512,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listNotificationsByCustomer(customerId: string, limit = 10): Promise<Result<Notification[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('notifications')
         .select('*')
         .eq('customer_id', customerId)
@@ -484,7 +532,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   // ===== Traffic Snapshot Operations =====
   async createTrafficSnapshot(input: CreateTrafficSnapshotInput): Promise<Result<TrafficSnapshot>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('traffic_snapshots')
         .insert(input)
         .select()
@@ -502,7 +550,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listTrafficSnapshotsByRoute(routeId: string, limit = 10): Promise<Result<TrafficSnapshot[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('traffic_snapshots')
         .select('*')
         .eq('route_id', routeId)
@@ -522,7 +570,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   // ===== Workflow Execution Operations =====
   async getWorkflowExecutionById(id: string): Promise<Result<WorkflowExecution | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('workflow_executions')
         .select('*')
         .eq('id', id)
@@ -543,7 +591,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async getWorkflowExecutionByWorkflowId(workflowId: string): Promise<Result<WorkflowExecution | null>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('workflow_executions')
         .select('*')
         .eq('workflow_id', workflowId)
@@ -564,7 +612,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async createWorkflowExecution(input: CreateWorkflowExecutionInput): Promise<Result<WorkflowExecution>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('workflow_executions')
         .insert(input)
         .select()
@@ -582,7 +630,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async updateWorkflowExecution(id: string, input: UpdateWorkflowExecutionInput): Promise<Result<WorkflowExecution>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('workflow_executions')
         .update(input)
         .eq('id', id)
@@ -601,7 +649,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async listWorkflowExecutionsByDelivery(deliveryId: string): Promise<Result<WorkflowExecution[]>> {
     try {
-      const { data, error } = await this.client
+      const { data, error } = await this.ensureClient()
         .from('workflow_executions')
         .select('*')
         .eq('delivery_id', deliveryId)

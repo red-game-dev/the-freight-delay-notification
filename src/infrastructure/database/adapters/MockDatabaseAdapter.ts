@@ -53,14 +53,19 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
 
   /**
    * Seed with realistic mock data
+   * Uses TEST_EMAIL and TEST_PHONE from environment variables if available
    */
   private seedMockData(): void {
-    // Mock Customers
+    // Mock Customers - use env vars if available
+    const testEmail = process.env.TEST_EMAIL || 'john.doe@example.com';
+    const testPhone = process.env.TEST_PHONE || '+1234567890';
+    const testName = process.env.TEST_NAME || 'John Doe';
+
     const customer1: Customer = {
       id: '550e8400-e29b-41d4-a716-446655440000',
-      email: 'john.doe@example.com',
-      phone: '+1234567890',
-      name: 'John Doe',
+      email: testEmail,
+      phone: testPhone,
+      name: testName,
       notification_preferences: { primary: 'email', secondary: 'sms' },
       created_at: new Date('2024-01-01T00:00:00Z'),
       updated_at: new Date('2024-01-01T00:00:00Z'),
