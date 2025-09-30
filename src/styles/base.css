@@ -1,0 +1,73 @@
+/* Base styles and theme configuration */
+
+/* Tailwind v4 dark mode variant configuration */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@layer base {
+  /* Light mode color scheme */
+  html {
+    color-scheme: light;
+  }
+
+  /* Dark mode color scheme */
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  /* Light mode - Clean, professional */
+  html {
+    background-color: oklch(0.98 0.005 230);
+    color: oklch(0.20 0.010 230);
+  }
+
+  /* Dark mode - Professional, easy on eyes for long dashboard usage */
+  [data-theme="dark"] {
+    background-color: oklch(0.12 0.015 230);
+    color: oklch(0.95 0.005 230);
+  }
+
+  /* Ensure backgrounds work */
+  body {
+    background-color: inherit;
+  }
+
+  [data-theme="dark"] body {
+    background-color: oklch(0.12 0.015 230);
+  }
+}
+
+@layer base {
+  /* Smooth transitions for theme changes */
+  html {
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  * {
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Selection colors */
+  ::selection {
+    background-color: oklch(0.65 0.120 230 / 0.3);
+    color: oklch(0.20 0.010 230);
+  }
+
+  [data-theme="dark"] ::selection {
+    background-color: oklch(0.65 0.120 230 / 0.4);
+    color: oklch(0.95 0.005 230);
+  }
+
+  /* Focus visible styles for accessibility */
+  :focus-visible {
+    outline: 2px solid oklch(0.65 0.120 230);
+    outline-offset: 2px;
+  }
+}
