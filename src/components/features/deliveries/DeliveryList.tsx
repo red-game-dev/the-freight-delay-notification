@@ -8,21 +8,11 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
+import { Alert } from '@/components/ui/Alert';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { MapPin, Clock } from 'lucide-react';
-
-interface Delivery {
-  id: string;
-  trackingNumber: string;
-  origin: string;
-  destination: string;
-  status: 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled';
-  scheduledDelivery: string;
-  customer: {
-    name: string;
-    email: string;
-  };
-}
+import { useDeliveries } from '@/core/infrastructure/http/services/deliveries';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'default' as const },
@@ -33,36 +23,37 @@ const statusConfig = {
 };
 
 export function DeliveryList() {
-  // TODO: Replace with actual data from API
-  const deliveries: Delivery[] = [
-    {
-      id: '1',
-      trackingNumber: 'FD-2024-001',
-      origin: 'New York, NY',
-      destination: 'Los Angeles, CA',
-      status: 'in_transit',
-      scheduledDelivery: '2024-01-15T10:00:00Z',
-      customer: { name: 'John Doe', email: 'john@example.com' },
-    },
-    {
-      id: '2',
-      trackingNumber: 'FD-2024-002',
-      origin: 'Chicago, IL',
-      destination: 'Miami, FL',
-      status: 'delayed',
-      scheduledDelivery: '2024-01-14T14:00:00Z',
-      customer: { name: 'Jane Smith', email: 'jane@example.com' },
-    },
-    {
-      id: '3',
-      trackingNumber: 'FD-2024-003',
-      origin: 'Seattle, WA',
-      destination: 'Portland, OR',
-      status: 'delivered',
-      scheduledDelivery: '2024-01-13T09:00:00Z',
-      customer: { name: 'Bob Johnson', email: 'bob@example.com' },
-    },
-  ];
+  const { data: deliveries, isLoading, error } = useDeliveries();
+
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="p-4 sm:p-6">
+          <div className="h-8 bg-muted rounded w-1/3 mb-2 animate-pulse" />
+          <div className="h-4 bg-muted rounded w-1/4 animate-pulse" />
+        </div>
+        <SkeletonTable rows={5} columns={5} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="error">
+        Failed to load deliveries. {error instanceof Error ? error.message : 'Please try again.'}
+      </Alert>
+    );
+  }
+
+  if (!deliveries || deliveries.length === 0) {
+    return (
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="p-12 text-center">
+          <p className="text-muted-foreground">No deliveries found. Create your first delivery to get started.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border bg-card shadow-sm">
@@ -84,13 +75,13 @@ export function DeliveryList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {deliveries.map((delivery) => {
-            const config = statusConfig[delivery.status];
+          {deliveries.map((delivery: any) => {
+            const config = statusConfig[delivery.status as keyof typeof statusConfig];
             return (
               <TableRow key={delivery.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell>
                   <Link href={`/deliveries/${delivery.id}`} className="block">
-                    <div className="font-medium">{delivery.trackingNumber}</div>
+                    <div className="font-medium">{delivery.tracking_number}</div>
                   </Link>
                 </TableCell>
                 <TableCell>
@@ -110,8 +101,8 @@ export function DeliveryList() {
                 <TableCell>
                   <Link href={`/deliveries/${delivery.id}`} className="block">
                     <div className="flex flex-col">
-                      <div className="font-medium text-sm">{delivery.customer.name}</div>
-                      <div className="text-xs text-muted-foreground">{delivery.customer.email}</div>
+                      <div className="font-medium text-sm">{delivery.customer_name}</div>
+                      <div className="text-xs text-muted-foreground">{delivery.customer_email}</div>
                     </div>
                   </Link>
                 </TableCell>
@@ -119,7 +110,7 @@ export function DeliveryList() {
                   <Link href={`/deliveries/${delivery.id}`} className="block">
                     <div className="flex items-center gap-1 text-sm">
                       <Clock className="h-3 w-3 text-muted-foreground" />
-                      {new Date(delivery.scheduledDelivery).toLocaleDateString()}
+                      {new Date(delivery.scheduled_delivery).toLocaleDateString()}
                     </div>
                   </Link>
                 </TableCell>

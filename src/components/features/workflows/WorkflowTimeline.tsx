@@ -8,7 +8,10 @@
 import * as React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { CompactTimeline } from '@/components/ui/Timeline';
-import { CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { SkeletonWorkflow } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow } from 'lucide-react';
+import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
 
 interface WorkflowExecution {
   id: string;
@@ -30,55 +33,38 @@ const statusConfig = {
   completed: { label: 'Completed', variant: 'success' as const, icon: CheckCircle2 },
   failed: { label: 'Failed', variant: 'error' as const, icon: XCircle },
   cancelled: { label: 'Cancelled', variant: 'warning' as const, icon: AlertCircle },
+  timed_out: { label: 'Timed Out', variant: 'error' as const, icon: AlertCircle },
 };
 
 export function WorkflowTimeline() {
-  // TODO: Replace with actual data from API
-  const executions: WorkflowExecution[] = [
-    {
-      id: '1',
-      workflowId: 'delay-notification-FD-2024-001-1705330800000',
-      deliveryId: 'FD-2024-001',
-      status: 'completed',
-      startedAt: '2024-01-15T10:30:00Z',
-      completedAt: '2024-01-15T10:32:15Z',
-      steps: {
-        trafficCheck: { completed: true },
-        delayEvaluation: { completed: true },
-        messageGeneration: { completed: true },
-        notificationDelivery: { completed: true },
-      },
-    },
-    {
-      id: '2',
-      workflowId: 'delay-notification-FD-2024-002-1705244400000',
-      deliveryId: 'FD-2024-002',
-      status: 'running',
-      startedAt: '2024-01-14T15:00:00Z',
-      steps: {
-        trafficCheck: { completed: true },
-        delayEvaluation: { completed: true },
-        messageGeneration: { completed: true },
-      },
-    },
-    {
-      id: '3',
-      workflowId: 'delay-notification-FD-2024-003-1705141500000',
-      deliveryId: 'FD-2024-003',
-      status: 'failed',
-      startedAt: '2024-01-13T09:15:00Z',
-      completedAt: '2024-01-13T09:16:30Z',
-      steps: {
-        trafficCheck: { completed: true },
-        delayEvaluation: { completed: true },
-      },
-    },
-  ];
+  const { data: workflows, isLoading } = useWorkflows();
 
   const getStepStatus = (step?: { completed: boolean }) => {
     if (!step) return 'pending';
     return step.completed ? 'completed' : 'in_progress';
   };
+
+  if (isLoading) {
+    return <SkeletonWorkflow items={3} />;
+  }
+
+  if (!workflows || workflows.length === 0) {
+    return (
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold">Workflow Executions</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Recent Temporal workflow executions and their status
+          </p>
+        </div>
+        <EmptyState
+          icon={Workflow}
+          title="No Workflow Executions"
+          description="No workflows have been executed yet. Workflows are triggered automatically when deliveries are monitored for delays."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border bg-card shadow-sm">
@@ -90,13 +76,21 @@ export function WorkflowTimeline() {
       </div>
 
       <div className="divide-y">
-        {executions.map((execution) => {
+        {workflows.map((execution) => {
           const config = statusConfig[execution.status];
           const Icon = config.icon;
-          const duration = execution.completedAt
+
+          // Handle both API type (completed_at, started_at) and fallback type (completedAt, startedAt)
+          const completedAt = 'completed_at' in execution ? execution.completed_at : (execution as any).completedAt;
+          const startedAt = 'started_at' in execution ? execution.started_at : (execution as any).startedAt;
+          const deliveryId = 'delivery_id' in execution ? execution.delivery_id : (execution as any).deliveryId;
+          const workflowId = 'workflow_id' in execution ? execution.workflow_id : (execution as any).workflowId;
+          const steps = (execution as any).steps;
+
+          const duration = completedAt
             ? Math.round(
-                (new Date(execution.completedAt).getTime() -
-                  new Date(execution.startedAt).getTime()) /
+                (new Date(completedAt).getTime() -
+                  new Date(startedAt).getTime()) /
                   1000
               )
             : null;
@@ -117,43 +111,45 @@ export function WorkflowTimeline() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium">{execution.deliveryId}</span>
+                    <span className="font-medium">{deliveryId}</span>
                     <Badge variant={config.variant}>{config.label}</Badge>
                   </div>
 
                   <p className="text-xs text-muted-foreground font-mono mb-3">
-                    {execution.workflowId}
+                    {workflowId}
                   </p>
 
-                  {/* Workflow Steps Progress */}
-                  <CompactTimeline
-                    className="mb-3"
-                    steps={[
-                      {
-                        id: 'trafficCheck',
-                        label: 'Traffic Check',
-                        status: getStepStatus(execution.steps.trafficCheck),
-                      },
-                      {
-                        id: 'delayEvaluation',
-                        label: 'Delay Evaluation',
-                        status: getStepStatus(execution.steps.delayEvaluation),
-                      },
-                      {
-                        id: 'messageGeneration',
-                        label: 'Message Generation',
-                        status: getStepStatus(execution.steps.messageGeneration),
-                      },
-                      {
-                        id: 'notificationDelivery',
-                        label: 'Notification Delivery',
-                        status: getStepStatus(execution.steps.notificationDelivery),
-                      },
-                    ]}
-                  />
+                  {/* Workflow Steps Progress - only show if steps data is available */}
+                  {steps && (
+                    <CompactTimeline
+                      className="mb-3"
+                      steps={[
+                        {
+                          id: 'trafficCheck',
+                          label: 'Traffic Check',
+                          status: getStepStatus(steps.trafficCheck),
+                        },
+                        {
+                          id: 'delayEvaluation',
+                          label: 'Delay Evaluation',
+                          status: getStepStatus(steps.delayEvaluation),
+                        },
+                        {
+                          id: 'messageGeneration',
+                          label: 'Message Generation',
+                          status: getStepStatus(steps.messageGeneration),
+                        },
+                        {
+                          id: 'notificationDelivery',
+                          label: 'Notification Delivery',
+                          status: getStepStatus(steps.notificationDelivery),
+                        },
+                      ]}
+                    />
+                  )}
 
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>Started: {new Date(execution.startedAt).toLocaleString()}</span>
+                    <span>Started: {new Date(startedAt).toLocaleString()}</span>
                     {duration && <span>Duration: {duration}s</span>}
                   </div>
                 </div>
