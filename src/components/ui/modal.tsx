@@ -47,18 +47,23 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      onClick={onClose}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-      {/* Modal */}
+    <>
+      {/* Backdrop Overlay - Visual only */}
       <div
-        className={`relative bg-background rounded-lg shadow-lg w-full ${sizeStyles[size]} m-4`}
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1020] h-screen"
+        aria-hidden="true"
+      />
+
+      {/* Modal Container - Handles clicks */}
+      <div
+        className="fixed inset-0 flex items-center justify-center overflow-y-auto p-4 z-[1021] min-h-screen"
+        onClick={onClose}
       >
+        {/* Modal Content */}
+        <div
+          className={`modal-panel relative rounded-lg shadow-lg w-full pointer-events-auto border ${sizeStyles[size]}`}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         {(title || showCloseButton) && (
           <div className="flex items-center justify-between p-6 border-b">
@@ -77,8 +82,9 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Body */}
         <div className="p-6">{children}</div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

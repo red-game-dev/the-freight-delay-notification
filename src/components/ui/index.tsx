@@ -15,6 +15,7 @@ export * from './Input';
 export * from './List';
 export * from './Modal';
 export * from './Progress';
+export * from './Skeleton';
 export * from './StatCard';
 export * from './Table';
 export * from './Timeline';
