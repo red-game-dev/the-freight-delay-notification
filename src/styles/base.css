@@ -20,6 +20,10 @@
     color: oklch(0.20 0.010 230);
     --drawer-bg: oklch(0.99 0.003 230);
     --drawer-border: oklch(0.90 0.005 230);
+    --modal-bg: oklch(0.99 0.003 230);
+    --modal-border: oklch(0.90 0.005 230);
+    --skeleton-base: oklch(0.92 0.005 230);
+    --skeleton-shimmer: oklch(0.96 0.005 230);
   }
 
   /* Dark mode - Professional, easy on eyes for long dashboard usage */
@@ -28,6 +32,10 @@
     color: oklch(0.95 0.005 230);
     --drawer-bg: oklch(0.15 0.018 230);
     --drawer-border: oklch(0.25 0.020 230);
+    --modal-bg: oklch(0.15 0.018 230);
+    --modal-border: oklch(0.25 0.020 230);
+    --skeleton-base: oklch(0.20 0.015 230);
+    --skeleton-shimmer: oklch(0.25 0.020 230);
   }
 
   /* Ensure backgrounds work */
@@ -91,5 +99,43 @@
 
   .drawer-overlay-fade {
     animation: fadeIn 300ms ease-out;
+  }
+
+  /* Modal styles */
+  .modal-panel {
+    background-color: var(--modal-bg);
+    border-color: var(--modal-border);
+  }
+
+  /* Animation utilities */
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Skeleton loading styles */
+  .skeleton-loader {
+    background-color: var(--skeleton-base);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--skeleton-shimmer) 50%,
+      transparent 100%
+    );
+    animation: shimmer 1.8s ease-in-out infinite;
   }
 }
