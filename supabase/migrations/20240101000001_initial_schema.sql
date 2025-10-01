@@ -14,6 +14,7 @@ CREATE TYPE delivery_status AS ENUM (
 
 CREATE TYPE traffic_condition AS ENUM (
   'light',
+  'normal',
   'moderate',
   'heavy',
   'severe'
@@ -29,6 +30,14 @@ CREATE TYPE notification_status AS ENUM (
   'sent',
   'failed',
   'skipped'
+);
+
+CREATE TYPE workflow_status AS ENUM (
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+  'timed_out'
 );
 
 -- Customers table
@@ -101,13 +110,14 @@ CREATE TABLE traffic_snapshots (
 -- Workflow executions table (for Temporal tracking)
 CREATE TABLE workflow_executions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workflow_id VARCHAR(255) NOT NULL UNIQUE,
+  workflow_id VARCHAR(255) NOT NULL,
   run_id VARCHAR(255) NOT NULL,
   delivery_id UUID REFERENCES deliveries(id),
-  status VARCHAR(50) NOT NULL,
+  status workflow_status DEFAULT 'running',
   started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
-  error_message TEXT
+  error_message TEXT,
+  UNIQUE(workflow_id, run_id)
 );
 
 -- Create indexes for performance
