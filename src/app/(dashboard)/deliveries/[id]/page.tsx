@@ -1,0 +1,353 @@
+/**
+ * Delivery Detail Page
+ * View full delivery information with manual workflow trigger
+ */
+
+'use client';
+
+import * as React from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import {
+  ArrowLeft,
+  Edit,
+  PlayCircle,
+  Trash2,
+  MapPin,
+  Clock,
+  User,
+  Mail,
+  Phone,
+  FileText,
+  XCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { Alert } from '@/components/ui/Alert';
+import { Modal, ModalFooter } from '@/components/ui/Modal';
+import { CompactTimeline } from '@/components/ui/Timeline';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { useDelivery, useDeleteDelivery } from '@/core/infrastructure/http/services/deliveries';
+import { useStartWorkflow, useCancelWorkflow } from '@/core/infrastructure/http/services/workflows';
+import { WorkflowStatusPolling } from '@/components/features/workflows/WorkflowStatusPolling';
+
+const statusConfig = {
+  pending: { label: 'Pending', variant: 'default' as const },
+  in_transit: { label: 'In Transit', variant: 'info' as const },
+  delayed: { label: 'Delayed', variant: 'warning' as const },
+  delivered: { label: 'Delivered', variant: 'success' as const },
+  cancelled: { label: 'Cancelled', variant: 'error' as const },
+};
+
+export default function DeliveryDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const deliveryId = params?.id as string;
+
+  const { data: delivery, isLoading, error } = useDelivery(deliveryId);
+  const startWorkflow = useStartWorkflow();
+  const cancelWorkflow = useCancelWorkflow();
+  const deleteDelivery = useDeleteDelivery();
+
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+  const [showCancelWorkflowModal, setShowCancelWorkflowModal] = React.useState(false);
+
+  // Construct the correct workflow ID based on delivery settings
+  // - If recurring checks are enabled: recurring-check-{id}
+  // - Otherwise: delay-notification-{id}
+  const workflowId = delivery
+    ? delivery.enable_recurring_checks
+      ? `recurring-check-${delivery.id}`
+      : `delay-notification-${delivery.id}`
+    : null;
+
+  const handleStartWorkflow = async () => {
+    if (!delivery) return;
+    try {
+      await startWorkflow.mutateAsync(delivery.id);
+      // No need to set state - workflowId is already constructed above
+    } catch (error) {
+      console.error('Failed to start workflow:', error);
+    }
+  };
+
+  const handleCancelWorkflow = async () => {
+    if (!delivery || !workflowId) return;
+
+    try {
+      // Try canceling the recurring workflow first
+      const recurringWorkflowId = `recurring-check-${delivery.id}`;
+      await cancelWorkflow.mutateAsync(recurringWorkflowId);
+      setShowCancelWorkflowModal(false);
+    } catch (error) {
+      console.error('Failed to cancel recurring workflow:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!delivery) return;
+
+    try {
+      await deleteDelivery.mutateAsync(delivery.id);
+      setShowDeleteModal(false);
+      router.push('/deliveries');
+    } catch (error) {
+      console.error('Failed to delete delivery:', error);
+    }
+  };
+
+  if (isLoading) {
+    return <SkeletonDetail />;
+  }
+
+  if (error || !delivery) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" size="sm" onClick={() => router.back()} leftIcon={<ArrowLeft className="h-4 w-4" />}>
+          Back
+        </Button>
+        <Alert variant="error">
+          Failed to load delivery. {error instanceof Error ? error.message : 'Please try again.'}
+        </Alert>
+      </div>
+    );
+  }
+
+  const statusInfo = statusConfig[delivery.status];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+          >
+            Back
+          </Button>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                {delivery.tracking_number}
+              </h1>
+              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Created {new Date(delivery.created_at).toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link href={`/deliveries/${delivery.id}/edit`}>
+            <Button variant="outline" size="sm" leftIcon={<Edit className="h-4 w-4" />}>
+              Edit
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteModal(true)}
+            leftIcon={<Trash2 className="h-4 w-4" />}
+          >
+            Delete
+          </Button>
+          {delivery.enable_recurring_checks && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCancelWorkflowModal(true)}
+              leftIcon={<XCircle className="h-4 w-4" />}
+            >
+              Stop Recurring Checks
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={handleStartWorkflow}
+            loading={startWorkflow.isPending}
+            leftIcon={<PlayCircle className="h-4 w-4" />}
+          >
+            Check Traffic & Notify
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Delivery Information */}
+        <Card>
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">Delivery Information</h2>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-start gap-2 mb-1">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Origin</p>
+                    <p className="font-medium">{delivery.origin}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-start gap-2 mb-1">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Destination</p>
+                    <p className="font-medium">{delivery.destination}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-start gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Scheduled Delivery</p>
+                    <p className="font-medium">
+                      {new Date(delivery.scheduled_delivery).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {delivery.notes && (
+                <div>
+                  <div className="flex items-start gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Notes</p>
+                      <p className="font-medium">{delivery.notes}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Customer Information */}
+        <Card>
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">Customer Information</h2>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-start gap-2 mb-1">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">{delivery.customer_name}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-start gap-2 mb-1">
+                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{delivery.customer_email}</p>
+                  </div>
+                </div>
+              </div>
+
+              {delivery.customer_phone && (
+                <div>
+                  <div className="flex items-start gap-2 mb-1">
+                    <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Phone</p>
+                      <p className="font-medium">{delivery.customer_phone}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Workflow Status - Real-time polling */}
+      {/* Always show WorkflowStatusPolling - it will detect if workflow exists or not */}
+      {workflowId && <WorkflowStatusPolling workflowId={workflowId} showActivities={true} />}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Delivery"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Are you sure you want to delete this delivery? This action cannot be undone.
+          </p>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              <strong>Warning:</strong> Deleting this delivery will permanently remove all associated data including workflow history and notifications.
+            </p>
+          </div>
+        </div>
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteModal(false)}
+            disabled={deleteDelivery.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="error"
+            onClick={handleDelete}
+            loading={deleteDelivery.isPending}
+            leftIcon={<Trash2 className="h-4 w-4" />}
+          >
+            Delete Delivery
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Cancel Workflow Confirmation Modal */}
+      <Modal
+        isOpen={showCancelWorkflowModal}
+        onClose={() => setShowCancelWorkflowModal(false)}
+        title="Stop Recurring Checks"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Are you sure you want to stop recurring traffic checks for this delivery?
+          </p>
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <strong>Note:</strong> The workflow will stop monitoring traffic conditions. You can manually check traffic using the "Check Traffic & Notify" button.
+            </p>
+          </div>
+        </div>
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowCancelWorkflowModal(false)}
+            disabled={cancelWorkflow.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleCancelWorkflow}
+            loading={cancelWorkflow.isPending}
+            leftIcon={<XCircle className="h-4 w-4" />}
+          >
+            Stop Recurring Checks
+          </Button>
+        </ModalFooter>
+      </Modal>
+    </div>
+  );
+}
