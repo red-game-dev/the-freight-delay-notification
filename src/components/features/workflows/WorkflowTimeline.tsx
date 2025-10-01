@@ -10,23 +10,10 @@ import { Badge } from '@/components/ui/Badge';
 import { CompactTimeline } from '@/components/ui/Timeline';
 import { SkeletonWorkflow } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow, Link } from 'lucide-react';
 import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
-
-interface WorkflowExecution {
-  id: string;
-  workflowId: string;
-  deliveryId: string;
-  status: 'running' | 'completed' | 'failed' | 'cancelled';
-  startedAt: string;
-  completedAt?: string;
-  steps: {
-    trafficCheck?: { completed: boolean };
-    delayEvaluation?: { completed: boolean };
-    messageGeneration?: { completed: boolean };
-    notificationDelivery?: { completed: boolean };
-  };
-}
+import { formatNextScheduledTime } from '@/core/utils/dateUtils';
+import Link from 'next/link';
 
 const statusConfig = {
   running: { label: 'Running', variant: 'info' as const, icon: Clock },
@@ -95,6 +82,15 @@ export function WorkflowTimeline() {
               )
             : null;
 
+          const isRecurring = workflowId?.startsWith('recurring-check-');
+          const trackingNumber = (execution as any).tracking_number;
+          const settings = (execution as any).settings;
+
+          // Calculate next run time for recurring workflows
+          const nextRun = isRecurring && execution.status === 'running' && settings?.check_interval_minutes
+            ? formatNextScheduledTime(startedAt, settings.check_interval_minutes, settings.checks_performed || 0)
+            : null;
+
           return (
             <div key={execution.id} className="p-4 sm:p-6 hover:bg-muted/50 transition-colors">
               <div className="flex items-start gap-4">
@@ -110,14 +106,88 @@ export function WorkflowTimeline() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium">{deliveryId}</span>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <Link
+                      href={`/deliveries/${deliveryId}`}
+                      className="font-medium hover:underline"
+                    >
+                      {trackingNumber || deliveryId}
+                    </Link>
                     <Badge variant={config.variant}>{config.label}</Badge>
+                    {isRecurring && (
+                      <Badge variant="default">Recurring</Badge>
+                    )}
+                    {nextRun && (
+                      <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                        <Clock className="h-3 w-3" />
+                        <span>Next check {nextRun}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <p className="text-xs text-muted-foreground font-mono mb-3">
+                  <p className="text-xs text-muted-foreground font-mono mb-3 break-all">
                     {workflowId}
                   </p>
+
+                  {/* Workflow Info Grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Started:</span>
+                      <span className="ml-2 font-medium">
+                        {new Date(startedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    {completedAt && (
+                      <div>
+                        <span className="text-muted-foreground">Completed:</span>
+                        <span className="ml-2 font-medium">
+                          {new Date(completedAt).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground">Duration:</span>
+                      <span className="ml-2 font-medium">
+                        {duration !== null ? `${duration}s` : 'In progress'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Type:</span>
+                      <span className="ml-2 font-medium">
+                        {isRecurring ? 'Recurring Check' : 'One-time Check'}
+                      </span>
+                    </div>
+
+                    {/* Additional settings if available */}
+                    {settings && isRecurring && (
+                      <>
+                        <div>
+                          <span className="text-muted-foreground">Check Interval:</span>
+                          <span className="ml-2 font-medium">
+                            Every {settings.check_interval_minutes} min
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Progress:</span>
+                          <span className="ml-2 font-medium">
+                            {settings.checks_performed || 0}/{settings.max_checks === -1 ? '∞' : settings.max_checks} checks
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Delay Threshold:</span>
+                          <span className="ml-2 font-medium">
+                            {settings.delay_threshold_minutes} min
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Notification Cooldown:</span>
+                          <span className="ml-2 font-medium">
+                            {settings.min_hours_between_notifications}h / {settings.min_delay_change_threshold}min change
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
                   {/* Workflow Steps Progress - only show if steps data is available */}
                   {steps && (
@@ -148,9 +218,14 @@ export function WorkflowTimeline() {
                     />
                   )}
 
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>Started: {new Date(startedAt).toLocaleString()}</span>
-                    {duration && <span>Duration: {duration}s</span>}
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 mt-3">
+                    <Link
+                      href={`/deliveries/${deliveryId}`}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      View Delivery →
+                    </Link>
                   </div>
                 </div>
               </div>

@@ -280,7 +280,23 @@ export default function DeliveryDetailPage() {
 
       {/* Workflow Status - Real-time polling */}
       {/* Always show WorkflowStatusPolling - it will detect if workflow exists or not */}
-      {workflowId && <WorkflowStatusPolling workflowId={workflowId} showActivities={true} />}
+      {workflowId && (
+        <WorkflowStatusPolling
+          workflowId={workflowId}
+          showActivities={true}
+          trackingNumber={delivery.tracking_number}
+          settings={{
+            type: delivery.enable_recurring_checks ? 'recurring' : 'one-time',
+            check_interval_minutes: delivery.check_interval_minutes,
+            max_checks: delivery.max_checks,
+            checks_performed: delivery.checks_performed,
+            delay_threshold_minutes: delivery.delay_threshold_minutes,
+            min_delay_change_threshold: delivery.min_delay_change_threshold,
+            min_hours_between_notifications: delivery.min_hours_between_notifications,
+            scheduled_delivery: delivery.scheduled_delivery,
+          }}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <Modal

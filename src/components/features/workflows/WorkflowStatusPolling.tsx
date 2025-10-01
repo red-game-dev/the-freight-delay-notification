@@ -13,6 +13,7 @@ import { CompactTimeline } from '@/components/ui/Timeline';
 import { CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
 import { useWorkflowStatus } from '@/core/infrastructure/http/services/workflows';
 import { useWorkflowActivities } from '@/core/infrastructure/http/services/activities';
+import { WorkflowDetails } from './WorkflowDetails';
 
 interface WorkflowStatusPollingProps {
   workflowId: string;
@@ -22,6 +23,19 @@ interface WorkflowStatusPollingProps {
   pollInterval?: number;
   /** Show activities timeline */
   showActivities?: boolean;
+  /** Delivery tracking number */
+  trackingNumber?: string;
+  /** Workflow settings from delivery */
+  settings?: {
+    type: 'recurring' | 'one-time';
+    check_interval_minutes?: number;
+    max_checks?: number;
+    checks_performed?: number;
+    delay_threshold_minutes?: number;
+    min_delay_change_threshold?: number;
+    min_hours_between_notifications?: number;
+    scheduled_delivery?: string;
+  };
 }
 
 const statusConfig = {
@@ -62,6 +76,8 @@ export const WorkflowStatusPolling: React.FC<WorkflowStatusPollingProps> = ({
   enabled = true,
   pollInterval = 2000,
   showActivities = true,
+  trackingNumber,
+  settings,
 }) => {
   // Determine if workflow is in a terminal state (completed, failed, cancelled, timed_out)
   // We'll update this after fetching workflow data
@@ -152,34 +168,18 @@ export const WorkflowStatusPolling: React.FC<WorkflowStatusPollingProps> = ({
         </div>
 
         {/* Workflow Details */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <p className="text-sm text-muted-foreground">Workflow ID</p>
-            <p className="text-sm font-mono">{workflow.workflow_id}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Started At</p>
-            <p className="text-sm">{new Date(workflow.started_at).toLocaleString()}</p>
-          </div>
-          {workflow.completed_at && (
-            <div>
-              <p className="text-sm text-muted-foreground">Completed At</p>
-              <p className="text-sm">{new Date(workflow.completed_at).toLocaleString()}</p>
-            </div>
-          )}
-          {workflow.completed_at && (
-            <div>
-              <p className="text-sm text-muted-foreground">Duration</p>
-              <p className="text-sm">
-                {Math.round(
-                  (new Date(workflow.completed_at).getTime() -
-                    new Date(workflow.started_at).getTime()) /
-                    1000
-                )}{' '}
-                seconds
-              </p>
-            </div>
-          )}
+        <div className="mb-6">
+          <WorkflowDetails
+            workflowId={workflow.workflow_id}
+            deliveryId={workflow.delivery_id}
+            trackingNumber={trackingNumber}
+            status={workflow.status}
+            startedAt={workflow.started_at}
+            completedAt={workflow.completed_at}
+            settings={settings}
+            showLink={false}
+            compact={false}
+          />
         </div>
 
         {/* Error/Info Message */}
