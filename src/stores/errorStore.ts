@@ -96,8 +96,10 @@ export const useErrorStore = create<ErrorStore>()(
       },
 
       // Get only active (non-dismissed) errors
+      // Cached to prevent infinite loops in selectors
       getActiveErrors: () => {
-        return get().errors.filter((e) => !e.dismissed);
+        const state = get();
+        return state.errors.filter((e) => !e.dismissed);
       },
 
       // Check if there are any active errors
