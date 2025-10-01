@@ -169,3 +169,28 @@ export interface UpdateWorkflowExecutionInput {
   completed_at?: Date;
   error_message?: string;
 }
+
+// Threshold
+export interface Threshold {
+  id: string;
+  name: string;
+  delay_minutes: number;
+  notification_channels: NotificationChannel[];
+  is_default: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateThresholdInput {
+  name: string;
+  delay_minutes: number;
+  notification_channels: NotificationChannel[];
+  is_default?: boolean;
+}
+
+export interface UpdateThresholdInput {
+  name?: string;
+  delay_minutes?: number;
+  notification_channels?: NotificationChannel[];
+  is_default?: boolean;
+}
