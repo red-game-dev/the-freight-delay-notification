@@ -244,7 +244,6 @@ export async function saveTrafficSnapshot(input: {
       traffic_condition: input.trafficCondition,
       delay_minutes: input.delayMinutes,
       duration_seconds: input.durationSeconds,
-      snapshot_at: new Date(),
     });
 
     if (result.success) {
@@ -272,6 +271,7 @@ export async function saveNotification(input: {
   status: 'sent' | 'failed';
   messageId?: string;
   error?: string;
+  delayMinutes?: number;
 }): Promise<{ success: boolean; id: string }> {
   console.log(`[Database] Saving notification for delivery ${input.deliveryId}`);
 
@@ -281,12 +281,8 @@ export async function saveNotification(input: {
       delivery_id: input.deliveryId,
       customer_id: input.customerId,
       channel: input.channel,
-      recipient: input.recipient,
       message: input.message,
-      status: input.status,
-      sent_at: input.status === 'sent' ? new Date() : undefined,
-      external_id: input.messageId,
-      error_message: input.error,
+      delay_minutes: input.delayMinutes,
     });
 
     if (result.success) {
@@ -350,10 +346,6 @@ export async function saveWorkflowExecution(input: {
       run_id: input.runId,
       delivery_id: input.deliveryId,
       status: input.status,
-      started_at: new Date(),
-      completed_at: input.status === 'completed' ? new Date() : undefined,
-      steps: input.steps,
-      error: input.error,
     });
 
     if (result.success) {
@@ -449,4 +441,137 @@ export async function updateDeliveryStatus(input: {
   console.log(`✅ Delivery status updated to: ${input.status}`);
 
   return { success: true };
+}
+
+/**
+ * Get delivery details from database
+ */
+export async function getDeliveryDetails(input: {
+  deliveryId: string;
+}): Promise<{
+  success: boolean;
+  delivery?: {
+    status: 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled' | 'failed';
+    scheduledDelivery: string;
+    checksPerformed: number;
+    maxChecks: number;
+    enableRecurringChecks: boolean;
+    minDelayChangeThreshold: number;
+    minHoursBetweenNotifications: number;
+  };
+}> {
+  console.log(`[Database] Fetching delivery details for ${input.deliveryId}`);
+
+  try {
+    const db = getDatabaseService();
+    const result = await db.getDeliveryById(input.deliveryId);
+
+    if (result.success && result.value) {
+      const delivery = result.value;
+      return {
+        success: true,
+        delivery: {
+          status: delivery.status,
+          scheduledDelivery: typeof delivery.scheduled_delivery === 'string'
+            ? delivery.scheduled_delivery
+            : delivery.scheduled_delivery.toISOString(),
+          checksPerformed: delivery.checks_performed || 0,
+          maxChecks: delivery.max_checks || 10,
+          enableRecurringChecks: delivery.enable_recurring_checks || false,
+          minDelayChangeThreshold: delivery.min_delay_change_threshold || 15,
+          minHoursBetweenNotifications: delivery.min_hours_between_notifications || 1.0,
+        },
+      };
+    } else {
+      console.error(`❌ Delivery not found: ${input.deliveryId}`);
+      return { success: false };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error fetching delivery: ${error.message}`);
+    return { success: false };
+  }
+}
+
+/**
+ * Increment checks_performed counter
+ */
+export async function incrementChecksPerformed(input: {
+  deliveryId: string;
+}): Promise<{ success: boolean; checksPerformed: number }> {
+  console.log(`[Database] Incrementing checks_performed for delivery ${input.deliveryId}`);
+
+  try {
+    const db = getDatabaseService();
+
+    // Get current value
+    const deliveryResult = await db.getDeliveryById(input.deliveryId);
+    if (!deliveryResult.success || !deliveryResult.value) {
+      return { success: false, checksPerformed: 0 };
+    }
+
+    const currentChecks = deliveryResult.value.checks_performed || 0;
+    const newChecks = currentChecks + 1;
+
+    // Update with incremented value
+    const updateResult = await db.updateDelivery(input.deliveryId, {
+      checks_performed: newChecks,
+    });
+
+    if (updateResult.success) {
+      console.log(`✅ Checks performed updated: ${newChecks}`);
+      return { success: true, checksPerformed: newChecks };
+    } else {
+      console.error(`❌ Failed to increment checks_performed`);
+      return { success: false, checksPerformed: currentChecks };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error incrementing checks_performed: ${error.message}`);
+    return { success: false, checksPerformed: 0 };
+  }
+}
+
+/**
+ * Get last notification for delivery to check if we should send another
+ */
+export async function getLastNotification(input: {
+  deliveryId: string;
+}): Promise<{
+  success: boolean;
+  notification: {
+    delayMinutes: number;
+    sentAt: Date;
+    channel: string;
+  } | null
+}> {
+  console.log(`[Database] Fetching last notification for delivery ${input.deliveryId}`);
+
+  try {
+    const db = getDatabaseService();
+    const notificationsResult = await db.listNotificationsByDelivery(input.deliveryId);
+
+    if (!notificationsResult.success || !notificationsResult.value || notificationsResult.value.length === 0) {
+      console.log(`📭 No previous notifications found for delivery ${input.deliveryId}`);
+      return { success: true, notification: null };
+    }
+
+    // Get most recent notification (sorted by created_at desc)
+    const notifications = notificationsResult.value;
+    const lastNotification = notifications.sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0];
+
+    console.log(`📬 Last notification found: ${lastNotification.delay_minutes} min delay at ${lastNotification.sent_at || lastNotification.created_at}`);
+
+    return {
+      success: true,
+      notification: {
+        delayMinutes: lastNotification.delay_minutes || 0,
+        sentAt: lastNotification.sent_at || lastNotification.created_at,
+        channel: lastNotification.channel,
+      },
+    };
+  } catch (error: any) {
+    console.error(`❌ Error fetching last notification: ${error.message}`);
+    return { success: false, notification: null };
+  }
 }

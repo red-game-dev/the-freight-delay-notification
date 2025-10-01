@@ -30,6 +30,11 @@ export interface DelayNotificationWorkflowInput {
   thresholdMinutes?: number; // Default 30 minutes as per PDF
 }
 
+export interface RecurringCheckWorkflowInput extends DelayNotificationWorkflowInput {
+  checkIntervalMinutes: number; // How often to check (15, 30, 60, 120, 180)
+  maxChecks: number; // Maximum number of checks (1-100)
+}
+
 // ===== Activity Input/Output Types =====
 
 // Step 1: Traffic Check Activity Types

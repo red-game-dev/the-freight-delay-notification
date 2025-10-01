@@ -76,6 +76,13 @@ export interface Delivery {
   actual_delivery: Date | null;
   current_location: Coordinates | null;
   delay_threshold_minutes: number;
+  auto_check_traffic: boolean;
+  enable_recurring_checks: boolean;
+  check_interval_minutes: number;
+  max_checks: number;
+  checks_performed: number;
+  min_delay_change_threshold: number;
+  min_hours_between_notifications: number;
   metadata: Record<string, any>;
   created_at: Date;
   updated_at: Date;
@@ -88,14 +95,38 @@ export interface CreateDeliveryInput {
   status?: DeliveryStatus;
   scheduled_delivery: Date;
   delay_threshold_minutes?: number;
+  auto_check_traffic?: boolean;
+  enable_recurring_checks?: boolean;
+  check_interval_minutes?: number;
+  max_checks?: number;
+  checks_performed?: number;
+  min_delay_change_threshold?: number;
+  min_hours_between_notifications?: number;
   metadata?: Record<string, any>;
 }
 
 export interface UpdateDeliveryInput {
+  tracking_number?: string;
   status?: DeliveryStatus;
   actual_delivery?: Date;
   current_location?: Coordinates;
+  scheduled_delivery?: Date;
+  delay_threshold_minutes?: number;
+  auto_check_traffic?: boolean;
+  enable_recurring_checks?: boolean;
+  check_interval_minutes?: number;
+  max_checks?: number;
+  checks_performed?: number;
+  min_delay_change_threshold?: number;
+  min_hours_between_notifications?: number;
   metadata?: Record<string, any>;
+  // Frontend convenience fields (will be converted to metadata)
+  notes?: string;
+  origin?: string;
+  destination?: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
 }
 
 // Notification

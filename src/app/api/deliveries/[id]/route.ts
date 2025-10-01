@@ -38,6 +38,8 @@ export const PATCH = createParamApiHandler(async (request, context) => {
     enable_recurring_checks?: boolean;
     check_interval_minutes?: number;
     max_checks?: number;
+    min_delay_change_threshold?: number;
+    min_hours_between_notifications?: number;
   }>(request);
 
   const db = getDatabaseService();
@@ -57,6 +59,8 @@ export const PATCH = createParamApiHandler(async (request, context) => {
   if (body.enable_recurring_checks !== undefined) updateData.enable_recurring_checks = body.enable_recurring_checks;
   if (body.check_interval_minutes !== undefined) updateData.check_interval_minutes = body.check_interval_minutes;
   if (body.max_checks !== undefined) updateData.max_checks = body.max_checks;
+  if (body.min_delay_change_threshold !== undefined) updateData.min_delay_change_threshold = body.min_delay_change_threshold;
+  if (body.min_hours_between_notifications !== undefined) updateData.min_hours_between_notifications = body.min_hours_between_notifications;
 
   return await db.updateDelivery(params.id, updateData);
 });

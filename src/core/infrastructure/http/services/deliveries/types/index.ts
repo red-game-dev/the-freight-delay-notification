@@ -14,6 +14,13 @@ export interface Delivery {
   customer_email: string;
   customer_phone?: string;
   notes?: string;
+  auto_check_traffic: boolean;
+  enable_recurring_checks: boolean;
+  check_interval_minutes: number;
+  max_checks: number;
+  checks_performed: number;
+  min_delay_change_threshold: number;
+  min_hours_between_notifications: number;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +34,12 @@ export interface CreateDeliveryInput {
   customer_email: string;
   customer_phone?: string;
   notes?: string;
+  auto_check_traffic?: boolean;
+  enable_recurring_checks?: boolean;
+  check_interval_minutes?: number;
+  max_checks?: number;
+  min_delay_change_threshold?: number;
+  min_hours_between_notifications?: number;
 }
 
 export interface UpdateDeliveryInput extends Partial<CreateDeliveryInput> {

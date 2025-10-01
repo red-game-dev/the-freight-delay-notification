@@ -51,7 +51,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     try {
       this.client = createClient(
         env.SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        env.SUPABASE_SERVICE_ROLE_KEY!,
         {
           auth: {
             autoRefreshToken: false,
@@ -69,7 +69,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
    * Check if Supabase is properly configured
    */
   private isConfigured(): boolean {
-    return !!(env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+    return !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
   }
 
   isAvailable(): boolean {
@@ -265,7 +265,11 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     try {
       const { data, error } = await this.ensureClient()
         .from('deliveries')
-        .select('*')
+        .select(`
+          *,
+          customers!inner(name, email, phone),
+          routes!inner(origin_address, destination_address, distance_meters, normal_duration_seconds)
+        `)
         .eq('id', id)
         .single();
 
@@ -279,7 +283,13 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       const delivery: Delivery = {
         ...data,
         current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
-      };
+        customer_name: (data as any).customers?.name || '',
+        customer_email: (data as any).customers?.email || '',
+        customer_phone: (data as any).customers?.phone || '',
+        origin: (data as any).routes?.origin_address || '',
+        destination: (data as any).routes?.destination_address || '',
+        notes: data.metadata?.notes || '',
+      } as any;
 
       return success(delivery);
     } catch (error: any) {
@@ -291,7 +301,11 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     try {
       const { data, error } = await this.ensureClient()
         .from('deliveries')
-        .select('*')
+        .select(`
+          *,
+          customers!inner(name, email, phone),
+          routes!inner(origin_address, destination_address, distance_meters, normal_duration_seconds)
+        `)
         .eq('tracking_number', trackingNumber)
         .single();
 
@@ -305,7 +319,13 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       const delivery: Delivery = {
         ...data,
         current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
-      };
+        customer_name: (data as any).customers?.name || '',
+        customer_email: (data as any).customers?.email || '',
+        customer_phone: (data as any).customers?.phone || '',
+        origin: (data as any).routes?.origin_address || '',
+        destination: (data as any).routes?.destination_address || '',
+        notes: data.metadata?.notes || '',
+      } as any;
 
       return success(delivery);
     } catch (error: any) {
@@ -339,27 +359,37 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   async updateDelivery(id: string, input: UpdateDeliveryInput): Promise<Result<Delivery>> {
     try {
       const dbInput: any = { ...input };
+
+      // Handle notes - save to metadata
+      if ('notes' in input) {
+        // Get existing delivery to merge metadata
+        const existing = await this.getDeliveryById(id);
+        if (!existing.success || !existing.value) {
+          return failure(new InfrastructureError('Delivery not found'));
+        }
+
+        dbInput.metadata = {
+          ...(existing.value.metadata || {}),
+          notes: input.notes,
+        };
+        delete dbInput.notes;
+      }
+
       if (input.current_location) {
         dbInput.current_location = this.coordinatesToPoint(input.current_location);
       }
 
-      const { data, error } = await this.ensureClient()
+      const { error } = await this.ensureClient()
         .from('deliveries')
         .update(dbInput)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
 
       if (error) {
         return failure(new InfrastructureError(`Failed to update delivery: ${error.message}`, { error }));
       }
 
-      const delivery: Delivery = {
-        ...data,
-        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
-      };
-
-      return success(delivery);
+      // Re-fetch with joins to return complete data
+      return await this.getDeliveryById(id) as any;
     } catch (error: any) {
       return failure(new InfrastructureError(`Failed to update delivery: ${error.message}`, { error }));
     }
@@ -369,7 +399,11 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     try {
       const { data, error } = await this.ensureClient()
         .from('deliveries')
-        .select('*')
+        .select(`
+          *,
+          customers!inner(name, email, phone),
+          routes!inner(origin_address, destination_address, distance_meters, normal_duration_seconds)
+        `)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -377,9 +411,15 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
       }
 
-      const deliveries = (data || []).map(delivery => ({
+      const deliveries = (data || []).map((delivery: any) => ({
         ...delivery,
         current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+        customer_name: delivery.customers?.name || '',
+        customer_email: delivery.customers?.email || '',
+        customer_phone: delivery.customers?.phone || '',
+        origin: delivery.routes?.origin_address || '',
+        destination: delivery.routes?.destination_address || '',
+        notes: delivery.metadata?.notes || '',
       }));
 
       return success(deliveries as Delivery[]);
@@ -392,7 +432,11 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     try {
       const { data, error } = await this.ensureClient()
         .from('deliveries')
-        .select('*')
+        .select(`
+          *,
+          customers!inner(name, email, phone),
+          routes!inner(origin_address, destination_address, distance_meters, normal_duration_seconds)
+        `)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -401,9 +445,15 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
       }
 
-      const deliveries = (data || []).map(delivery => ({
+      const deliveries = (data || []).map((delivery: any) => ({
         ...delivery,
         current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+        customer_name: delivery.customers?.name || '',
+        customer_email: delivery.customers?.email || '',
+        customer_phone: delivery.customers?.phone || '',
+        origin: delivery.routes?.origin_address || '',
+        destination: delivery.routes?.destination_address || '',
+        notes: delivery.metadata?.notes || '',
       }));
 
       return success(deliveries as Delivery[]);
@@ -416,7 +466,11 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     try {
       const { data, error } = await this.ensureClient()
         .from('deliveries')
-        .select('*')
+        .select(`
+          *,
+          customers!inner(name, email, phone),
+          routes!inner(origin_address, destination_address, distance_meters, normal_duration_seconds)
+        `)
         .eq('status', status)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -425,9 +479,15 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
       }
 
-      const deliveries = (data || []).map(delivery => ({
+      const deliveries = (data || []).map((delivery: any) => ({
         ...delivery,
         current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+        customer_name: delivery.customers?.name || '',
+        customer_email: delivery.customers?.email || '',
+        customer_phone: delivery.customers?.phone || '',
+        origin: delivery.routes?.origin_address || '',
+        destination: delivery.routes?.destination_address || '',
+        notes: delivery.metadata?.notes || '',
       }));
 
       return success(deliveries as Delivery[]);

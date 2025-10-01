@@ -50,6 +50,8 @@ export const POST = createApiHandler(async (request) => {
     enable_recurring_checks?: boolean;
     check_interval_minutes?: number;
     max_checks?: number;
+    min_delay_change_threshold?: number;
+    min_hours_between_notifications?: number;
   }>(request);
 
   // Validate required fields
@@ -105,6 +107,8 @@ export const POST = createApiHandler(async (request) => {
     check_interval_minutes: body.check_interval_minutes || 30,
     max_checks: body.max_checks ?? -1, // -1 means unlimited
     checks_performed: 0,
+    min_delay_change_threshold: body.min_delay_change_threshold || 15,
+    min_hours_between_notifications: body.min_hours_between_notifications || 1.0,
     metadata: {
       notes: body.notes,
       customer_name: body.customer_name,

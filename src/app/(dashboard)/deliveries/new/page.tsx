@@ -283,6 +283,41 @@ export default function NewDeliveryPage() {
                   </FormField>
                 </FormRow>
 
+                <FormRow columns={2}>
+                  <FormField>
+                    <Input
+                      {...register('min_delay_change_threshold', {
+                        valueAsNumber: true,
+                        min: { value: 5, message: 'Must be at least 5 minutes' },
+                        max: { value: 120, message: 'Cannot exceed 120 minutes' },
+                      })}
+                      type="number"
+                      label="Minimum Delay Change (minutes)"
+                      placeholder="15"
+                      helperText="Default: 15 minutes. Only send notification if delay changes by this amount."
+                      error={errors.min_delay_change_threshold?.message}
+                      fullWidth
+                    />
+                  </FormField>
+
+                  <FormField>
+                    <Input
+                      {...register('min_hours_between_notifications', {
+                        valueAsNumber: true,
+                        min: { value: 0.5, message: 'Must be at least 0.5 hours' },
+                        max: { value: 24, message: 'Cannot exceed 24 hours' },
+                      })}
+                      type="number"
+                      step="0.1"
+                      label="Minimum Hours Between Notifications"
+                      placeholder="1.0"
+                      helperText="Default: 1.0 hours. Prevent spam by setting minimum time between notifications."
+                      error={errors.min_hours_between_notifications?.message}
+                      fullWidth
+                    />
+                  </FormField>
+                </FormRow>
+
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                   <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
                     Automatic Stop Conditions

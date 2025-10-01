@@ -55,9 +55,9 @@ export async function GET(request: NextRequest) {
             status: workflowExecution.value.status === 'completed' ? 'completed' : 'failed',
             started_at: workflowExecution.value.started_at,
             completed_at: workflowExecution.value.completed_at,
-            error: workflowExecution.value.error || null,
-            steps: workflowExecution.value.steps || null,
-            result: workflowExecution.value.result || null,
+            error: workflowExecution.value.error_message || null,
+            steps: null, // Not stored in database
+            result: null, // Not stored in database
             source: 'database', // Indicate this came from DB, not Temporal
           });
         }
