@@ -25,6 +25,9 @@ import {
   WorkflowExecution,
   CreateWorkflowExecutionInput,
   UpdateWorkflowExecutionInput,
+  Threshold,
+  CreateThresholdInput,
+  UpdateThresholdInput,
   Coordinates,
 } from '../types/database.types';
 
@@ -662,6 +665,126 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       return success((data as WorkflowExecution[]) || []);
     } catch (error: any) {
       return failure(new InfrastructureError(`Failed to list workflow executions: ${error.message}`, { error }));
+    }
+  }
+
+  // ===== Threshold Operations =====
+
+  async getThresholdById(id: string): Promise<Result<Threshold | null>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('thresholds')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to get threshold: ${error.message}`, { error }));
+      }
+
+      return success(data as Threshold | null);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get threshold: ${error.message}`, { error }));
+    }
+  }
+
+  async getDefaultThreshold(): Promise<Result<Threshold | null>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('thresholds')
+        .select('*')
+        .eq('is_default', true)
+        .maybeSingle();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to get default threshold: ${error.message}`, { error }));
+      }
+
+      return success(data as Threshold | null);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to get default threshold: ${error.message}`, { error }));
+    }
+  }
+
+  async createThreshold(input: CreateThresholdInput): Promise<Result<Threshold>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('thresholds')
+        .insert(input)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to create threshold: ${error.message}`, { error }));
+      }
+
+      return success(data as Threshold);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to create threshold: ${error.message}`, { error }));
+    }
+  }
+
+  async updateThreshold(id: string, input: UpdateThresholdInput): Promise<Result<Threshold>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('thresholds')
+        .update(input)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to update threshold: ${error.message}`, { error }));
+      }
+
+      return success(data as Threshold);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to update threshold: ${error.message}`, { error }));
+    }
+  }
+
+  async deleteThreshold(id: string): Promise<Result<void>> {
+    try {
+      // First check if it's the default threshold
+      const thresholdResult = await this.getThresholdById(id);
+      if (!thresholdResult.success || !thresholdResult.value) {
+        return failure(new InfrastructureError('Threshold not found'));
+      }
+
+      if (thresholdResult.value.is_default) {
+        return failure(new InfrastructureError('Cannot delete default threshold'));
+      }
+
+      const { error } = await this.ensureClient()
+        .from('thresholds')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to delete threshold: ${error.message}`, { error }));
+      }
+
+      return success(undefined);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to delete threshold: ${error.message}`, { error }));
+    }
+  }
+
+  async listThresholds(limit = 100, offset = 0): Promise<Result<Threshold[]>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('thresholds')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list thresholds: ${error.message}`, { error }));
+      }
+
+      return success((data as Threshold[]) || []);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to list thresholds: ${error.message}`, { error }));
     }
   }
 }

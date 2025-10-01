@@ -292,6 +292,32 @@ export class DatabaseService {
       adapter.listWorkflowExecutionsByDelivery(deliveryId)
     );
   }
+
+  // ===== Threshold Operations =====
+
+  async getThresholdById(id: string) {
+    return this.readWithFallback('getThresholdById', (adapter) => adapter.getThresholdById(id));
+  }
+
+  async getDefaultThreshold() {
+    return this.readWithFallback('getDefaultThreshold', (adapter) => adapter.getDefaultThreshold());
+  }
+
+  async createThreshold(input: Parameters<DatabaseAdapter['createThreshold']>[0]) {
+    return this.writeToAll('createThreshold', (adapter) => adapter.createThreshold(input));
+  }
+
+  async updateThreshold(id: string, input: Parameters<DatabaseAdapter['updateThreshold']>[1]) {
+    return this.writeToAll('updateThreshold', (adapter) => adapter.updateThreshold(id, input));
+  }
+
+  async deleteThreshold(id: string) {
+    return this.writeToAll('deleteThreshold', (adapter) => adapter.deleteThreshold(id));
+  }
+
+  async listThresholds(limit?: number, offset?: number) {
+    return this.readWithFallback('listThresholds', (adapter) => adapter.listThresholds(limit, offset));
+  }
 }
 
 // Singleton instance

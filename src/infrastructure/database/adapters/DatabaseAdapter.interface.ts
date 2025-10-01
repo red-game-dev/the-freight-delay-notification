@@ -20,6 +20,9 @@ import type {
   WorkflowExecution,
   CreateWorkflowExecutionInput,
   UpdateWorkflowExecutionInput,
+  Threshold,
+  CreateThresholdInput,
+  UpdateThresholdInput,
 } from '../types/database.types';
 
 /**
@@ -74,4 +77,12 @@ export interface DatabaseAdapter {
   createWorkflowExecution(input: CreateWorkflowExecutionInput): Promise<Result<WorkflowExecution>>;
   updateWorkflowExecution(id: string, input: UpdateWorkflowExecutionInput): Promise<Result<WorkflowExecution>>;
   listWorkflowExecutionsByDelivery(deliveryId: string): Promise<Result<WorkflowExecution[]>>;
+
+  // ===== Threshold Operations =====
+  getThresholdById(id: string): Promise<Result<Threshold | null>>;
+  getDefaultThreshold(): Promise<Result<Threshold | null>>;
+  createThreshold(input: CreateThresholdInput): Promise<Result<Threshold>>;
+  updateThreshold(id: string, input: UpdateThresholdInput): Promise<Result<Threshold>>;
+  deleteThreshold(id: string): Promise<Result<void>>;
+  listThresholds(limit?: number, offset?: number): Promise<Result<Threshold[]>>;
 }
