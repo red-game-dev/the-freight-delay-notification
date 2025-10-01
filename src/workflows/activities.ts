@@ -21,6 +21,7 @@ import { Route } from '@/core/domain/delivery/entities/Route';
 import { Coordinates } from '@/core/domain/delivery/value-objects/Coordinates';
 import { DeliveryStatus } from '@/core/domain/delivery/value-objects/DeliveryStatus';
 import { Delivery } from '@/core/domain/delivery/entities/Delivery';
+import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 
 // Step 1: Check Traffic Conditions
 export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
@@ -224,6 +225,149 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
 }
 
 // Database Persistence Activities
+
+/**
+ * Save traffic snapshot to database
+ */
+export async function saveTrafficSnapshot(input: {
+  routeId: string;
+  trafficCondition: 'light' | 'moderate' | 'heavy' | 'severe';
+  delayMinutes: number;
+  durationSeconds: number;
+}): Promise<{ success: boolean; id: string }> {
+  console.log(`[Database] Saving traffic snapshot for route ${input.routeId}`);
+
+  try {
+    const db = getDatabaseService();
+    const result = await db.createTrafficSnapshot({
+      route_id: input.routeId,
+      traffic_condition: input.trafficCondition,
+      delay_minutes: input.delayMinutes,
+      duration_seconds: input.durationSeconds,
+      snapshot_at: new Date(),
+    });
+
+    if (result.success) {
+      console.log(`✅ Traffic snapshot saved: ${result.value.id}`);
+      return { success: true, id: result.value.id };
+    } else {
+      console.error(`❌ Failed to save traffic snapshot: ${result.error.message}`);
+      return { success: false, id: '' };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error saving traffic snapshot: ${error.message}`);
+    return { success: false, id: '' };
+  }
+}
+
+/**
+ * Save notification to database
+ */
+export async function saveNotification(input: {
+  deliveryId: string;
+  customerId: string;
+  channel: 'email' | 'sms';
+  recipient: string;
+  message: string;
+  status: 'sent' | 'failed';
+  messageId?: string;
+  error?: string;
+}): Promise<{ success: boolean; id: string }> {
+  console.log(`[Database] Saving notification for delivery ${input.deliveryId}`);
+
+  try {
+    const db = getDatabaseService();
+    const result = await db.createNotification({
+      delivery_id: input.deliveryId,
+      customer_id: input.customerId,
+      channel: input.channel,
+      recipient: input.recipient,
+      message: input.message,
+      status: input.status,
+      sent_at: input.status === 'sent' ? new Date() : undefined,
+      external_id: input.messageId,
+      error_message: input.error,
+    });
+
+    if (result.success) {
+      console.log(`✅ Notification saved: ${result.value.id}`);
+      return { success: true, id: result.value.id };
+    } else {
+      console.error(`❌ Failed to save notification: ${result.error.message}`);
+      return { success: false, id: '' };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error saving notification: ${error.message}`);
+    return { success: false, id: '' };
+  }
+}
+
+/**
+ * Update delivery status in database
+ */
+export async function updateDeliveryStatusInDb(input: {
+  deliveryId: string;
+  status: 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled' | 'failed';
+}): Promise<{ success: boolean }> {
+  console.log(`[Database] Updating delivery ${input.deliveryId} status to ${input.status}`);
+
+  try {
+    const db = getDatabaseService();
+    const result = await db.updateDelivery(input.deliveryId, {
+      status: input.status,
+    });
+
+    if (result.success) {
+      console.log(`✅ Delivery status updated to: ${input.status}`);
+      return { success: true };
+    } else {
+      console.error(`❌ Failed to update delivery status: ${result.error.message}`);
+      return { success: false };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error updating delivery status: ${error.message}`);
+    return { success: false };
+  }
+}
+
+/**
+ * Save workflow execution to database
+ */
+export async function saveWorkflowExecution(input: {
+  workflowId: string;
+  runId: string;
+  deliveryId: string;
+  status: 'running' | 'completed' | 'failed';
+  steps?: any;
+  error?: string;
+}): Promise<{ success: boolean; id: string }> {
+  console.log(`[Database] Saving workflow execution ${input.workflowId}`);
+
+  try {
+    const db = getDatabaseService();
+    const result = await db.createWorkflowExecution({
+      workflow_id: input.workflowId,
+      run_id: input.runId,
+      delivery_id: input.deliveryId,
+      status: input.status,
+      started_at: new Date(),
+      completed_at: input.status === 'completed' ? new Date() : undefined,
+      steps: input.steps,
+      error: input.error,
+    });
+
+    if (result.success) {
+      console.log(`✅ Workflow execution saved: ${result.value.id}`);
+      return { success: true, id: result.value.id };
+    } else {
+      console.error(`❌ Failed to save workflow execution: ${result.error.message}`);
+      return { success: false, id: '' };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error saving workflow execution: ${error.message}`);
+    return { success: false, id: '' };
+  }
+}
 
 export async function saveRouteEntity(input: {
   routeId: string;
