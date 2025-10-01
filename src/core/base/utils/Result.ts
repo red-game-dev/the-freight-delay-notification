@@ -30,3 +30,14 @@ export function isSuccess<T, E>(result: Result<T, E>): result is Success<T> {
 export function isFailure<T, E>(result: Result<T, E>): result is Failure<E> {
   return result.success === false;
 }
+
+// Namespace for static methods (allows Result.ok() syntax)
+export namespace Result {
+  export function ok<T>(value: T): Success<T> {
+    return success(value);
+  }
+
+  export function fail<E = Error>(error: E): Failure<E> {
+    return failure(error);
+  }
+}

@@ -11,7 +11,7 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 export type InputSize = 'sm' | 'md' | 'lg';
 export type InputState = 'default' | 'success' | 'error' | 'warning';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   helperText?: string;
