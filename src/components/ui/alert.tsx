@@ -6,6 +6,7 @@
 
 import * as React from 'react';
 import { AlertCircle, CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { cn } from '@/core/base/utils/cn';
 
 export interface AlertProps {
   children: React.ReactNode;
@@ -38,13 +39,13 @@ export function Alert({
   title,
   dismissible = false,
   onDismiss,
-  className = '',
+  className,
 }: AlertProps) {
   const Icon = icons[variant];
 
   return (
     <div
-      className={`flex gap-3 p-4 border rounded-lg ${variantStyles[variant]} ${className}`}
+      className={cn('flex gap-3 p-4 border rounded-lg', variantStyles[variant], className)}
       role="alert"
     >
       <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />

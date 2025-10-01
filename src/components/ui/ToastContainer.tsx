@@ -101,7 +101,13 @@ function ToastItem({ toast }: ToastItemProps) {
     ? (toast.data as AppError).severity
     : (toast.data as Notification).type;
 
-  const message = toast.data.message;
+  // Ensure message is always a string, handle edge cases where objects might be passed
+  const rawMessage = toast.data.message;
+  const message = typeof rawMessage === 'string'
+    ? rawMessage
+    : typeof rawMessage === 'object' && rawMessage !== null
+    ? (rawMessage as any).message || (rawMessage as any).error || JSON.stringify(rawMessage)
+    : String(rawMessage);
 
   const config = variantConfig[variant];
   const Icon = config.icon;

@@ -5,6 +5,7 @@
 'use client';
 
 import * as React from 'react';
+import { cn } from '@/core/base/utils/cn';
 
 export type BadgeVariant =
   | 'default'
@@ -32,13 +33,17 @@ const variantStyles: Record<BadgeVariant, string> = {
 
 export function Badge({
   variant = 'default',
-  className = '',
+  className,
   children,
   ...props
 }: BadgeProps) {
   return (
     <div
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantStyles[variant]} ${className}`}
+      className={cn(
+        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+        variantStyles[variant],
+        className
+      )}
       {...props}
     >
       {children}
