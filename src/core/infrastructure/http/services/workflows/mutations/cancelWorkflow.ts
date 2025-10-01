@@ -4,10 +4,10 @@
  */
 
 import { fetchJson } from '../../../client/fetchJson';
-import { apiConfig } from '../../../config';
+import { env } from '@/infrastructure/config/EnvValidator';
 
 export async function cancelWorkflow(workflowId: string): Promise<void> {
-  const url = `${apiConfig.baseUrl}/api/workflows/${workflowId}/cancel`;
+  const url = `${env.NEXT_PUBLIC_API_URL}/api/workflows/${workflowId}/cancel`;
   return fetchJson<void>(url, {
     method: 'POST',
   });

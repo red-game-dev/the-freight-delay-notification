@@ -4,11 +4,11 @@
  */
 
 import { fetchJson } from '../../../client/fetchJson';
-import { apiConfig } from '../../../config';
+import { env } from '@/infrastructure/config/EnvValidator';
 import type { Delivery, UpdateDeliveryInput } from '../types';
 
 export async function updateDelivery(id: string, data: UpdateDeliveryInput): Promise<Delivery> {
-  const url = `${apiConfig.baseUrl}/api/deliveries/${id}`;
+  const url = `${env.NEXT_PUBLIC_API_URL}/api/deliveries/${id}`;
 
   return fetchJson<Delivery>(url, {
     method: 'PATCH',

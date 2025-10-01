@@ -23,6 +23,7 @@ const envSchema = z.object({
   // Application Configuration
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
+  NEXT_PUBLIC_API_URL: z.string().default(''),
 
   // Feature Flags
   ENABLE_SMS: z.string().transform((val) => val === 'true').default('false'),

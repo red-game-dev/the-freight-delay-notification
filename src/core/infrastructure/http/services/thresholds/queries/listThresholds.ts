@@ -4,10 +4,10 @@
  */
 
 import { fetchJson } from '../../../client/fetchJson';
-import { apiConfig } from '../../../config';
+import { env } from '@/infrastructure/config/EnvValidator';
 import type { Threshold } from '../types';
 
 export async function listThresholds(): Promise<Threshold[]> {
-  const url = `${apiConfig.baseUrl}/api/thresholds`;
+  const url = `${env.NEXT_PUBLIC_API_URL}/api/thresholds`;
   return fetchJson<Threshold[]>(url);
 }

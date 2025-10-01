@@ -4,10 +4,10 @@
  */
 
 import { fetchJson } from '../../../client/fetchJson';
-import { apiConfig } from '../../../config';
+import { env } from '@/infrastructure/config/EnvValidator';
 import type { WorkflowActivity } from '../types';
 
 export async function getWorkflowActivities(workflowId: string): Promise<WorkflowActivity[]> {
-  const url = `${apiConfig.baseUrl}/api/workflows/${workflowId}/activities`;
+  const url = `${env.NEXT_PUBLIC_API_URL}/api/workflows/${workflowId}/activities`;
   return fetchJson<WorkflowActivity[]>(url);
 }

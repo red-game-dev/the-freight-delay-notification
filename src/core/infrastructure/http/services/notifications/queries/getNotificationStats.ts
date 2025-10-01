@@ -4,10 +4,10 @@
  */
 
 import { fetchJson } from '../../../client/fetchJson';
-import { apiConfig } from '../../../config';
+import { env } from '@/infrastructure/config/EnvValidator';
 import type { NotificationStats } from '../types';
 
 export async function getNotificationStats(): Promise<NotificationStats> {
-  const url = `${apiConfig.baseUrl}/api/notifications/stats`;
+  const url = `${env.NEXT_PUBLIC_API_URL}/api/notifications/stats`;
   return fetchJson<NotificationStats>(url);
 }
