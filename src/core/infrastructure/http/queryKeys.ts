@@ -33,4 +33,12 @@ export const queryKeys = {
     all: ['activities'] as const,
     byWorkflow: (workflowId: string) => ['activities', 'workflow', workflowId] as const,
   },
+  routes: {
+    all: ['routes'] as const,
+    list: () => ['routes', 'list'] as const,
+  },
+  traffic: {
+    all: ['traffic'] as const,
+    list: () => ['traffic', 'list'] as const,
+  },
 } as const;
