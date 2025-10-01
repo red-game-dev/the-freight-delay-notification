@@ -134,16 +134,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
           aria-describedby={error ? `${actualId}-error` : helperText ? `${actualId}-helper` : undefined}
           className={`
             w-full flex items-center justify-between rounded-lg border
-            bg-background text-foreground
-            focus:outline-none focus:ring-2 focus:ring-primary
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+            focus:outline-none focus:ring-2 focus:ring-primary-500
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-colors
             ${sizeClasses[size]}
-            ${error ? 'border-red-500 focus:ring-red-500' : 'border-input'}
-            ${isOpen ? 'ring-2 ring-primary' : ''}
+            ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}
+            ${isOpen ? 'ring-2 ring-primary-500' : ''}
           `}
         >
-          <span className={selectedOption ? '' : 'text-muted-foreground'}>
+          <span className={selectedOption ? '' : 'text-gray-500 dark:text-gray-400'}>
             {selectedOption?.label || placeholder}
           </span>
           <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
         {isOpen && (
           <div
             role="listbox"
-            className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-auto"
+            className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto"
           >
             {options.map((option) => (
               <button
@@ -172,9 +172,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 disabled={option.disabled}
                 className={`
                   w-full flex items-center justify-between px-3 py-2 text-left
-                  hover:bg-muted transition-colors
+                  text-gray-900 dark:text-gray-100
+                  hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  ${value === option.value ? 'bg-muted' : ''}
+                  ${value === option.value ? 'bg-gray-100 dark:bg-gray-700' : ''}
                 `}
               >
                 <span>{option.label}</span>
@@ -197,7 +198,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
               ? 'text-green-600 dark:text-green-400'
               : actualState === 'warning'
               ? 'text-orange-600 dark:text-orange-400'
-              : 'text-muted-foreground'
+              : 'text-gray-600 dark:text-gray-400'
           }`}
         >
           {helperText}

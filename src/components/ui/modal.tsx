@@ -15,6 +15,7 @@ export interface ModalProps {
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
+  position?: 'center' | 'right' | 'left';
 }
 
 const sizeStyles = {
@@ -25,6 +26,12 @@ const sizeStyles = {
   full: 'max-w-full mx-4',
 };
 
+const positionStyles = {
+  center: 'items-center justify-center',
+  right: 'items-center justify-end pr-4',
+  left: 'items-center justify-start pl-4',
+};
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -32,6 +39,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   size = 'md',
   showCloseButton = true,
+  position = 'center',
 }) => {
   React.useEffect(() => {
     if (isOpen) {
@@ -56,7 +64,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Container - Handles clicks */}
       <div
-        className="fixed inset-0 flex items-center justify-center overflow-y-auto p-4 z-[1021] min-h-screen"
+        className={`fixed inset-0 flex overflow-y-auto p-4 z-[1021] min-h-screen ${positionStyles[position]}`}
         onClick={onClose}
       >
         {/* Modal Content */}
@@ -97,7 +105,7 @@ export interface ModalFooterProps {
 
 export const ModalFooter: React.FC<ModalFooterProps> = ({ className = '', children }) => {
   return (
-    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t bg-muted/50 ${className}`}>
+    <div className={`flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 ${className}`}>
       {children}
     </div>
   );
