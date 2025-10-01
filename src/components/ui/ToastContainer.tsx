@@ -14,6 +14,7 @@
 import * as React from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { useErrorStore, useNotificationStore } from '@/stores';
+import { useShallow } from 'zustand/react/shallow';
 import type { AppError, Notification } from '@/stores';
 
 type ToastItem =
@@ -44,9 +45,14 @@ const variantConfig = {
 };
 
 export function ToastContainer() {
-  // Subscribe to stores
-  const errors = useErrorStore((state) => state.getActiveErrors());
-  const notifications = useNotificationStore((state) => state.getActiveNotifications());
+  // Subscribe to stores with shallow comparison to prevent infinite loops
+  const errors = useErrorStore(
+    useShallow((state) => state.errors.filter((e) => !e.dismissed))
+  );
+
+  const notifications = useNotificationStore(
+    useShallow((state) => state.notifications.filter((n) => !n.dismissed))
+  );
 
   // Combine and sort by timestamp (newest first)
   const toasts: ToastItem[] = React.useMemo(() => {

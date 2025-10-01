@@ -55,7 +55,14 @@ export async function fetchJson<T>(
       return {} as T;
     }
 
-    return await response.json();
+    const json = await response.json();
+
+    // Unwrap API response if it has the standard format { success, data }
+    if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
+      return json.data as T;
+    }
+
+    return json as T;
   } catch (error) {
     // Re-throw HttpError as-is
     if (error instanceof HttpError) {
