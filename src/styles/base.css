@@ -18,12 +18,16 @@
   html {
     background-color: oklch(0.98 0.005 230);
     color: oklch(0.20 0.010 230);
+    --drawer-bg: oklch(0.99 0.003 230);
+    --drawer-border: oklch(0.90 0.005 230);
   }
 
   /* Dark mode - Professional, easy on eyes for long dashboard usage */
   [data-theme="dark"] {
     background-color: oklch(0.12 0.015 230);
     color: oklch(0.95 0.005 230);
+    --drawer-bg: oklch(0.15 0.018 230);
+    --drawer-border: oklch(0.25 0.020 230);
   }
 
   /* Ensure backgrounds work */
@@ -69,5 +73,23 @@
   :focus-visible {
     outline: 2px solid oklch(0.65 0.120 230);
     outline-offset: 2px;
+  }
+
+  /* Drawer styles */
+  .drawer-panel {
+    background-color: var(--drawer-bg);
+    border-color: var(--drawer-border);
+  }
+
+  .drawer-slide-left {
+    animation: slideInFromLeft 300ms ease-out;
+  }
+
+  .drawer-slide-right {
+    animation: slideInFromRight 300ms ease-out;
+  }
+
+  .drawer-overlay-fade {
+    animation: fadeIn 300ms ease-out;
   }
 }
