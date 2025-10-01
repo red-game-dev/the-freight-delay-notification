@@ -19,6 +19,10 @@ const {
   evaluateDelay,
   generateAIMessage,
   sendNotification,
+  saveTrafficSnapshot,
+  saveNotification,
+  saveWorkflowExecution,
+  updateDeliveryStatusInDb,
 } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
   retry: {
@@ -90,6 +94,14 @@ export async function DelayNotificationWorkflow(
       });
 
       console.log(`[Workflow] Traffic check complete: ${result.steps.trafficCheck.delayMinutes} minutes delay detected`);
+
+      // Save traffic snapshot to database
+      await saveTrafficSnapshot({
+        routeId: input.routeId,
+        trafficCondition: result.steps.trafficCheck.trafficCondition,
+        delayMinutes: result.steps.trafficCheck.delayMinutes,
+        durationSeconds: result.steps.trafficCheck.estimatedDurationMinutes * 60,
+      });
     }
 
     // Step 2: Evaluate Delay
@@ -104,6 +116,14 @@ export async function DelayNotificationWorkflow(
       });
 
       console.log(`[Workflow] Delay evaluation: ${result.steps.delayEvaluation.exceedsThreshold ? 'EXCEEDS' : 'WITHIN'} threshold`);
+
+      // Update delivery status to "delayed" if threshold exceeded
+      if (result.steps.delayEvaluation.exceedsThreshold) {
+        await updateDeliveryStatusInDb({
+          deliveryId: input.deliveryId,
+          status: 'delayed',
+        });
+      }
     }
 
     // Step 3: Generate AI Message (only if threshold exceeded)
@@ -143,6 +163,33 @@ export async function DelayNotificationWorkflow(
       });
 
       console.log(`[Workflow] Notification sent via ${result.steps.notificationDelivery.channel}`);
+
+      // Save notifications to database
+      if (result.steps.notificationDelivery.emailResult && input.customerEmail) {
+        await saveNotification({
+          deliveryId: input.deliveryId,
+          customerId: input.customerId,
+          channel: 'email',
+          recipient: input.customerEmail,
+          message: result.steps.messageGeneration.message,
+          status: result.steps.notificationDelivery.emailResult.success ? 'sent' : 'failed',
+          messageId: result.steps.notificationDelivery.emailResult.messageId,
+          error: result.steps.notificationDelivery.emailResult.error,
+        });
+      }
+
+      if (result.steps.notificationDelivery.smsResult && input.customerPhone) {
+        await saveNotification({
+          deliveryId: input.deliveryId,
+          customerId: input.customerId,
+          channel: 'sms',
+          recipient: input.customerPhone,
+          message: result.steps.messageGeneration.message,
+          status: result.steps.notificationDelivery.smsResult.success ? 'sent' : 'failed',
+          messageId: result.steps.notificationDelivery.smsResult.messageId,
+          error: result.steps.notificationDelivery.smsResult.error,
+        });
+      }
     }
 
     // Mark workflow as completed
@@ -158,11 +205,35 @@ export async function DelayNotificationWorkflow(
       console.log(`✅ Workflow completed successfully for delivery ${input.deliveryId}`);
     }
 
+    // Save workflow execution to database
+    await saveWorkflowExecution({
+      workflowId: `delay-notification-${input.deliveryId}-${Date.now()}`,
+      runId: `run-${Date.now()}`,
+      deliveryId: input.deliveryId,
+      status: 'completed',
+      steps: result.steps,
+    });
+
   } catch (error) {
     currentStep = 'failed';
     result.success = false;
     result.error = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error(`❌ Workflow failed: ${result.error}`);
+
+    // Save failed workflow execution to database
+    try {
+      await saveWorkflowExecution({
+        workflowId: `delay-notification-${input.deliveryId}-${Date.now()}`,
+        runId: `run-${Date.now()}`,
+        deliveryId: input.deliveryId,
+        status: 'failed',
+        steps: result.steps,
+        error: result.error,
+      });
+    } catch (saveError) {
+      console.error(`❌ Failed to save workflow execution: ${saveError}`);
+    }
+
     throw error;
   }
 
