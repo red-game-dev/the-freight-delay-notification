@@ -89,8 +89,7 @@ async function clearTable(tableName: string, keepDefault = false): Promise<numbe
     const { count, error } = await supabase
       .from(tableName)
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all (using impossible ID)
-      .select('*', { count: 'exact', head: true });
+      .neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (!error && count !== null) {
       deleted = count;
