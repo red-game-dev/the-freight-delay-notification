@@ -182,10 +182,42 @@ export const WorkflowStatusPolling: React.FC<WorkflowStatusPollingProps> = ({
           )}
         </div>
 
-        {/* Error Message */}
+        {/* Error/Info Message */}
         {workflow.error && (
-          <Alert variant="error" className="mb-6">
-            <strong>Error:</strong> {workflow.error}
+          <Alert
+            variant={workflow.status === 'cancelled' ? 'warning' : 'error'}
+            title={workflow.status === 'cancelled' ? 'Workflow Stopped' : 'Workflow Error'}
+            className="mb-6"
+            details={
+              workflow.status === 'cancelled' ? (
+                <div>
+                  <p className="font-medium mb-1">Reason:</p>
+                  <p className="text-sm opacity-90">{workflow.error}</p>
+                </div>
+              ) : workflow.error.includes('Workflow code was updated') ? (
+                <div>
+                  <p className="font-medium mb-2">Error Details:</p>
+                  <p className="text-sm opacity-90 mb-3">{workflow.error}</p>
+                  <p className="font-medium mb-2">Action Required:</p>
+                  <ol className="space-y-1 list-decimal list-inside ml-1 text-sm">
+                    <li>Click <strong>"Stop Recurring Checks"</strong> and enable <strong>"Force Cancel"</strong></li>
+                    <li>Then restart by clicking <strong>"Check Traffic & Notify"</strong></li>
+                  </ol>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium mb-1">Error Details:</p>
+                  <p className="text-sm opacity-90">{workflow.error}</p>
+                </div>
+              )
+            }
+            defaultExpanded={workflow.error.includes('Workflow code was updated')}
+          >
+            {workflow.status === 'cancelled' ? (
+              <>To resume monitoring, click the <strong>"Check Traffic & Notify"</strong> button above to start a new workflow.</>
+            ) : (
+              <>The workflow encountered an error and could not complete. Check the details below for more information.</>
+            )}
           </Alert>
         )}
 

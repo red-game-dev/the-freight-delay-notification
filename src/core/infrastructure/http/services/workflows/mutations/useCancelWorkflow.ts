@@ -15,10 +15,11 @@ export function useCancelWorkflow() {
 
   return useMutation({
     mutationFn: cancelWorkflow,
-    onSuccess: (_, workflowId) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.workflows.detail(workflowId) });
+    onSuccess: (_, input) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.workflows.detail(input.workflowId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.workflows.all });
-      useNotificationStore.getState().success('Workflow cancelled successfully');
+      const message = input.force ? 'Workflow terminated successfully' : 'Workflow cancelled successfully';
+      useNotificationStore.getState().success(message);
     },
     onError: (err: Error) => {
       useErrorStore.getState().addError(

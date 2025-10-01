@@ -6,9 +6,13 @@
 import { fetchJson } from '../../../client/fetchJson';
 import { env } from '@/infrastructure/config/EnvValidator';
 
-export async function cancelWorkflow(workflowId: string): Promise<void> {
-  const url = `${env.NEXT_PUBLIC_API_URL}/api/workflows/${workflowId}/cancel`;
+export async function cancelWorkflow(input: {
+  workflowId: string;
+  force?: boolean;
+}): Promise<void> {
+  const url = `${env.NEXT_PUBLIC_API_URL}/api/workflows/${input.workflowId}/cancel`;
   return fetchJson<void>(url, {
     method: 'POST',
+    body: JSON.stringify({ force: input.force }),
   });
 }

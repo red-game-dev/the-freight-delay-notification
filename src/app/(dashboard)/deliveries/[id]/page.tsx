@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
+import { Toggle } from '@/components/ui/Toggle';
 import { CompactTimeline } from '@/components/ui/Timeline';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { useDelivery, useDeleteDelivery } from '@/core/infrastructure/http/services/deliveries';
@@ -52,6 +53,7 @@ export default function DeliveryDetailPage() {
 
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   const [showCancelWorkflowModal, setShowCancelWorkflowModal] = React.useState(false);
+  const [forceCancel, setForceCancel] = React.useState(false);
 
   // Construct the correct workflow ID based on delivery settings
   // - If recurring checks are enabled: recurring-check-{id}
@@ -76,10 +78,13 @@ export default function DeliveryDetailPage() {
     if (!delivery || !workflowId) return;
 
     try {
-      // Try canceling the recurring workflow first
-      const recurringWorkflowId = `recurring-check-${delivery.id}`;
-      await cancelWorkflow.mutateAsync(recurringWorkflowId);
+      await cancelWorkflow.mutateAsync({
+        workflowId,
+        force: forceCancel,
+      });
+
       setShowCancelWorkflowModal(false);
+      setForceCancel(false);
     } catch (error) {
       console.error('Failed to cancel recurring workflow:', error);
     }
@@ -316,7 +321,10 @@ export default function DeliveryDetailPage() {
       {/* Cancel Workflow Confirmation Modal */}
       <Modal
         isOpen={showCancelWorkflowModal}
-        onClose={() => setShowCancelWorkflowModal(false)}
+        onClose={() => {
+          setShowCancelWorkflowModal(false);
+          setForceCancel(false);
+        }}
         title="Stop Recurring Checks"
         size="md"
       >
@@ -324,27 +332,42 @@ export default function DeliveryDetailPage() {
           <p className="text-gray-700 dark:text-gray-300">
             Are you sure you want to stop recurring traffic checks for this delivery?
           </p>
+
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>Note:</strong> The workflow will stop monitoring traffic conditions. You can manually check traffic using the "Check Traffic & Notify" button.
+            </p>
+          </div>
+
+          <div className="border-t pt-4">
+            <Toggle
+              checked={forceCancel}
+              onChange={setForceCancel}
+              label="Force Cancel (Terminate)"
+            />
+            <p className="text-xs text-muted-foreground mt-2 ml-[calc(2.75rem)]">
+              Enable this if the workflow is stuck or has errors. This will immediately terminate the workflow without waiting for graceful shutdown.
             </p>
           </div>
         </div>
         <ModalFooter>
           <Button
             variant="outline"
-            onClick={() => setShowCancelWorkflowModal(false)}
+            onClick={() => {
+              setShowCancelWorkflowModal(false);
+              setForceCancel(false);
+            }}
             disabled={cancelWorkflow.isPending}
           >
             Cancel
           </Button>
           <Button
-            variant="default"
+            variant={forceCancel ? 'error' : 'default'}
             onClick={handleCancelWorkflow}
             loading={cancelWorkflow.isPending}
             leftIcon={<XCircle className="h-4 w-4" />}
           >
-            Stop Recurring Checks
+            {forceCancel ? 'Force Terminate' : 'Stop Recurring Checks'}
           </Button>
         </ModalFooter>
       </Modal>

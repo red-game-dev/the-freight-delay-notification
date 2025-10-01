@@ -35,7 +35,28 @@ export async function GET(request: NextRequest) {
 
       // Only query if workflow is still running
       if (description.status.name === 'RUNNING') {
-        internalStatus = await handle.query('workflowStatus');
+        try {
+          internalStatus = await handle.query('workflowStatus');
+        } catch (queryError: any) {
+          // Handle query failures (e.g., workflow task failed)
+          const errorMsg = queryError.message || '';
+          const causeMsg = queryError.cause?.message || '';
+
+          if (errorMsg.includes('Workflow Task in failed state')) {
+            console.log(`⚠️ Cannot query workflow ${workflowId} - task in failed state`);
+
+            // Check if it's a non-determinism error
+            if (causeMsg.includes('Nondeterminism') || causeMsg.includes('does not match')) {
+              console.log(`⚠️ Non-determinism detected: ${causeMsg}`);
+              error = 'Workflow code was updated after this workflow started. Please cancel this workflow and start a new one.';
+            } else {
+              error = 'Workflow task in failed state - check Temporal UI for details';
+            }
+            // Continue without internal status - we'll use the error message
+          } else {
+            throw queryError;
+          }
+        }
       }
     } catch (error: any) {
       // Workflow not found - check database for completed workflow
@@ -97,11 +118,24 @@ export async function GET(request: NextRequest) {
       }
     } else if (description.status.name === 'FAILED') {
       status = 'failed';
-      error = description.status.name;
+      // Try to get the failure reason
+      try {
+        await handle.result();
+      } catch (err: any) {
+        error = err.message || err.cause?.message || 'Workflow failed';
+      }
     } else if (description.status.name === 'CANCELLED') {
       status = 'cancelled';
+      error = 'Workflow was cancelled';
+    } else if (description.status.name === 'TERMINATED') {
+      status = 'cancelled'; // Treat terminated as cancelled for UI purposes
+      error = 'Workflow was terminated';
     } else if (description.status.name === 'TIMED_OUT') {
       status = 'timed_out';
+    } else if (description.status.name === 'RUNNING' && !internalStatus) {
+      // Workflow is running but we couldn't query it (likely due to failed task)
+      status = 'failed';
+      error = 'Workflow task in failed state - check Temporal UI for details';
     }
 
     // Return normalized response that matches frontend expectations

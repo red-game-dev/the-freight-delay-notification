@@ -358,21 +358,37 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async updateDelivery(id: string, input: UpdateDeliveryInput): Promise<Result<Delivery>> {
     try {
+      // Get existing delivery to access metadata
+      const existing = await this.getDeliveryById(id);
+      if (!existing.success || !existing.value) {
+        return failure(new InfrastructureError('Delivery not found'));
+      }
+
       const dbInput: any = { ...input };
 
-      // Handle notes - save to metadata
-      if ('notes' in input) {
-        // Get existing delivery to merge metadata
-        const existing = await this.getDeliveryById(id);
-        if (!existing.success || !existing.value) {
-          return failure(new InfrastructureError('Delivery not found'));
-        }
+      // Remove virtual fields that don't exist in the deliveries table
+      // These are read-only fields populated from joins
+      delete dbInput.customer_name;
+      delete dbInput.customer_email;
+      delete dbInput.customer_phone;
+      delete dbInput.origin;
+      delete dbInput.destination;
 
+      // Handle notes and other convenience fields - save to metadata
+      const metadataUpdates: any = {};
+      let hasMetadataUpdates = false;
+
+      if ('notes' in input) {
+        metadataUpdates.notes = input.notes;
+        hasMetadataUpdates = true;
+        delete dbInput.notes;
+      }
+
+      if (hasMetadataUpdates) {
         dbInput.metadata = {
           ...(existing.value.metadata || {}),
-          notes: input.notes,
+          ...metadataUpdates,
         };
-        delete dbInput.notes;
       }
 
       if (input.current_location) {
