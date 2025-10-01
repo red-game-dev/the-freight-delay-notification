@@ -6,6 +6,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { MapPin, Clock } from 'lucide-react';
@@ -86,36 +87,46 @@ export function DeliveryList() {
           {deliveries.map((delivery) => {
             const config = statusConfig[delivery.status];
             return (
-              <TableRow key={delivery.id}>
+              <TableRow key={delivery.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell>
-                  <div className="font-medium">{delivery.trackingNumber}</div>
+                  <Link href={`/deliveries/${delivery.id}`} className="block">
+                    <div className="font-medium">{delivery.trackingNumber}</div>
+                  </Link>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-1">
+                  <Link href={`/deliveries/${delivery.id}`} className="block">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1 text-sm">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span>{delivery.origin}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <span>→</span>
+                        <span>{delivery.destination}</span>
+                      </div>
+                    </div>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link href={`/deliveries/${delivery.id}`} className="block">
+                    <div className="flex flex-col">
+                      <div className="font-medium text-sm">{delivery.customer.name}</div>
+                      <div className="text-xs text-muted-foreground">{delivery.customer.email}</div>
+                    </div>
+                  </Link>
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  <Link href={`/deliveries/${delivery.id}`} className="block">
                     <div className="flex items-center gap-1 text-sm">
-                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                      <span>{delivery.origin}</span>
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      {new Date(delivery.scheduledDelivery).toLocaleDateString()}
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <span>→</span>
-                      <span>{delivery.destination}</span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <div className="font-medium text-sm">{delivery.customer.name}</div>
-                    <div className="text-xs text-muted-foreground">{delivery.customer.email}</div>
-                  </div>
+                  </Link>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  <div className="flex items-center gap-1 text-sm">
-                    <Clock className="h-3 w-3 text-muted-foreground" />
-                    {new Date(delivery.scheduledDelivery).toLocaleDateString()}
-                  </div>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <Badge variant={config.variant}>{config.label}</Badge>
+                  <Link href={`/deliveries/${delivery.id}`} className="block">
+                    <Badge variant={config.variant}>{config.label}</Badge>
+                  </Link>
                 </TableCell>
               </TableRow>
             );
