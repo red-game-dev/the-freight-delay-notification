@@ -12,7 +12,8 @@ import {
   Activity,
   Bell,
   Workflow,
-  Home
+  Home,
+  Settings
 } from 'lucide-react';
 
 const navigation = [
@@ -40,6 +41,11 @@ const navigation = [
     name: 'Workflows',
     href: '/workflows',
     icon: Workflow,
+  },
+  {
+    name: 'Settings',
+    href: '/settings',
+    icon: Settings,
   },
 ];
 
