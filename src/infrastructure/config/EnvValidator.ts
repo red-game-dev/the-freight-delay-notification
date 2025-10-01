@@ -10,6 +10,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().optional(),
   SUPABASE_URL: z.string().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
 
   // API Keys
   GOOGLE_MAPS_API_KEY: z.string().optional(),
