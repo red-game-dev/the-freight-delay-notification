@@ -5,6 +5,7 @@
  */
 
 import { BaseError, InfrastructureError, ValidationError, NotFoundError } from './BaseError';
+import { isDevelopment } from '../utils/environment';
 
 /**
  * Base HTTP Error with status code
@@ -23,7 +24,7 @@ export class HttpError extends InfrastructureError {
       message: this.message,
       code: this.code,
       statusCode: this.statusCode,
-      ...(process.env.NODE_ENV === 'development' && {
+      ...(isDevelopment() && {
         context: this.context,
         stack: this.stack,
       }),

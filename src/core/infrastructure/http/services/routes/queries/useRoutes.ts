@@ -13,5 +13,7 @@ export function useRoutes() {
   return useQuery({
     queryKey: queryKeys.routes.list(),
     queryFn: listRoutes,
+    refetchInterval: 60000, // Refetch every 60 seconds for route updates
+    refetchOnWindowFocus: true,
   });
 }

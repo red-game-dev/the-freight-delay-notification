@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { CompactTimeline } from '@/components/ui/Timeline';
 import { SkeletonWorkflow } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow, Link } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow } from 'lucide-react';
 import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
 import { formatNextScheduledTime } from '@/core/utils/dateUtils';
 import Link from 'next/link';

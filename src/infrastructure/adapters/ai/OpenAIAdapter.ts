@@ -78,10 +78,10 @@ export class OpenAIAdapter implements AIAdapter {
   }
 
   private createPrompt(input: MessageGenerationInput): string {
+    const deliveryRef = input.trackingNumber || input.deliveryId;
     return `Generate a professional and empathetic delivery delay notification email for the following situation:
 
-Delivery ID: ${input.deliveryId}
-Customer ID: ${input.customerId}
+Tracking Number: ${deliveryRef}
 Route: ${input.origin} to ${input.destination}
 Delay: ${input.delayMinutes} minutes
 Traffic Condition: ${input.trafficCondition}
@@ -90,9 +90,11 @@ New Estimated Arrival: ${new Date(input.estimatedArrival).toLocaleString()}
 
 Please create a brief, clear message that:
 1. Apologizes for the delay
-2. Explains the traffic situation
+2. Explains the traffic situation in a customer-friendly way
 3. Provides the new estimated arrival time
 4. Thanks the customer for their patience
+
+IMPORTANT: Vary the wording, tone, and structure based on the specific situation. Don't use generic templates. Make it feel personalized to THIS specific delay scenario.
 
 Keep it under 150 words and maintain a professional yet friendly tone.`;
   }
@@ -112,9 +114,10 @@ Keep it under 150 words and maintain a professional yet friendly tone.`;
   }
 
   private createFallbackMessageText(input: MessageGenerationInput): string {
+    const deliveryRef = input.trackingNumber || input.deliveryId;
     return `Dear Valued Customer,
 
-We want to inform you that your delivery (ID: ${input.deliveryId}) is experiencing a delay of approximately ${input.delayMinutes} minutes due to ${input.trafficCondition} traffic conditions.
+We want to inform you that your delivery (Tracking #: ${deliveryRef}) is experiencing a delay of approximately ${input.delayMinutes} minutes due to ${input.trafficCondition} traffic conditions.
 
 Route: ${input.origin} → ${input.destination}
 
@@ -130,12 +133,13 @@ Freight Delivery Team`;
   }
 
   private generateSubject(input: MessageGenerationInput): string {
+    const deliveryRef = input.trackingNumber || input.deliveryId;
     if (input.delayMinutes > 60) {
-      return `Important: Significant Delay - Delivery ${input.deliveryId}`;
+      return `Important: Significant Delay - Tracking #${deliveryRef}`;
     } else if (input.delayMinutes > 30) {
-      return `Delivery Update: ${input.delayMinutes}-minute delay - ID ${input.deliveryId}`;
+      return `Delivery Update: ${input.delayMinutes}-minute delay - #${deliveryRef}`;
     } else {
-      return `Minor Delay Notice - Delivery ${input.deliveryId}`;
+      return `Minor Delay Notice - Tracking #${deliveryRef}`;
     }
   }
 }

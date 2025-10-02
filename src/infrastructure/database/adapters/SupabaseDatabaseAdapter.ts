@@ -14,6 +14,7 @@ import {
   CreateCustomerInput,
   Route,
   CreateRouteInput,
+  UpdateRouteInput,
   Delivery,
   CreateDeliveryInput,
   UpdateDeliveryInput,
@@ -91,12 +92,15 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     // PostgreSQL POINT format: "(lng,lat)" or "lng,lat"
     const cleaned = point.replace(/[()]/g, '');
     const [lng, lat] = cleaned.split(',').map(Number);
-    return { lat, lng };
+    return { x: lat, y: lng, lat, lng };
   }
 
   // ===== Helper: Convert Coordinates to POINT =====
   private coordinatesToPoint(coords: Coordinates): string {
-    return `(${coords.lng},${coords.lat})`;
+    // Support both {x,y} and {lat,lng} formats
+    const lat = coords.lat ?? coords.x;
+    const lng = coords.lng ?? coords.y;
+    return `(${lng},${lat})`;
   }
 
   // ===== Customer Operations =====
@@ -237,6 +241,41 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     }
   }
 
+  async updateRoute(id: string, input: UpdateRouteInput): Promise<Result<Route>> {
+    try {
+      // Convert coordinates to POINT format for database
+      const dbInput: Omit<UpdateRouteInput, 'origin_coords' | 'destination_coords'> & {
+        origin_coords?: string;
+        destination_coords?: string;
+      } = {
+        ...input,
+        origin_coords: input.origin_coords ? this.coordinatesToPoint(input.origin_coords) : undefined,
+        destination_coords: input.destination_coords ? this.coordinatesToPoint(input.destination_coords) : undefined,
+      };
+
+      const { data, error } = await this.ensureClient()
+        .from('routes')
+        .update(dbInput)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to update route: ${error.message}`, { error }));
+      }
+
+      const route: Route = {
+        ...data,
+        origin_coords: this.pointToCoordinates(data.origin_coords),
+        destination_coords: this.pointToCoordinates(data.destination_coords),
+      };
+
+      return success(route);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Failed to update route: ${error.message}`, { error }));
+    }
+  }
+
   async listRoutes(limit = 10, offset = 0): Promise<Result<Route[]>> {
     try {
       const { data, error } = await this.ensureClient()
@@ -364,36 +403,36 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         return failure(new InfrastructureError('Delivery not found'));
       }
 
-      const dbInput: any = { ...input };
+      // Build database input by removing virtual fields
+      const {
+        customer_name,
+        customer_email,
+        customer_phone,
+        origin,
+        destination,
+        notes,
+        current_location,
+        ...dbFields
+      } = input;
 
-      // Remove virtual fields that don't exist in the deliveries table
-      // These are read-only fields populated from joins
-      delete dbInput.customer_name;
-      delete dbInput.customer_email;
-      delete dbInput.customer_phone;
-      delete dbInput.origin;
-      delete dbInput.destination;
-
-      // Handle notes and other convenience fields - save to metadata
-      const metadataUpdates: any = {};
-      let hasMetadataUpdates = false;
-
-      if ('notes' in input) {
-        metadataUpdates.notes = input.notes;
-        hasMetadataUpdates = true;
-        delete dbInput.notes;
+      // Handle notes - save to metadata
+      const metadataUpdates: Record<string, string> = {};
+      if (notes !== undefined) {
+        metadataUpdates.notes = notes;
       }
 
-      if (hasMetadataUpdates) {
-        dbInput.metadata = {
+      // Build final database input with proper types
+      const dbInput: Omit<UpdateDeliveryInput, 'current_location' | 'customer_name' | 'customer_email' | 'customer_phone' | 'origin' | 'destination' | 'notes'> & {
+        current_location?: string;
+        metadata?: Record<string, unknown>;
+      } = {
+        ...dbFields,
+        current_location: current_location ? this.coordinatesToPoint(current_location) : undefined,
+        metadata: Object.keys(metadataUpdates).length > 0 ? {
           ...(existing.value.metadata || {}),
           ...metadataUpdates,
-        };
-      }
-
-      if (input.current_location) {
-        dbInput.current_location = this.coordinatesToPoint(input.current_location);
-      }
+        } : undefined,
+      };
 
       const { error } = await this.ensureClient()
         .from('deliveries')
@@ -405,7 +444,11 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       }
 
       // Re-fetch with joins to return complete data
-      return await this.getDeliveryById(id) as any;
+      const updatedDelivery = await this.getDeliveryById(id);
+      if (!updatedDelivery.success || !updatedDelivery.value) {
+        return failure(new InfrastructureError('Failed to fetch updated delivery'));
+      }
+      return success(updatedDelivery.value);
     } catch (error: any) {
       return failure(new InfrastructureError(`Failed to update delivery: ${error.message}`, { error }));
     }
@@ -611,9 +654,15 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   // ===== Traffic Snapshot Operations =====
   async createTrafficSnapshot(input: CreateTrafficSnapshotInput): Promise<Result<TrafficSnapshot>> {
     try {
+      // Convert incident_location coordinates to POINT format if provided
+      const dbInput: Omit<CreateTrafficSnapshotInput, 'incident_location'> & { incident_location?: string } = {
+        ...input,
+        incident_location: input.incident_location ? this.coordinatesToPoint(input.incident_location) : undefined,
+      };
+
       const { data, error } = await this.ensureClient()
         .from('traffic_snapshots')
-        .insert(input)
+        .insert(dbInput)
         .select()
         .single();
 

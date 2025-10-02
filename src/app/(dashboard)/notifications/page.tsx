@@ -10,8 +10,10 @@ import { StatCard, StatGrid } from '@/components/ui/StatCard';
 import { List, ListItem } from '@/components/ui/List';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Mail, MessageSquare, CheckCircle2, XCircle, Bell } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
+import { Mail, MessageSquare, CheckCircle2, XCircle, Bell, Clock, RefreshCw, ExternalLink } from 'lucide-react';
 import { useNotifications, useNotificationStats } from '@/core/infrastructure/http/services/notifications';
+import Link from 'next/link';
 
 export default function NotificationsPage() {
   const { data: notifications, isLoading: notificationsLoading } = useNotifications();
@@ -67,39 +69,127 @@ export default function NotificationsPage() {
           />
         ) : (
           <List>
-            {notifications.map((notification) => (
-            <ListItem key={notification.id}>
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  {notification.channel === 'email' ? (
-                    <Mail className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">{notification.delivery_id}</span>
-                    <Badge
-                      variant={notification.status === 'sent' ? 'success' : 'error'}
-                    >
-                      {notification.status}
-                    </Badge>
-                    <span className="text-xs uppercase text-muted-foreground">
-                      {notification.channel}
-                    </span>
+            {notifications.map((notification) => {
+              const hasError = notification.status === 'failed' && notification.error_message;
+              const retryCount = (notification as any).retry_count || 0;
+              const attemptedAt = (notification as any).attempted_at;
+              const trackingNumber = (notification as any).tracking_number;
+
+              return (
+                <ListItem key={notification.id}>
+                  <div className="flex items-start gap-4 w-full">
+                    <div className="flex-shrink-0">
+                      {notification.channel === 'email' ? (
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {/* Header with delivery link and status */}
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {trackingNumber ? (
+                          <Link
+                            href={`/deliveries/${notification.delivery_id}`}
+                            className="font-medium hover:underline flex items-center gap-1"
+                          >
+                            {trackingNumber}
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-muted-foreground">
+                            {notification.delivery_id.substring(0, 8)}...
+                          </span>
+                        )}
+                        <Badge
+                          variant={notification.status === 'sent' ? 'success' : notification.status === 'failed' ? 'error' : 'default'}
+                        >
+                          {notification.status}
+                        </Badge>
+                        <span className="text-xs uppercase text-muted-foreground">
+                          {notification.channel}
+                        </span>
+                        {retryCount > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                            <RefreshCw className="h-3 w-3" />
+                            <span>{retryCount} {retryCount === 1 ? 'retry' : 'retries'}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Recipient */}
+                      <p className="text-sm text-muted-foreground mb-2">
+                        To: {notification.recipient}
+                      </p>
+
+                      {/* Message preview */}
+                      <p className="text-sm mb-3 line-clamp-2">{notification.message}</p>
+
+                      {/* Timestamps */}
+                      <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground mb-2">
+                        {attemptedAt && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>Attempted: {new Date(attemptedAt).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {notification.sent_at && (
+                          <div className="flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Sent: {new Date(notification.sent_at).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {!attemptedAt && !notification.sent_at && notification.created_at && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>Created: {new Date(notification.created_at).toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Go to Delivery link */}
+                      <div className="mt-2">
+                        <Link
+                          href={`/deliveries/${notification.delivery_id}`}
+                          className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          Go to delivery →
+                        </Link>
+                      </div>
+
+                      {/* Error details */}
+                      {hasError && (
+                        <Alert
+                          variant="error"
+                          title="Notification Failed"
+                          className="mt-3"
+                          details={
+                            <div className="space-y-2">
+                              {notification.error_message && (
+                                <div>
+                                  <p className="font-medium text-sm mb-1">Error Message:</p>
+                                  <p className="text-sm opacity-90">{notification.error_message}</p>
+                                </div>
+                              )}
+                              {notification.error_message && (
+                                <div>
+                                  <p className="font-medium text-sm mb-1">Technical Details:</p>
+                                  <pre className="text-xs opacity-90 overflow-auto p-2 bg-black/10 dark:bg-white/10 rounded">
+                                    {notification.error_message}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          }
+                        >
+                          The notification could not be delivered. {retryCount > 0 ? `Attempted ${retryCount + 1} time(s).` : ''} Check the details below for more information.
+                        </Alert>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    To: {notification.recipient}
-                  </p>
-                  <p className="text-sm">{notification.message}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {notification.sent_at ? new Date(notification.sent_at).toLocaleString() : 'Not sent yet'}
-                  </p>
-                </div>
-              </div>
-            </ListItem>
-          ))}
+                </ListItem>
+              );
+            })}
           </List>
         )}
       </div>

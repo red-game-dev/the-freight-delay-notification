@@ -18,9 +18,9 @@ export class TwilioAdapter implements NotificationAdapter {
   private fromPhone: string;
 
   constructor() {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
-    const authToken = process.env.TWILIO_AUTH_TOKEN || '';
-    this.fromPhone = process.env.TWILIO_FROM_PHONE || '';
+    const accountSid = env.TWILIO_ACCOUNT_SID || '';
+    const authToken = env.TWILIO_AUTH_TOKEN || '';
+    this.fromPhone = env.TWILIO_FROM_PHONE || '';
 
     if (accountSid && authToken) {
       this.client = new Twilio(accountSid, authToken);

@@ -14,6 +14,8 @@ export interface Route {
   destination_coords: { x: number; y: number };
   distance_meters: number;
   normal_duration_seconds: number;
+  current_duration_seconds: number | null;
+  traffic_condition: 'light' | 'moderate' | 'heavy' | 'severe' | null;
   created_at: string;
   updated_at: string;
 }

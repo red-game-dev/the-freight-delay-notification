@@ -24,7 +24,7 @@ export function isSupabaseConfigured(): boolean {
  * Check if admin client is properly configured
  */
 export function isSupabaseAdminConfigured(): boolean {
-  return !!(env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 // Lazy-initialize clients only when needed
@@ -48,7 +48,7 @@ export const supabase = (() => {
  */
 export const supabaseAdmin = (() => {
   if (!_supabaseAdmin && isSupabaseAdminConfigured()) {
-    _supabaseAdmin = createClient(env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    _supabaseAdmin = createClient(env.SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE_KEY!);
   }
   return _supabaseAdmin!;
 })();

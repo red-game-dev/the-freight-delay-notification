@@ -21,8 +21,8 @@ export class SendGridAdapter implements NotificationAdapter {
 
   constructor() {
     this.apiKey = env.SENDGRID_API_KEY || '';
-    this.fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@example.com';
-    this.fromName = process.env.SENDGRID_FROM_NAME || 'Freight Notifications';
+    this.fromEmail = env.SENDGRID_FROM_EMAIL || 'noreply@example.com';
+    this.fromName = env.SENDGRID_FROM_NAME || 'Freight Notifications';
 
     if (this.apiKey) {
       sgMail.setApiKey(this.apiKey);

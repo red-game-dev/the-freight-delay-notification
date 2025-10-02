@@ -7,11 +7,13 @@ import { success, failure } from '../../../core/base/utils/Result';
 import type { Result } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import type { DatabaseAdapter } from './DatabaseAdapter.interface';
+import { env } from '../../config/EnvValidator';
 import type {
   Customer,
   CreateCustomerInput,
   Route,
   CreateRouteInput,
+  UpdateRouteInput,
   Delivery,
   CreateDeliveryInput,
   UpdateDeliveryInput,
@@ -61,9 +63,9 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
    */
   private seedMockData(): void {
     // Mock Customers - use env vars if available
-    const testEmail = process.env.TEST_EMAIL || 'john.doe@example.com';
-    const testPhone = process.env.TEST_PHONE || '+1234567890';
-    const testName = process.env.TEST_NAME || 'John Doe';
+    const testEmail = env.TEST_EMAIL || 'john.doe@example.com';
+    const testPhone = env.TEST_PHONE || '+1234567890';
+    const testName = env.TEST_NAME || 'John Doe';
 
     const customer1: Customer = {
       id: '550e8400-e29b-41d4-a716-446655440000',
@@ -120,9 +122,9 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     const route1: Route = {
       id: '660e8400-e29b-41d4-a716-446655440000',
       origin_address: 'Downtown Los Angeles, CA',
-      origin_coords: { lat: 34.0522, lng: -118.2437 },
+      origin_coords: { x: 34.0522, y: -118.2437, lat: 34.0522, lng: -118.2437 },
       destination_address: 'LAX Airport, CA',
-      destination_coords: { lat: 33.9416, lng: -118.4085 },
+      destination_coords: { x: 33.9416, y: -118.4085, lat: 33.9416, lng: -118.4085 },
       distance_meters: 22000,
       normal_duration_seconds: 1800,
       current_duration_seconds: null,
@@ -133,9 +135,9 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     const route2: Route = {
       id: '660e8400-e29b-41d4-a716-446655440001',
       origin_address: 'Times Square, Manhattan, NY',
-      origin_coords: { lat: 40.7580, lng: -73.9855 },
+      origin_coords: { x: 40.7580, y: -73.9855, lat: 40.7580, lng: -73.9855 },
       destination_address: 'JFK Airport, Queens, NY',
-      destination_coords: { lat: 40.6413, lng: -73.7781 },
+      destination_coords: { x: 40.6413, y: -73.7781, lat: 40.6413, lng: -73.7781 },
       distance_meters: 28000,
       normal_duration_seconds: 2700,
       current_duration_seconds: null,
@@ -146,9 +148,9 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     const route3: Route = {
       id: '660e8400-e29b-41d4-a716-446655440002',
       origin_address: 'Downtown San Francisco, CA',
-      origin_coords: { lat: 37.7749, lng: -122.4194 },
+      origin_coords: { x: 37.7749, y: -122.4194, lat: 37.7749, lng: -122.4194 },
       destination_address: 'San Jose, CA',
-      destination_coords: { lat: 37.3382, lng: -121.8863 },
+      destination_coords: { x: 37.3382, y: -121.8863, lat: 37.3382, lng: -121.8863 },
       distance_meters: 75000,
       normal_duration_seconds: 4500,
       current_duration_seconds: null,
@@ -159,9 +161,9 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     const route4: Route = {
       id: '660e8400-e29b-41d4-a716-446655440003',
       origin_address: 'Chicago Loop, IL',
-      origin_coords: { lat: 41.8781, lng: -87.6298 },
+      origin_coords: { x: 41.8781, y: -87.6298, lat: 41.8781, lng: -87.6298 },
       destination_address: "O'Hare Airport, IL",
-      destination_coords: { lat: 41.9742, lng: -87.9073 },
+      destination_coords: { x: 41.9742, y: -87.9073, lat: 41.9742, lng: -87.9073 },
       distance_meters: 27000,
       normal_duration_seconds: 2100,
       current_duration_seconds: null,
@@ -172,9 +174,9 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     const route5: Route = {
       id: '660e8400-e29b-41d4-a716-446655440004',
       origin_address: 'Seattle Downtown, WA',
-      origin_coords: { lat: 47.6062, lng: -122.3321 },
+      origin_coords: { x: 47.6062, y: -122.3321, lat: 47.6062, lng: -122.3321 },
       destination_address: 'Portland, OR',
-      destination_coords: { lat: 45.5152, lng: -122.6784 },
+      destination_coords: { x: 45.5152, y: -122.6784, lat: 45.5152, lng: -122.6784 },
       distance_meters: 280000,
       normal_duration_seconds: 10800,
       current_duration_seconds: null,
@@ -602,6 +604,25 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     }
   }
 
+  async updateRoute(id: string, input: UpdateRouteInput): Promise<Result<Route>> {
+    try {
+      const existing = this.routes.get(id);
+      if (!existing) {
+        return failure(new InfrastructureError(`Mock: Route not found: ${id}`));
+      }
+
+      const updated: Route = {
+        ...existing,
+        ...input,
+        updated_at: new Date(),
+      };
+      this.routes.set(id, updated);
+      return success(updated);
+    } catch (error: any) {
+      return failure(new InfrastructureError(`Mock: Failed to update route: ${error.message}`));
+    }
+  }
+
   async listRoutes(limit = 100, offset = 0): Promise<Result<Route[]>> {
     try {
       const routes = Array.from(this.routes.values()).slice(offset, offset + limit);
@@ -810,7 +831,12 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         delay_minutes: input.delay_minutes,
         duration_seconds: input.duration_seconds,
         snapshot_at: new Date(),
-      };
+        ...(input.description && { description: input.description }),
+        ...(input.severity && { severity: input.severity }),
+        ...(input.affected_area && { affected_area: input.affected_area }),
+        ...(input.incident_type && { incident_type: input.incident_type }),
+        ...(input.incident_location && { incident_location: input.incident_location }),
+      } as any;
       this.trafficSnapshots.set(snapshot.id, snapshot);
       return success(snapshot);
     } catch (error: any) {

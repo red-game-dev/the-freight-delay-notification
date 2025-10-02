@@ -94,6 +94,13 @@ export class DatabaseService {
   }
 
   /**
+   * Get current adapter name (alias for getAdapterName)
+   */
+  get currentAdapter(): string {
+    return this.primaryAdapter.name;
+  }
+
+  /**
    * Write operation: Write to ALL adapters
    * Returns primary result, logs secondary failures
    */
@@ -185,6 +192,10 @@ export class DatabaseService {
 
   async createRoute(input: Parameters<DatabaseAdapter['createRoute']>[0]) {
     return this.writeToAll('createRoute', (adapter) => adapter.createRoute(input));
+  }
+
+  async updateRoute(id: string, input: Parameters<DatabaseAdapter['updateRoute']>[1]) {
+    return this.writeToAll('updateRoute', (adapter) => adapter.updateRoute(id, input));
   }
 
   async listRoutes(limit?: number, offset?: number) {

@@ -10,9 +10,12 @@ export type NotificationChannel = 'email' | 'sms';
 export type NotificationStatus = 'pending' | 'sent' | 'failed' | 'skipped';
 
 // Coordinate type (PostgreSQL POINT)
+// PostGIS returns {x: lat, y: lng} format
 export interface Coordinates {
-  lat: number;
-  lng: number;
+  x: number; // latitude
+  y: number; // longitude
+  lat?: number; // alias for x
+  lng?: number; // alias for y
 }
 
 // Notification Preferences
@@ -61,6 +64,17 @@ export interface CreateRouteInput {
   destination_coords: Coordinates;
   distance_meters: number;
   normal_duration_seconds: number;
+  current_duration_seconds?: number;
+  traffic_condition?: TrafficCondition;
+}
+
+export interface UpdateRouteInput {
+  origin_address?: string;
+  origin_coords?: Coordinates;
+  destination_address?: string;
+  destination_coords?: Coordinates;
+  distance_meters?: number;
+  normal_duration_seconds?: number;
   current_duration_seconds?: number;
   traffic_condition?: TrafficCondition;
 }
@@ -174,6 +188,11 @@ export interface CreateTrafficSnapshotInput {
   traffic_condition: TrafficCondition;
   delay_minutes: number;
   duration_seconds: number;
+  description?: string;
+  severity?: string;
+  affected_area?: string;
+  incident_type?: 'accident' | 'construction' | 'road_closure' | 'weather' | 'congestion' | 'other';
+  incident_location?: { x: number; y: number };
 }
 
 // Workflow Execution

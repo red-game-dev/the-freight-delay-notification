@@ -9,6 +9,7 @@ import type {
   CreateCustomerInput,
   Route,
   CreateRouteInput,
+  UpdateRouteInput,
   Delivery,
   CreateDeliveryInput,
   UpdateDeliveryInput,
@@ -49,6 +50,7 @@ export interface DatabaseAdapter {
   // ===== Route Operations =====
   getRouteById(id: string): Promise<Result<Route | null>>;
   createRoute(input: CreateRouteInput): Promise<Result<Route>>;
+  updateRoute(id: string, input: UpdateRouteInput): Promise<Result<Route>>;
   listRoutes(limit?: number, offset?: number): Promise<Result<Route[]>>;
 
   // ===== Delivery Operations =====

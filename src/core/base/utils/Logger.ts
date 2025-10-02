@@ -3,13 +3,15 @@
  * Provides consistent logging across the application
  */
 
+import { isDevelopment } from './environment';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 class Logger {
-  private isDevelopment = process.env.NODE_ENV !== 'production';
+  private isDev = isDevelopment();
 
   debug(message: string, ...args: any[]): void {
-    if (this.isDevelopment) {
+    if (this.isDev) {
       console.debug(`[DEBUG] ${message}`, ...args);
     }
   }

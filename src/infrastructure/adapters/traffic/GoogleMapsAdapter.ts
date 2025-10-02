@@ -108,4 +108,53 @@ export class GoogleMapsAdapter implements TrafficAdapter {
     if (delayPercentage < 50) return 'heavy';
     return 'severe';
   }
+
+  /**
+   * Geocode an address to coordinates
+   */
+  async geocodeAddress(address: string): Promise<Result<{ lat: number; lng: number }>> {
+    if (!this.isAvailable()) {
+      return failure(new InfrastructureError(
+        `${this.providerName} API key not configured`,
+        { provider: this.providerName }
+      ));
+    }
+
+    try {
+      console.log(`🌍 [${this.providerName}] Geocoding address: ${address}`);
+
+      const response = await this.client.geocode({
+        params: {
+          address,
+          key: this.apiKey,
+        },
+      });
+
+      if (response.data.status !== 'OK' || !response.data.results.length) {
+        return failure(new InfrastructureError(
+          `${this.providerName} geocoding failed: ${response.data.status}`,
+          {
+            status: response.data.status,
+            error_message: response.data.error_message,
+            address
+          }
+        ));
+      }
+
+      const location = response.data.results[0].geometry.location;
+
+      console.log(`✅ [${this.providerName}] Geocoded: ${address} → (${location.lat}, ${location.lng})`);
+
+      return success({
+        lat: location.lat,
+        lng: location.lng,
+      });
+    } catch (error: any) {
+      console.error(`❌ [${this.providerName}] Geocoding error:`, error.message);
+      return failure(new InfrastructureError(
+        `${this.providerName} geocoding request failed`,
+        { error: error.message, address }
+      ));
+    }
+  }
 }

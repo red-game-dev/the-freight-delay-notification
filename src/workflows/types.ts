@@ -8,6 +8,7 @@
 
 export interface DelayNotificationWorkflowInput {
   deliveryId: string;
+  trackingNumber?: string;
   routeId: string;
   customerId: string;
   customerEmail?: string;
@@ -82,6 +83,7 @@ export interface DelayEvaluationResult {
 // Step 3: AI Message Generation Activity Types
 export interface GenerateMessageInput {
   deliveryId: string;
+  trackingNumber?: string;
   customerId: string;
   origin: string;
   destination: string;

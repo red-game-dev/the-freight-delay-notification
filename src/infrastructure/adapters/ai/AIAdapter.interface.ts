@@ -7,6 +7,7 @@ import { Result } from '../../../core/base/utils/Result';
 
 export interface MessageGenerationInput {
   deliveryId: string;
+  trackingNumber?: string;
   customerId: string;
   origin: string;
   destination: string;

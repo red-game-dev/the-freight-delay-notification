@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/core/base/utils/Logger';
 import { toHttpError } from '@/core/base/errors/HttpError';
 import type { ApiResponse, ApiHandlerOptions } from '../types';
+import { isDevelopment } from '@/core/base/utils/environment';
 
 /**
  * Create a standardized error response
@@ -35,7 +36,7 @@ export function createErrorResponse(
     error: {
       message: httpError.message,
       code: httpError.code,
-      ...(process.env.NODE_ENV === 'development' && {
+      ...(isDevelopment() && {
         details: httpError.context,
       }),
     },

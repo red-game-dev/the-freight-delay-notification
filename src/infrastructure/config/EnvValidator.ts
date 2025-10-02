@@ -1,3 +1,12 @@
+/**
+ * Server-Side Environment Validator
+ *
+ * IMPORTANT: This is for SERVER-SIDE use only (API routes, server components, workers)
+ * For CLIENT components ('use client'), use ClientEnv instead
+ *
+ * @see src/infrastructure/config/ClientEnv.ts for client-side env vars
+ */
+
 import { z } from 'zod';
 
 const envSchema = z.object({
@@ -16,12 +25,16 @@ const envSchema = z.object({
 
   // API Keys
   GOOGLE_MAPS_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
   MAPBOX_ACCESS_TOKEN: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().optional(),
+  SENDGRID_FROM_NAME: z.string().optional(),
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_PHONE_NUMBER: z.string().optional(),
+  TWILIO_FROM_PHONE: z.string().optional(),
 
   // Application Configuration
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -38,6 +51,15 @@ const envSchema = z.object({
 
   // Thresholds
   DEFAULT_DELAY_THRESHOLD_MINUTES: z.string().transform(Number).default('30'),
+
+  // Cron Configuration
+  CRON_SECRET: z.string().optional(),
+  CRON_INTERVAL_SECONDS: z.string().transform(Number).default('600'), // 10 minutes default, 10 seconds for testing
+
+  // Testing Configuration
+  TEST_EMAIL: z.string().optional(),
+  TEST_PHONE: z.string().optional(),
+  TEST_NAME: z.string().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

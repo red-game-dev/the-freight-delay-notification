@@ -23,9 +23,14 @@ VALUES
   ('550e8400-e29b-41d4-a716-446655440018', 'quinn.martinez@example.com', '+1234567808', 'Quinn Martinez', '{"primary": "sms"}'::jsonb),
   ('550e8400-e29b-41d4-a716-446655440019', 'rachel.robinson@example.com', '+1234567809', 'Rachel Robinson', '{"primary": "email", "secondary": "sms"}'::jsonb);
 
--- Insert sample routes (15 total covering major US cities)
+-- Insert sample routes (45 total covering major cities worldwide)
+-- NOTE: Routes include POINT coordinates for map display
+-- These coordinates are NOT fetched from Google Maps API
+-- Google Maps API only provides TRAFFIC CONDITIONS (delay, duration, etc)
+-- The cron job will update traffic_condition and current_duration_seconds fields
 INSERT INTO routes (id, origin_address, origin_coords, destination_address, destination_coords, distance_meters, normal_duration_seconds)
 VALUES
+  -- North America (15 routes)
   ('660e8400-e29b-41d4-a716-446655440000', 'Downtown Los Angeles, CA', POINT(-118.2437, 34.0522), 'LAX Airport, CA', POINT(-118.4085, 33.9416), 22000, 1800),
   ('660e8400-e29b-41d4-a716-446655440001', 'Times Square, Manhattan, NY', POINT(-73.9855, 40.7580), 'JFK Airport, Queens, NY', POINT(-73.7781, 40.6413), 28000, 2700),
   ('660e8400-e29b-41d4-a716-446655440002', 'Downtown San Francisco, CA', POINT(-122.4194, 37.7749), 'San Jose, CA', POINT(-121.8863, 37.3382), 75000, 4500),
@@ -40,7 +45,43 @@ VALUES
   ('660e8400-e29b-41d4-a716-446655440011', 'Downtown Philadelphia, PA', POINT(-75.1652, 39.9526), 'King of Prussia, PA', POINT(-75.3860, 40.0893), 30000, 2100),
   ('660e8400-e29b-41d4-a716-446655440012', 'Downtown Las Vegas, NV', POINT(-115.1398, 36.1699), 'Henderson, NV', POINT(-114.9817, 36.0395), 25000, 1800),
   ('660e8400-e29b-41d4-a716-446655440013', 'Downtown San Diego, CA', POINT(-117.1611, 32.7157), 'La Jolla, CA', POINT(-117.2713, 32.8328), 20000, 1500),
-  ('660e8400-e29b-41d4-a716-446655440014', 'Downtown Houston, TX', POINT(-95.3698, 29.7604), 'IAH Airport, TX', POINT(-95.3414, 29.9902), 38000, 2400);
+  ('660e8400-e29b-41d4-a716-446655440014', 'Downtown Houston, TX', POINT(-95.3698, 29.7604), 'IAH Airport, TX', POINT(-95.3414, 29.9902), 38000, 2400),
+
+  -- Europe (10 routes)
+  ('660e8400-e29b-41d4-a716-446655440015', 'London, UK', POINT(-0.1278, 51.5074), 'Manchester, UK', POINT(-2.2426, 53.4808), 320000, 14400),
+  ('660e8400-e29b-41d4-a716-446655440016', 'Paris, France', POINT(2.3522, 48.8566), 'Lyon, France', POINT(4.8357, 45.7640), 470000, 16920),
+  ('660e8400-e29b-41d4-a716-446655440017', 'Berlin, Germany', POINT(13.4050, 52.5200), 'Munich, Germany', POINT(11.5820, 48.1351), 585000, 21060),
+  ('660e8400-e29b-41d4-a716-446655440018', 'Madrid, Spain', POINT(-3.7038, 40.4168), 'Barcelona, Spain', POINT(2.1734, 41.3851), 625000, 22500),
+  ('660e8400-e29b-41d4-a716-446655440019', 'Rome, Italy', POINT(12.4964, 41.9028), 'Milan, Italy', POINT(9.1900, 45.4642), 575000, 20700),
+  ('660e8400-e29b-41d4-a716-446655440020', 'Amsterdam, Netherlands', POINT(4.9041, 52.3676), 'Rotterdam, Netherlands', POINT(4.47917, 51.9225), 80000, 3600),
+  ('660e8400-e29b-41d4-a716-446655440021', 'Brussels, Belgium', POINT(4.3517, 50.8503), 'Antwerp, Belgium', POINT(4.4025, 51.2194), 50000, 2700),
+  ('660e8400-e29b-41d4-a716-446655440022', 'Vienna, Austria', POINT(16.3738, 48.2082), 'Salzburg, Austria', POINT(13.0550, 47.8095), 300000, 10800),
+  ('660e8400-e29b-41d4-a716-446655440023', 'Lisbon, Portugal', POINT(-9.1393, 38.7223), 'Porto, Portugal', POINT(-8.6291, 41.1579), 315000, 11340),
+  ('660e8400-e29b-41d4-a716-446655440024', 'Stockholm, Sweden', POINT(18.0686, 59.3293), 'Gothenburg, Sweden', POINT(11.9746, 57.7089), 470000, 16920),
+
+  -- Asia (10 routes)
+  ('660e8400-e29b-41d4-a716-446655440025', 'Tokyo, Japan', POINT(139.6503, 35.6762), 'Osaka, Japan', POINT(135.5023, 34.6937), 515000, 18540),
+  ('660e8400-e29b-41d4-a716-446655440026', 'Beijing, China', POINT(116.4074, 39.9042), 'Shanghai, China', POINT(121.4737, 31.2304), 1200000, 43200),
+  ('660e8400-e29b-41d4-a716-446655440027', 'Seoul, South Korea', POINT(126.9780, 37.5665), 'Busan, South Korea', POINT(129.0756, 35.1796), 325000, 11700),
+  ('660e8400-e29b-41d4-a716-446655440028', 'Mumbai, India', POINT(72.8777, 19.0760), 'Pune, India', POINT(73.8567, 18.5204), 150000, 5400),
+  ('660e8400-e29b-41d4-a716-446655440029', 'Delhi, India', POINT(77.1025, 28.7041), 'Jaipur, India', POINT(75.7873, 26.9124), 280000, 10080),
+  ('660e8400-e29b-41d4-a716-446655440030', 'Singapore', POINT(103.8198, 1.3521), 'Johor Bahru, Malaysia', POINT(103.7414, 1.4927), 35000, 1800),
+  ('660e8400-e29b-41d4-a716-446655440031', 'Bangkok, Thailand', POINT(100.5018, 13.7563), 'Chiang Mai, Thailand', POINT(98.9853, 18.7883), 700000, 25200),
+  ('660e8400-e29b-41d4-a716-446655440032', 'Hong Kong', POINT(114.1694, 22.3193), 'Shenzhen, China', POINT(114.0579, 22.5431), 35000, 1800),
+  ('660e8400-e29b-41d4-a716-446655440033', 'Kuala Lumpur, Malaysia', POINT(101.6869, 3.1390), 'Penang, Malaysia', POINT(100.3327, 5.4164), 350000, 12600),
+  ('660e8400-e29b-41d4-a716-446655440034', 'Jakarta, Indonesia', POINT(106.8456, -6.2088), 'Bandung, Indonesia', POINT(107.6191, -6.9175), 150000, 5400),
+
+  -- South America (5 routes)
+  ('660e8400-e29b-41d4-a716-446655440035', 'São Paulo, Brazil', POINT(-46.6333, -23.5505), 'Rio de Janeiro, Brazil', POINT(-43.1729, -22.9068), 430000, 15480),
+  ('660e8400-e29b-41d4-a716-446655440036', 'Buenos Aires, Argentina', POINT(-58.3816, -34.6037), 'Córdoba, Argentina', POINT(-64.1888, -31.4201), 700000, 25200),
+  ('660e8400-e29b-41d4-a716-446655440037', 'Lima, Peru', POINT(-77.0428, -12.0464), 'Arequipa, Peru', POINT(-71.5375, -16.4090), 1000000, 36000),
+  ('660e8400-e29b-41d4-a716-446655440038', 'Bogotá, Colombia', POINT(-74.0721, 4.7110), 'Medellín, Colombia', POINT(-75.5812, 6.2442), 415000, 14940),
+  ('660e8400-e29b-41d4-a716-446655440039', 'Santiago, Chile', POINT(-70.6693, -33.4489), 'Valparaíso, Chile', POINT(-71.6188, -33.0472), 120000, 4320),
+
+  -- Australia & Oceania (3 routes)
+  ('660e8400-e29b-41d4-a716-446655440040', 'Sydney, Australia', POINT(151.2093, -33.8688), 'Melbourne, Australia', POINT(144.9631, -37.8136), 880000, 31680),
+  ('660e8400-e29b-41d4-a716-446655440041', 'Brisbane, Australia', POINT(153.0251, -27.4698), 'Gold Coast, Australia', POINT(153.4000, -28.0167), 80000, 3600),
+  ('660e8400-e29b-41d4-a716-446655440042', 'Auckland, New Zealand', POINT(174.7633, -36.8485), 'Wellington, New Zealand', POINT(174.7762, -41.2865), 640000, 23040);
 
 -- Insert sample deliveries with diverse statuses (50 total for pagination testing)
 INSERT INTO deliveries (id, tracking_number, customer_id, route_id, status, scheduled_delivery, actual_delivery, delay_threshold_minutes)

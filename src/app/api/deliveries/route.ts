@@ -11,6 +11,7 @@ import { DeliveryStatus } from '@/infrastructure/database/types/database.types';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { WorkflowIdReusePolicy } from '@temporalio/client';
 import type { DelayNotificationWorkflowInput } from '@/workflows/types';
+import { getGeocodingService } from '@/infrastructure/adapters/geocoding/GeocodingService';
 
 /**
  * GET /api/deliveries
@@ -65,6 +66,7 @@ export const POST = createApiHandler(async (request) => {
   ]);
 
   const db = getDatabaseService();
+  const geocodingService = getGeocodingService();
 
   // Step 1: Create or find customer
   let customer = await db.getCustomerByEmail(body.customer_email);
@@ -80,21 +82,39 @@ export const POST = createApiHandler(async (request) => {
     customer = createCustomerResult;
   }
 
-  // Step 2: Create route
+  // Step 2: Geocode addresses to get coordinates
+  console.log(`🌍 Geocoding addresses: ${body.origin} → ${body.destination}`);
+
+  const originGeocodingResult = await geocodingService.geocodeAddress(body.origin);
+  if (!originGeocodingResult.success) {
+    console.error(`❌ Failed to geocode origin: ${body.origin}`, originGeocodingResult.error);
+    return originGeocodingResult;
+  }
+
+  const destinationGeocodingResult = await geocodingService.geocodeAddress(body.destination);
+  if (!destinationGeocodingResult.success) {
+    console.error(`❌ Failed to geocode destination: ${body.destination}`, destinationGeocodingResult.error);
+    return destinationGeocodingResult;
+  }
+
+  console.log(`✅ Geocoded origin: ${body.origin} → (${originGeocodingResult.value.lat}, ${originGeocodingResult.value.lng})`);
+  console.log(`✅ Geocoded destination: ${body.destination} → (${destinationGeocodingResult.value.lat}, ${destinationGeocodingResult.value.lng})`);
+
+  // Step 3: Create route with geocoded coordinates
   const routeResult = await db.createRoute({
     origin_address: body.origin,
-    origin_coords: { lat: 0, lng: 0 }, // TODO: Geocode address
+    origin_coords: originGeocodingResult.value,
     destination_address: body.destination,
-    destination_coords: { lat: 0, lng: 0 }, // TODO: Geocode address
-    distance_meters: 0, // Will be calculated later
-    normal_duration_seconds: 0, // Will be calculated later
+    destination_coords: destinationGeocodingResult.value,
+    distance_meters: 0, // Will be calculated by first traffic check
+    normal_duration_seconds: 0, // Will be calculated by first traffic check
   });
 
   if (!routeResult.success) {
     return routeResult;
   }
 
-  // Step 3: Create delivery
+  // Step 4: Create delivery
   const deliveryResult = await db.createDelivery({
     tracking_number: body.tracking_number,
     customer_id: customer.value!.id,

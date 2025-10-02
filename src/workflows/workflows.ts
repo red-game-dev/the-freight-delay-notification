@@ -105,6 +105,8 @@ export async function DelayNotificationWorkflow(
         trafficCondition: result.steps.trafficCheck.trafficCondition,
         delayMinutes: result.steps.trafficCheck.delayMinutes,
         durationSeconds: result.steps.trafficCheck.estimatedDurationMinutes * 60,
+        origin: input.origin,
+        destination: input.destination,
       });
     }
 
@@ -140,6 +142,7 @@ export async function DelayNotificationWorkflow(
 
       result.steps.messageGeneration = await generateAIMessage({
         deliveryId: input.deliveryId,
+        trackingNumber: input.trackingNumber,
         customerId: input.customerId,
         origin: input.origin.address,
         destination: input.destination.address,
@@ -354,6 +357,8 @@ export async function RecurringTrafficCheckWorkflow(
         trafficCondition: result.steps.trafficCheck.trafficCondition,
         delayMinutes: result.steps.trafficCheck.delayMinutes,
         durationSeconds: result.steps.trafficCheck.estimatedDurationMinutes * 60,
+        origin: input.origin,
+        destination: input.destination,
       });
 
       // Evaluate delay (Step 2)
@@ -435,6 +440,7 @@ export async function RecurringTrafficCheckWorkflow(
 
         result.steps.messageGeneration = await generateAIMessage({
           deliveryId: input.deliveryId,
+          trackingNumber: input.trackingNumber,
           customerId: input.customerId,
           origin: input.origin.address,
           destination: input.destination.address,

@@ -26,16 +26,19 @@
     --skeleton-shimmer: oklch(0.96 0.005 230);
   }
 
-  /* Dark mode - Professional, easy on eyes for long dashboard usage */
+  /* Dark mode - Professional, easy on eyes for long dashboard usage
+   * WCAG 2.2 AAA compliant with reduced eye strain
+   * Uses warmer, softer blacks instead of pure black
+   */
   [data-theme="dark"] {
-    background-color: oklch(0.12 0.015 230);
-    color: oklch(0.95 0.005 230);
-    --drawer-bg: oklch(0.15 0.018 230);
-    --drawer-border: oklch(0.25 0.020 230);
-    --modal-bg: oklch(0.15 0.018 230);
-    --modal-border: oklch(0.25 0.020 230);
-    --skeleton-base: oklch(0.20 0.015 230);
-    --skeleton-shimmer: oklch(0.25 0.020 230);
+    background-color: oklch(0.17 0.012 230); /* Softer than pure black, easier on eyes */
+    color: oklch(0.92 0.008 230); /* Softer white, reduces eye strain */
+    --drawer-bg: oklch(0.20 0.015 230);
+    --drawer-border: oklch(0.28 0.018 230);
+    --modal-bg: oklch(0.20 0.015 230);
+    --modal-border: oklch(0.28 0.018 230);
+    --skeleton-base: oklch(0.24 0.012 230);
+    --skeleton-shimmer: oklch(0.30 0.015 230);
   }
 
   /* Ensure backgrounds work */
@@ -44,7 +47,7 @@
   }
 
   [data-theme="dark"] body {
-    background-color: oklch(0.12 0.015 230);
+    background-color: oklch(0.17 0.012 230);
   }
 }
 
@@ -73,8 +76,8 @@
   }
 
   [data-theme="dark"] ::selection {
-    background-color: oklch(0.65 0.120 230 / 0.4);
-    color: oklch(0.95 0.005 230);
+    background-color: oklch(0.65 0.120 230 / 0.35);
+    color: oklch(0.92 0.008 230);
   }
 
   /* Focus visible styles for accessibility */

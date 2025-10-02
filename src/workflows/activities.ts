@@ -25,6 +25,20 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 
 // Step 1: Check Traffic Conditions
 export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
+  // Defensive check for missing data
+  if (!input || !input.origin || !input.destination) {
+    console.error('[Step 1] ERROR: Missing origin or destination data:', JSON.stringify(input, null, 2));
+    throw new Error('Invalid input: origin and destination are required');
+  }
+
+  if (!input.origin.address || !input.destination.address) {
+    console.error('[Step 1] ERROR: Missing addresses:', {
+      originAddress: input.origin?.address,
+      destinationAddress: input.destination?.address
+    });
+    throw new Error('Invalid input: origin.address and destination.address are required');
+  }
+
   console.log(`[Step 1] Checking traffic from ${input.origin.address} to ${input.destination.address}`);
 
   // Use TrafficService which handles all adapters and fallback
@@ -108,6 +122,7 @@ export async function generateAIMessage(input: GenerateMessageInput): Promise<Me
 
   const result = await aiService.generateMessage({
     deliveryId: input.deliveryId,
+    trackingNumber: input.trackingNumber,
     customerId: input.customerId,
     origin: input.origin,
     destination: input.destination,
@@ -234,16 +249,48 @@ export async function saveTrafficSnapshot(input: {
   trafficCondition: 'light' | 'moderate' | 'heavy' | 'severe';
   delayMinutes: number;
   durationSeconds: number;
+  origin?: { address: string; coordinates?: { lat: number; lng: number } };
+  destination?: { address: string; coordinates?: { lat: number; lng: number } };
 }): Promise<{ success: boolean; id: string }> {
   console.log(`[Database] Saving traffic snapshot for route ${input.routeId}`);
 
   try {
     const db = getDatabaseService();
+
+    // Generate incident details based on traffic condition
+    const severity = input.delayMinutes > 60 ? 'severe' :
+                     input.delayMinutes > 30 ? 'major' :
+                     input.delayMinutes > 15 ? 'moderate' : 'minor';
+
+    const incidentType = input.delayMinutes > 45 ? 'accident' :
+                         input.delayMinutes > 20 ? 'congestion' :
+                         'congestion';
+
+    const description = `${input.trafficCondition.charAt(0).toUpperCase() + input.trafficCondition.slice(1)} traffic conditions causing ${input.delayMinutes} minute delay`;
+
+    const affectedArea = input.origin && input.destination
+      ? `Route from ${input.origin.address.split(',')[0]} to ${input.destination.address.split(',')[0]}`
+      : 'Route segment';
+
+    // Calculate incident location (midpoint of route if coordinates available)
+    let incidentLocation: { x: number; y: number } | undefined;
+    if (input.origin?.coordinates && input.destination?.coordinates) {
+      incidentLocation = {
+        x: (input.origin.coordinates.lat + input.destination.coordinates.lat) / 2,
+        y: (input.origin.coordinates.lng + input.destination.coordinates.lng) / 2,
+      };
+    }
+
     const result = await db.createTrafficSnapshot({
       route_id: input.routeId,
       traffic_condition: input.trafficCondition,
       delay_minutes: input.delayMinutes,
       duration_seconds: input.durationSeconds,
+      description,
+      severity,
+      affected_area: affectedArea,
+      incident_type: incidentType,
+      incident_location: incidentLocation,
     });
 
     if (result.success) {

@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
     let internalStatus = null;
     let description = null;
+    let error: string | null = null;
 
     // Try to query workflow - handle case where workflow doesn't exist
     try {
@@ -106,7 +107,6 @@ export async function GET(request: NextRequest) {
     // Determine workflow status based on execution state
     let status: 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out' = 'running';
     let result = null;
-    let error = null;
 
     if (description.status.name === 'COMPLETED') {
       try {
