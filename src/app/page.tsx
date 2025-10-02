@@ -3,7 +3,8 @@
  */
 
 import Link from 'next/link';
-import { Package, Activity, Bell, Workflow, ArrowRight } from 'lucide-react';
+import { Package, Activity, Bell, Workflow, ArrowRight, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 const features = [
   {
@@ -40,10 +41,19 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl mb-4">
             Freight Delay Notification System
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
             Proactively notify customers about delivery delays using real-time traffic data,
             AI-generated messages, and automated workflows.
           </p>
+          <Link href="/how-to-use">
+            <Button
+              variant="outline"
+              size="lg"
+              leftIcon={<BookOpen className="h-5 w-5" />}
+            >
+              How to Use This App
+            </Button>
+          </Link>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mb-16">

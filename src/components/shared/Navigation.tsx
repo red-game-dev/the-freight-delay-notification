@@ -7,7 +7,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Menu, Home, TruckIcon, Activity, Bell, Workflow } from 'lucide-react';
+import { Package, Menu, Home, TruckIcon, Activity, Bell, Workflow, BookOpen } from 'lucide-react';
 import { ThemeToggle } from '../ThemeToggle';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
@@ -18,6 +18,7 @@ const navigation = [
   { name: 'Monitoring', href: '/monitoring', icon: Activity },
   { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Workflows', href: '/workflows', icon: Workflow },
+  { name: 'How to Use', href: '/how-to-use', icon: BookOpen },
 ];
 
 export function Navigation() {
