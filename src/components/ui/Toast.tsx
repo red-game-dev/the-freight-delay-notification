@@ -8,6 +8,7 @@
 import * as React from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { generateShortId } from '@/core/utils/idUtils';
+import { Button } from './Button';
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
@@ -126,13 +127,16 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
     >
       <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
-      <button
+      <Button
         onClick={() => onRemove(toast.id)}
-        className="flex-shrink-0 hover:opacity-70 transition-opacity"
+        variant="ghost"
+        size="sm"
+        iconOnly
         aria-label="Close notification"
+        className="flex-shrink-0"
       >
         <X className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   );
 };

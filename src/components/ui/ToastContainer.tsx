@@ -16,6 +16,7 @@ import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react'
 import { useErrorStore, useNotificationStore } from '@/stores';
 import { useShallow } from 'zustand/react/shallow';
 import type { AppError, Notification } from '@/stores';
+import { Button } from './Button';
 
 type ToastItem =
   | { type: 'error'; data: AppError }
@@ -135,14 +136,16 @@ function ToastItem({ toast }: ToastItemProps) {
           <p className="text-xs opacity-70 mt-1">Source: {toast.data.source}</p>
         )}
       </div>
-      <button
+      <Button
         onClick={handleDismiss}
-        className="flex-shrink-0 hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-current rounded"
+        variant="ghost"
+        size="sm"
+        iconOnly
         aria-label="Close notification"
-        type="button"
+        className="flex-shrink-0"
       >
         <X className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   );
 }

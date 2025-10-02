@@ -7,6 +7,7 @@
 
 import * as React from 'react';
 import { X } from 'lucide-react';
+import { Button } from './Button';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -77,13 +78,15 @@ export const Modal: React.FC<ModalProps> = ({
           <div className="flex items-center justify-between p-6 border-b">
             {title && <h2 className="text-xl font-semibold">{title}</h2>}
             {showCloseButton && (
-              <button
+              <Button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-muted transition-colors"
+                variant="ghost"
+                size="sm"
+                iconOnly
                 aria-label="Close modal"
               >
                 <X className="h-5 w-5" />
-              </button>
+              </Button>
             )}
           </div>
         )}

@@ -7,6 +7,7 @@
 import * as React from 'react';
 import { AlertCircle, CheckCircle, XCircle, AlertTriangle, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/core/base/utils/cn';
+import { Button } from './Button';
 
 export interface AlertAction {
   label: string;
@@ -94,34 +95,32 @@ export function Alert({
           <div className="text-sm">{children}</div>
         </div>
         {dismissible && onDismiss && (
-          <button
+          <Button
             onClick={onDismiss}
-            className={cn('flex-shrink-0 hover:opacity-70 transition-opacity', styles.button)}
+            variant="ghost"
+            size="sm"
+            iconOnly
             aria-label="Dismiss"
+            className="flex-shrink-0"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Collapsible Details */}
       {details && (
         <>
-          <button
+          <Button
             onClick={() => setIsExpanded(!isExpanded)}
-            className={cn(
-              'w-full flex items-center justify-between px-4 py-2 text-sm font-medium border-t transition-colors',
-              styles.border,
-              styles.button
-            )}
+            variant="ghost"
+            size="sm"
+            fullWidth
+            className={cn('justify-between border-t', styles.border)}
+            rightIcon={isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           >
-            <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </button>
+            {isExpanded ? 'Hide Details' : 'View Details'}
+          </Button>
           {isExpanded && (
             <div className={cn('px-4 py-3 text-sm border-t', styles.border)}>
               {details}
@@ -134,18 +133,14 @@ export function Alert({
       {actions && actions.length > 0 && (
         <div className={cn('flex items-center gap-2 px-4 py-3 border-t', styles.border)}>
           {actions.map((action, index) => (
-            <button
+            <Button
               key={index}
               onClick={action.onClick}
-              className={cn(
-                'px-3 py-1.5 text-sm font-medium rounded transition-colors',
-                action.variant === 'primary'
-                  ? 'bg-current/10 hover:bg-current/20'
-                  : 'hover:bg-current/10'
-              )}
+              variant={action.variant === 'primary' ? 'primary' : 'ghost'}
+              size="sm"
             >
               {action.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}
