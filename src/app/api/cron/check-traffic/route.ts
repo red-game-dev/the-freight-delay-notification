@@ -13,6 +13,9 @@ import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { DelayNotificationWorkflow } from '@/workflows/workflows';
 import { env } from '@/infrastructure/config/EnvValidator';
 import { logger, getErrorMessage } from '@/core/base/utils/Logger';
+import { getCurrentISOTimestamp, subtractHours } from '@/core/utils/dateUtils';
+import { capitalizeFirstLetter } from '@/core/utils/stringUtils';
+import { generateWorkflowId } from '@/core/utils/workflowUtils';
 import { Result } from '@/core/base/utils/Result';
 import { UnauthorizedError, InfrastructureError } from '@/core/base/errors/BaseError';
 import { createApiHandler } from '@/core/infrastructure/http';
@@ -141,7 +144,7 @@ export const GET = createApiHandler(async (request: NextRequest) => {
                             trafficData.delayMinutes > 20 ? 'congestion' as const :
                             'congestion' as const;
 
-        const description = `${trafficData.trafficCondition.charAt(0).toUpperCase() + trafficData.trafficCondition.slice(1)} traffic conditions causing ${trafficData.delayMinutes} minute delay`;
+        const description = `${capitalizeFirstLetter(trafficData.trafficCondition)} traffic conditions causing ${trafficData.delayMinutes} minute delay`;
 
         const affectedArea = `Route from ${route.origin_address.split(',')[0]} to ${route.destination_address.split(',')[0]}`;
 
@@ -223,7 +226,7 @@ export const GET = createApiHandler(async (request: NextRequest) => {
             }
 
             // Only trigger if no notification was sent in the last hour
-            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            const oneHourAgo = subtractHours(new Date(), 1);
             const recentNotification = notificationsResult.value.find(
               n => n.created_at && new Date(n.created_at) > oneHourAgo
             );
@@ -236,7 +239,7 @@ export const GET = createApiHandler(async (request: NextRequest) => {
                 // Trigger delay notification workflow
                 await temporalClient.workflow.start(DelayNotificationWorkflow, {
                   taskQueue: env.TEMPORAL_TASK_QUEUE || 'freight-delay-notifications',
-                  workflowId: `delay-notification-${delivery.tracking_number}-${Date.now()}`,
+                  workflowId: generateWorkflowId(delivery.tracking_number),
                   args: [{
                     deliveryId: delivery.id,
                     trackingNumber: delivery.tracking_number,
@@ -284,7 +287,7 @@ export const GET = createApiHandler(async (request: NextRequest) => {
 
     return Result.ok({
       success: true,
-      timestamp: new Date().toISOString(),
+      timestamp: getCurrentISOTimestamp(),
       result,
     });
 

@@ -9,6 +9,7 @@ import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import type { DatabaseAdapter } from './DatabaseAdapter.interface';
 import { env } from '../../config/EnvValidator';
 import { getErrorMessage } from '@/core/base/utils/Logger';
+import { generateRandomId } from '@/core/utils/idUtils';
 import type {
   Customer,
   CreateCustomerInput,
@@ -522,7 +523,7 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
    * Generate deterministic UUID for testing
    */
   private generateId(): string {
-    return `mock-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    return generateRandomId('mock');
   }
 
   // ===== Customer Operations =====

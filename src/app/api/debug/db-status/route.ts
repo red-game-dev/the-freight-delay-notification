@@ -8,6 +8,7 @@ import { createApiHandler } from '@/core/infrastructure/http';
 import { getDatabaseService } from '@/infrastructure/database';
 import { Result } from '@/core/base/utils/Result';
 import type { TrafficSnapshot } from '@/infrastructure/database/types/database.types';
+import { getCurrentISOTimestamp } from '@/core/utils/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export const GET = createApiHandler(async () => {
 
   return Result.ok({
     success: true,
-    timestamp: new Date().toISOString(),
+    timestamp: getCurrentISOTimestamp(),
     database: {
       adapter: db.currentAdapter,
       routes: {

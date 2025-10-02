@@ -21,6 +21,8 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { logger, getErrorMessage } from '@/core/base/utils/Logger';
 import { ValidationError, InfrastructureError } from '@/core/base/errors/BaseError';
 import type { TrafficCondition, DeliveryStatus as DeliveryStatusType } from '@/infrastructure/database/types/database.types';
+import { getCurrentISOTimestamp } from '@/core/utils/dateUtils';
+import { capitalizeFirstLetter, extractFirstPart } from '@/core/utils/stringUtils';
 
 // Step 1: Check Traffic Conditions
 export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
@@ -158,7 +160,7 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
   const result: NotificationResult = {
     sent: false,
     channel: 'none',
-    timestamp: new Date().toISOString(),
+    timestamp: getCurrentISOTimestamp(),
   };
 
   // Prepare notification input
@@ -268,10 +270,10 @@ export async function saveTrafficSnapshot(input: {
                          input.delayMinutes > 20 ? 'congestion' :
                          'congestion';
 
-    const description = `${input.trafficCondition.charAt(0).toUpperCase() + input.trafficCondition.slice(1)} traffic conditions causing ${input.delayMinutes} minute delay`;
+    const description = `${capitalizeFirstLetter(input.trafficCondition)} traffic conditions causing ${input.delayMinutes} minute delay`;
 
     const affectedArea = input.origin && input.destination
-      ? `Route from ${input.origin.address.split(',')[0]} to ${input.destination.address.split(',')[0]}`
+      ? `Route from ${extractFirstPart(input.origin.address)} to ${extractFirstPart(input.destination.address)}`
       : 'Route segment';
 
     // Calculate incident location (midpoint of route if coordinates available)

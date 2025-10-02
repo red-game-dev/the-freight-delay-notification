@@ -8,6 +8,7 @@ import { CheckDelayThresholdUseCase } from '@/core/engine/delivery/CheckDelayThr
 import type { TrafficData } from '@/types/shared/traffic.types';
 import { Result } from '@/core/base/utils/Result';
 import { ValidationError } from '@/core/base/errors/BaseError';
+import { getCurrentISOTimestamp } from '@/core/utils/dateUtils';
 
 export const POST = createApiHandler(async (request) => {
   const body = await parseJsonBody<{
@@ -44,7 +45,7 @@ export const POST = createApiHandler(async (request) => {
     (data) => ({
       success: true,
       data,
-      timestamp: new Date().toISOString(),
+      timestamp: getCurrentISOTimestamp(),
     })
   );
 });

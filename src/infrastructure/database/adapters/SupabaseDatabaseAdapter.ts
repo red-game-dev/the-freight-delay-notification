@@ -32,6 +32,7 @@ import {
   Coordinates,
 } from '../types/database.types';
 import { logger, getErrorMessage, hasMessage, hasCode, hasName, hasCause } from '@/core/base/utils/Logger';
+import { pointToCoordinates } from '@/core/utils/coordinateUtils';
 
 // Types for Supabase joined queries
 interface DeliveryWithJoins {
@@ -106,32 +107,6 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     return this.client;
   }
 
-  // ===== Helper: Convert POINT to Coordinates =====
-  private pointToCoordinates(point: string | { x: number; y: number } | null | undefined): Coordinates | null {
-    if (!point) return null;
-
-    // If already an object with x/y (PostGIS can return parsed objects)
-    if (typeof point === 'object' && 'x' in point && 'y' in point) {
-      return {
-        x: point.x,
-        y: point.y,
-        lat: point.x,
-        lng: point.y,
-      };
-    }
-
-    // If string format "(lng,lat)" or "lng,lat"
-    if (typeof point === 'string') {
-      const cleaned = point.replace(/[()]/g, '');
-      const parts = cleaned.split(',').map(s => parseFloat(s.trim()));
-      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        const [lng, lat] = parts;
-        return { x: lat, y: lng, lat, lng };
-      }
-    }
-
-    return null;
-  }
 
   // ===== Helper: Convert Coordinates to POINT =====
   private coordinatesToPoint(coords: Coordinates): string {
@@ -239,8 +214,8 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       // Convert POINT to Coordinates
       const route: Route = {
         ...data,
-        origin_coords: this.pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
-        destination_coords: this.pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        origin_coords: pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       };
 
       return success(route);
@@ -269,8 +244,8 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const route: Route = {
         ...data,
-        origin_coords: this.pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
-        destination_coords: this.pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        origin_coords: pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       };
 
       return success(route);
@@ -304,8 +279,8 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const route: Route = {
         ...data,
-        origin_coords: this.pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
-        destination_coords: this.pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        origin_coords: pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       };
 
       return success(route);
@@ -327,8 +302,8 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const routes = (data || []).map(route => ({
         ...route,
-        origin_coords: this.pointToCoordinates(route.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
-        destination_coords: this.pointToCoordinates(route.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        origin_coords: pointToCoordinates(route.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: pointToCoordinates(route.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       }));
 
       return success(routes as Route[]);
@@ -361,7 +336,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const delivery: Delivery = {
         ...data,
-        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
+        current_location: data.current_location ? pointToCoordinates(data.current_location) : null,
         customer_name: joinedData.customers?.name || '',
         customer_email: joinedData.customers?.email || '',
         customer_phone: joinedData.customers?.phone || '',
@@ -399,7 +374,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const delivery: Delivery = {
         ...data,
-        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
+        current_location: data.current_location ? pointToCoordinates(data.current_location) : null,
         customer_name: joinedData.customers?.name || '',
         customer_email: joinedData.customers?.email || '',
         customer_phone: joinedData.customers?.phone || '',
@@ -428,7 +403,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const delivery: Delivery = {
         ...data,
-        current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
+        current_location: data.current_location ? pointToCoordinates(data.current_location) : null,
       };
 
       return success(delivery);
@@ -514,7 +489,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const deliveries = (data || []).map((delivery: DeliveryWithJoins) => ({
         ...delivery,
-        current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+        current_location: delivery.current_location ? pointToCoordinates(delivery.current_location) : null,
         customer_name: delivery.customers?.name || '',
         customer_email: delivery.customers?.email || '',
         customer_phone: delivery.customers?.phone || '',
@@ -548,7 +523,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const deliveries = (data || []).map((delivery: DeliveryWithJoins) => ({
         ...delivery,
-        current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+        current_location: delivery.current_location ? pointToCoordinates(delivery.current_location) : null,
         customer_name: delivery.customers?.name || '',
         customer_email: delivery.customers?.email || '',
         customer_phone: delivery.customers?.phone || '',
@@ -582,7 +557,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
       const deliveries = (data || []).map((delivery: DeliveryWithJoins) => ({
         ...delivery,
-        current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
+        current_location: delivery.current_location ? pointToCoordinates(delivery.current_location) : null,
         customer_name: delivery.customers?.name || '',
         customer_email: delivery.customers?.email || '',
         customer_phone: delivery.customers?.phone || '',

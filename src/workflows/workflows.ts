@@ -18,6 +18,8 @@ import type {
   UpdateThresholdSignal,
   WorkflowStatusQuery,
 } from './types';
+import { getCurrentISOTimestamp } from '../core/utils/dateUtils';
+import { generateWorkflowId, generateRecurringWorkflowId } from '../core/utils/workflowUtils';
 
 // Import all activities with retry policies and timeouts
 const {
@@ -64,7 +66,7 @@ export async function DelayNotificationWorkflow(
   const result: DelayNotificationWorkflowResult = {
     workflowId: input.deliveryId,
     deliveryId: input.deliveryId,
-    processedAt: new Date().toISOString(),
+    processedAt: getCurrentISOTimestamp(),
     steps: {},
     success: false,
   };
@@ -85,7 +87,7 @@ export async function DelayNotificationWorkflow(
   setHandler(workflowStatusQuery, () => ({
     currentStep,
     startedAt: result.processedAt,
-    lastUpdateAt: new Date().toISOString(),
+    lastUpdateAt: getCurrentISOTimestamp(),
     delayDetected: result.steps.delayEvaluation?.exceedsThreshold,
     notificationSent: result.steps.notificationDelivery?.sent,
   }));
@@ -221,7 +223,7 @@ export async function DelayNotificationWorkflow(
 
     // Save workflow execution to database
     await saveWorkflowExecution({
-      workflowId: `delay-notification-${input.deliveryId}-${Date.now()}`,
+      workflowId: generateWorkflowId(input.deliveryId),
       runId: `run-${Date.now()}`,
       deliveryId: input.deliveryId,
       status: 'completed',
@@ -237,7 +239,7 @@ export async function DelayNotificationWorkflow(
     // Save failed workflow execution to database
     try {
       await saveWorkflowExecution({
-        workflowId: `delay-notification-${input.deliveryId}-${Date.now()}`,
+        workflowId: generateWorkflowId(input.deliveryId),
         runId: `run-${Date.now()}`,
         deliveryId: input.deliveryId,
         status: 'failed',
@@ -273,7 +275,7 @@ export async function RecurringTrafficCheckWorkflow(
   const result: DelayNotificationWorkflowResult = {
     workflowId: input.deliveryId,
     deliveryId: input.deliveryId,
-    processedAt: new Date().toISOString(),
+    processedAt: getCurrentISOTimestamp(),
     steps: {},
     success: false,
   };
@@ -289,7 +291,7 @@ export async function RecurringTrafficCheckWorkflow(
   setHandler(workflowStatusQuery, () => ({
     currentStep,
     startedAt: result.processedAt,
-    lastUpdateAt: new Date().toISOString(),
+    lastUpdateAt: getCurrentISOTimestamp(),
     delayDetected: result.steps.delayEvaluation?.exceedsThreshold,
     notificationSent: result.steps.notificationDelivery?.sent,
   }));
@@ -531,7 +533,7 @@ export async function RecurringTrafficCheckWorkflow(
 
     // Save workflow execution
     await saveWorkflowExecution({
-      workflowId: `recurring-check-${input.deliveryId}`,
+      workflowId: generateRecurringWorkflowId(input.deliveryId),
       runId: `run-${Date.now()}`,
       deliveryId: input.deliveryId,
       status: 'completed',
@@ -547,7 +549,7 @@ export async function RecurringTrafficCheckWorkflow(
     // Save failed workflow execution
     try {
       await saveWorkflowExecution({
-        workflowId: `recurring-check-${input.deliveryId}`,
+        workflowId: generateRecurringWorkflowId(input.deliveryId),
         runId: `run-${Date.now()}`,
         deliveryId: input.deliveryId,
         status: 'failed',

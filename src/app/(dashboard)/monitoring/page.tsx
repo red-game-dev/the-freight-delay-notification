@@ -11,6 +11,7 @@ import { StatCard, StatGrid } from '@/components/ui/StatCard';
 import { List, ListItem } from '@/components/ui/List';
 import { Badge } from '@/components/ui/Badge';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
+import { getDeliveryStatusVariant, getTrafficConditionVariant } from '@/core/utils/statusUtils';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -316,7 +317,7 @@ export default function MonitoringPage() {
                                   <span className="text-blue-800 dark:text-blue-200 font-mono">
                                     {delivery.tracking_number}
                                   </span>
-                                  <Badge variant={delivery.status === 'delayed' ? 'error' : delivery.status === 'in_transit' ? 'warning' : 'default'} className="text-xs">
+                                  <Badge variant={getDeliveryStatusVariant(delivery.status)} className="text-xs">
                                     {delivery.status}
                                   </Badge>
                                 </div>

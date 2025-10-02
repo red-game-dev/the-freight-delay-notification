@@ -7,6 +7,7 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { StatCard, StatGrid } from '@/components/ui/StatCard';
+import { getNotificationStatusVariant } from '@/core/utils/statusUtils';
 import { List, ListItem } from '@/components/ui/List';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -102,7 +103,7 @@ export default function NotificationsPage() {
                           </span>
                         )}
                         <Badge
-                          variant={notification.status === 'sent' ? 'success' : notification.status === 'failed' ? 'error' : 'default'}
+                          variant={getNotificationStatusVariant(notification.status)}
                         >
                           {notification.status}
                         </Badge>

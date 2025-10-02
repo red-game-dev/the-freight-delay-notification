@@ -7,6 +7,7 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
+import { generateRecurringWorkflowId, generateWorkflowId } from '@/core/utils/workflowUtils';
 
 interface WorkflowListItem {
   id: string;
@@ -81,8 +82,8 @@ export const GET = createApiHandler(async (request) => {
     for (const delivery of allDeliveries) {
       // Check both recurring and one-time workflow patterns
       const workflowIds = [
-        `recurring-check-${delivery.id}`,
-        `delay-notification-${delivery.id}`,
+        generateRecurringWorkflowId(delivery.id),
+        generateWorkflowId(delivery.id, false),
       ];
 
       for (const workflowId of workflowIds) {

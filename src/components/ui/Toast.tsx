@@ -7,6 +7,7 @@
 
 import * as React from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { generateShortId } from '@/core/utils/idUtils';
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
@@ -42,7 +43,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
   const showToast = React.useCallback(
     (message: string, variant: ToastVariant = 'info', duration = 5000) => {
-      const id = Math.random().toString(36).substring(7);
+      const id = generateShortId();
       const newToast: Toast = { id, message, variant, duration };
 
       setToasts((prev) => [...prev, newToast]);
