@@ -6,6 +6,8 @@
 export interface Delivery {
   id: string;
   tracking_number: string;
+  customer_id: string;
+  route_id: string;
   origin: string;
   destination: string;
   scheduled_delivery: string;

@@ -12,10 +12,13 @@ import { List, ListItem } from '@/components/ui/List';
 import { Badge } from '@/components/ui/Badge';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { MapPin, Activity, AlertTriangle, Clock, Map as MapIcon, ExternalLink, Navigation, Filter, Package } from 'lucide-react';
 import { useRoutes } from '@/core/infrastructure/http/services/routes';
 import { useTrafficSnapshots } from '@/core/infrastructure/http/services/traffic';
 import { useDeliveries } from '@/core/infrastructure/http/services/deliveries';
+import type { Delivery } from '@/core/infrastructure/http/services/deliveries';
 import { Button } from '@/components/ui/Button';
 import { TrafficMap } from '@/components/features/monitoring/TrafficMap';
 
@@ -68,7 +71,7 @@ export default function MonitoringPage() {
   const deliveriesByRoute = React.useMemo(() => {
     if (!deliveries) return new Map();
     const map = new Map<string, typeof deliveries>();
-    deliveries.forEach(delivery => {
+    deliveries.forEach((delivery) => {
       const existing = map.get(delivery.route_id) || [];
       existing.push(delivery);
       map.set(delivery.route_id, existing);
@@ -91,12 +94,10 @@ export default function MonitoringPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Route Monitoring</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Real-time traffic monitoring and delay detection
-        </p>
-      </div>
+      <PageHeader
+        title="Route Monitoring"
+        description="Real-time traffic monitoring and delay detection"
+      />
 
       {/* Stats */}
       {trafficLoading ? (
@@ -132,10 +133,11 @@ export default function MonitoringPage() {
       {/* Traffic Map - Interactive visualization */}
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <div className="p-4 sm:p-6">
-          <h2 className="text-xl sm:text-2xl font-bold">Traffic Map</h2>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Real-time traffic visualization with route overlays and incident markers
-          </p>
+          <SectionHeader
+            title="Traffic Map"
+            description="Real-time traffic visualization with route overlays and incident markers"
+            size="lg"
+          />
         </div>
         <div className="p-4 sm:p-6 pt-0">
           {trafficLoading || routesLoading ? (
@@ -159,13 +161,12 @@ export default function MonitoringPage() {
       {/* Recent Traffic Snapshots */}
       <div className="rounded-lg border bg-card shadow-sm">
         <div className="p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold">Recent Traffic Updates</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Live traffic conditions on monitored routes
-              </p>
-            </div>
+          <div className="mb-4">
+            <SectionHeader
+              title="Recent Traffic Updates"
+              description="Live traffic conditions on monitored routes"
+              size="lg"
+            />
           </div>
 
           {/* Filter Buttons */}
@@ -310,7 +311,7 @@ export default function MonitoringPage() {
                           <div className="space-y-1">
                             {deliveriesByRoute.get(route.id)!
                               .slice(0, expandedDeliveries.has(snapshot.id) ? undefined : 3)
-                              .map(delivery => (
+                              .map((delivery: Delivery) => (
                                 <div key={delivery.id} className="flex items-center justify-between text-xs">
                                   <span className="text-blue-800 dark:text-blue-200 font-mono">
                                     {delivery.tracking_number}
@@ -321,14 +322,16 @@ export default function MonitoringPage() {
                                 </div>
                               ))}
                             {deliveriesByRoute.get(route.id)!.length > 3 && (
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => toggleDeliveries(snapshot.id)}
-                                className="text-xs text-blue-700 dark:text-blue-300 hover:underline mt-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+                                className="text-xs text-blue-700 dark:text-blue-300 hover:underline mt-1 h-auto py-0 px-1"
                               >
                                 {expandedDeliveries.has(snapshot.id)
                                   ? 'Show less'
                                   : `+${deliveriesByRoute.get(route.id)!.length - 3} more deliveries`}
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </div>

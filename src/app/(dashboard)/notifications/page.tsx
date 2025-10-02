@@ -11,6 +11,8 @@ import { List, ListItem } from '@/components/ui/List';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Alert } from '@/components/ui/Alert';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Mail, MessageSquare, CheckCircle2, XCircle, Bell, Clock, RefreshCw, ExternalLink } from 'lucide-react';
 import { useNotifications, useNotificationStats } from '@/core/infrastructure/http/services/notifications';
 import Link from 'next/link';
@@ -21,12 +23,10 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Notifications</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Track sent notifications and delivery confirmations
-        </p>
-      </div>
+      <PageHeader
+        title="Notifications"
+        description="Track sent notifications and delivery confirmations"
+      />
 
       {/* Stats */}
       {statsLoading ? (
@@ -56,7 +56,7 @@ export default function NotificationsPage() {
       {/* Notifications List */}
       <div className="rounded-lg border bg-card shadow-sm">
         <div className="p-4 sm:p-6">
-          <h2 className="text-xl sm:text-2xl font-bold">Recent Notifications</h2>
+          <SectionHeader title="Recent Notifications" size="lg" />
         </div>
 
         {notificationsLoading ? (

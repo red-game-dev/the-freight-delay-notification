@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
+import { Skeleton } from './ui/Skeleton';
 
 export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
@@ -15,9 +16,7 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return (
-      <div className="w-11 h-6 rounded-full bg-gray-300 dark:bg-gray-700 animate-pulse" />
-    );
+    return <Skeleton variant="rectangular" width={44} height={24} className="rounded-full" />;
   }
 
   return (

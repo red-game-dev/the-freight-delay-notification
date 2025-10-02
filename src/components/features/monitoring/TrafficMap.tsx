@@ -9,6 +9,9 @@
 import * as React from 'react';
 import { GoogleMap, useLoadScript, DirectionsRenderer, Marker, InfoWindow, TrafficLayer, Polyline } from '@react-google-maps/api';
 import { Alert } from '@/components/ui/Alert';
+import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Select } from '@/components/ui/Select';
 import { Loader2 } from 'lucide-react';
 import { clientEnv } from '@/infrastructure/config/ClientEnv';
 
@@ -325,25 +328,19 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
       <div className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 space-y-3 max-w-xs">
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="traffic-toggle"
-              checked={showTrafficLayer}
-              onChange={(e) => setShowTrafficLayer(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <label htmlFor="traffic-toggle" className="text-sm font-medium cursor-pointer">
-              Live Traffic Layer
-            </label>
-          </div>
+          <Checkbox
+            label="Live Traffic Layer"
+            checked={showTrafficLayer}
+            onChange={(e) => setShowTrafficLayer(e.target.checked)}
+          />
           {selectedRoute && (
-            <button
+            <Button
+              size="sm"
               onClick={() => setSelectedRoute(null)}
-              className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="text-xs"
             >
               Show All
-            </button>
+            </Button>
           )}
         </div>
 
@@ -356,20 +353,20 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
           </div>
 
           {!selectedRoute && (
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Filter by Traffic:</label>
-              <select
-                value={trafficFilter}
-                onChange={(e) => setTrafficFilter(e.target.value as any)}
-                className="w-full text-xs px-2 py-1 border rounded bg-white dark:bg-gray-700"
-              >
-                <option value="all">All Traffic ({routes.length})</option>
-                <option value="severe">🔴 Severe Only</option>
-                <option value="heavy">🟠 Heavy Only</option>
-                <option value="moderate">🟡 Moderate Only</option>
-                <option value="light">🟢 Light Only</option>
-              </select>
-            </div>
+            <Select
+              label="Filter by Traffic:"
+              value={trafficFilter}
+              onChange={(e) => setTrafficFilter(e.target.value as any)}
+              size="sm"
+              fullWidth
+              options={[
+                { value: 'all', label: `All Traffic (${routes.length})` },
+                { value: 'severe', label: '🔴 Severe Only' },
+                { value: 'heavy', label: '🟠 Heavy Only' },
+                { value: 'moderate', label: '🟡 Moderate Only' },
+                { value: 'light', label: '🟢 Light Only' },
+              ]}
+            />
           )}
 
           {!selectedRoute && routePolylines.length > 0 && (
@@ -383,41 +380,51 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
         <div className="text-xs pt-2 border-t">
           <p className="font-semibold mb-2">Traffic Conditions:</p>
           <div className="grid grid-cols-2 gap-2">
-            <button
+            <Button
+              variant={trafficFilter === 'light' ? 'primary' : 'outline'}
+              size="sm"
               onClick={() => setTrafficFilter('light')}
-              className={`flex items-center gap-2 p-1 rounded transition ${trafficFilter === 'light' ? 'bg-green-50 dark:bg-green-900' : ''}`}
+              className="justify-start text-xs h-auto py-1.5"
             >
-              <div className="w-3 h-3 bg-green-500 rounded"></div>
-              <span>Light</span>
-            </button>
-            <button
+              <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
+              Light
+            </Button>
+            <Button
+              variant={trafficFilter === 'moderate' ? 'primary' : 'outline'}
+              size="sm"
               onClick={() => setTrafficFilter('moderate')}
-              className={`flex items-center gap-2 p-1 rounded transition ${trafficFilter === 'moderate' ? 'bg-yellow-50 dark:bg-yellow-900' : ''}`}
+              className="justify-start text-xs h-auto py-1.5"
             >
-              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-              <span>Moderate</span>
-            </button>
-            <button
+              <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
+              Moderate
+            </Button>
+            <Button
+              variant={trafficFilter === 'heavy' ? 'primary' : 'outline'}
+              size="sm"
               onClick={() => setTrafficFilter('heavy')}
-              className={`flex items-center gap-2 p-1 rounded transition ${trafficFilter === 'heavy' ? 'bg-orange-50 dark:bg-orange-900' : ''}`}
+              className="justify-start text-xs h-auto py-1.5"
             >
-              <div className="w-3 h-3 bg-orange-500 rounded"></div>
-              <span>Heavy</span>
-            </button>
-            <button
+              <div className="w-3 h-3 bg-orange-500 rounded mr-2"></div>
+              Heavy
+            </Button>
+            <Button
+              variant={trafficFilter === 'severe' ? 'primary' : 'outline'}
+              size="sm"
               onClick={() => setTrafficFilter('severe')}
-              className={`flex items-center gap-2 p-1 rounded transition ${trafficFilter === 'severe' ? 'bg-red-50 dark:bg-red-900' : ''}`}
+              className="justify-start text-xs h-auto py-1.5"
             >
-              <div className="w-3 h-3 bg-red-500 rounded"></div>
-              <span>Severe</span>
-            </button>
+              <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
+              Severe
+            </Button>
           </div>
-          <button
+          <Button
+            variant={trafficFilter === 'all' ? 'primary' : 'outline'}
+            size="sm"
             onClick={() => setTrafficFilter('all')}
-            className={`mt-2 w-full text-xs py-1 px-2 rounded border transition ${trafficFilter === 'all' ? 'bg-blue-50 dark:bg-blue-900 border-blue-500' : 'border-gray-300'}`}
+            className="mt-2 w-full text-xs"
           >
             Show All Traffic
-          </button>
+          </Button>
         </div>
       </div>
 

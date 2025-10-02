@@ -15,6 +15,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { FormField, FormRow } from '@/components/ui/FormField';
 import { Alert } from '@/components/ui/Alert';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import {
   useThresholds,
@@ -60,17 +62,14 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Manage delay thresholds and notification preferences
-          </p>
-        </div>
+      <PageHeader
+        title="Settings"
+        description="Manage delay thresholds and notification preferences"
+      >
         <Button onClick={handleCreate} leftIcon={<Plus className="h-4 w-4" />}>
           New Threshold
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Info Alert */}
       <Alert variant="info">
@@ -266,37 +265,25 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
         <FormField>
           <label className="block text-sm font-medium mb-2">Notification Channels</label>
           <div className="flex gap-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={channels.includes('email')}
-                onChange={() => toggleChannel('email')}
-                className="rounded"
-              />
-              <span>Email</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={channels.includes('sms')}
-                onChange={() => toggleChannel('sms')}
-                className="rounded"
-              />
-              <span>SMS</span>
-            </label>
+            <Checkbox
+              label="Email"
+              checked={channels.includes('email')}
+              onChange={() => toggleChannel('email')}
+            />
+            <Checkbox
+              label="SMS"
+              checked={channels.includes('sms')}
+              onChange={() => toggleChannel('sms')}
+            />
           </div>
         </FormField>
 
         <FormField>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isDefault}
-              onChange={(e) => setIsDefault(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm">Set as default threshold</span>
-          </label>
+          <Checkbox
+            label="Set as default threshold"
+            checked={isDefault}
+            onChange={(e) => setIsDefault(e.target.checked)}
+          />
         </FormField>
 
         <div className="flex items-center justify-end gap-3 pt-4 border-t">

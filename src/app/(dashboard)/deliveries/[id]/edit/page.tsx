@@ -18,6 +18,10 @@ import { Toggle } from '@/components/ui/Toggle';
 import { FormField, FormRow, FormSection } from '@/components/ui/FormField';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
+import { Select } from '@/components/ui/Select';
+import { InfoBox } from '@/components/ui/InfoBox';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { SkeletonPage } from '@/components/ui/Skeleton';
 import { useDelivery, useUpdateDelivery } from '@/core/infrastructure/http/services/deliveries';
 import type { UpdateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
 
@@ -91,15 +95,7 @@ export default function EditDeliveryPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/3 mb-2"></div>
-          <div className="h-4 bg-muted rounded w-1/4"></div>
-        </div>
-        <div className="h-96 bg-muted rounded animate-pulse"></div>
-      </div>
-    );
+    return <SkeletonPage />;
   }
 
   if (error || !delivery) {
@@ -118,7 +114,10 @@ export default function EditDeliveryPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <PageHeader
+        title={`Edit Delivery: ${delivery.tracking_number}`}
+        description="Update delivery information"
+      >
         <Button
           variant="ghost"
           size="sm"
@@ -127,15 +126,7 @@ export default function EditDeliveryPage() {
         >
           Back
         </Button>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Edit Delivery: {delivery.tracking_number}
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Update delivery information
-          </p>
-        </div>
-      </div>
+      </PageHeader>
 
       {/* Form */}
       <Card>
@@ -407,16 +398,13 @@ export default function EditDeliveryPage() {
                   </FormField>
                 </FormRow>
 
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                    Automatic Stop Conditions
-                  </h4>
-                  <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                <InfoBox variant="info" title="Automatic Stop Conditions">
+                  <ul className="space-y-1">
                     <li>✓ After reaching maximum number of checks</li>
                     <li>✓ When scheduled delivery time + 2 hours passes</li>
                     <li>✓ When delivery status changes to delivered/cancelled</li>
                   </ul>
-                </div>
+                </InfoBox>
               </>
             )}
           </FormSection>

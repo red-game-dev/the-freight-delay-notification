@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
-import { SkeletonTable } from '@/components/ui/Skeleton';
+import { Skeleton, SkeletonTable } from '@/components/ui/Skeleton';
 import { MapPin, Clock } from 'lucide-react';
 import { useDeliveries } from '@/core/infrastructure/http/services/deliveries';
 
@@ -28,9 +28,9 @@ export function DeliveryList() {
   if (isLoading) {
     return (
       <div className="rounded-lg border bg-card shadow-sm">
-        <div className="p-4 sm:p-6">
-          <div className="h-8 bg-muted rounded w-1/3 mb-2 animate-pulse" />
-          <div className="h-4 bg-muted rounded w-1/4 animate-pulse" />
+        <div className="p-4 sm:p-6 space-y-2">
+          <Skeleton width="33%" height={32} />
+          <Skeleton width="25%" height={16} />
         </div>
         <SkeletonTable rows={5} columns={5} />
       </div>

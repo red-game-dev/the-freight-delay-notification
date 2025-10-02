@@ -16,6 +16,9 @@ import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Toggle } from '@/components/ui/Toggle';
 import { FormField, FormRow, FormSection } from '@/components/ui/FormField';
 import { Card } from '@/components/ui/Card';
+import { Select } from '@/components/ui/Select';
+import { InfoBox } from '@/components/ui/InfoBox';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useCreateDelivery } from '@/core/infrastructure/http/services/deliveries';
 import type { CreateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
 
@@ -44,7 +47,10 @@ export default function NewDeliveryPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <PageHeader
+        title="New Delivery"
+        description="Create a new freight delivery"
+      >
         <Button
           variant="ghost"
           size="sm"
@@ -53,13 +59,7 @@ export default function NewDeliveryPage() {
         >
           Back
         </Button>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">New Delivery</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Create a new freight delivery
-          </p>
-        </div>
-      </div>
+      </PageHeader>
 
       {/* Form */}
       <Card>
@@ -233,37 +233,43 @@ export default function NewDeliveryPage() {
               <>
                 <FormRow columns={2}>
                   <FormField>
-                    <label className="block text-sm font-medium mb-1.5">
-                      Check Interval
-                      <span className="text-red-600 dark:text-red-400 ml-1">*</span>
-                    </label>
-                    <select
+                    <Select
                       {...register('check_interval_minutes', {
                         required: watch('enable_recurring_checks'),
                         valueAsNumber: true,
                       })}
-                      className="w-full px-3 py-2 border rounded-lg bg-background"
-                    >
-                      <optgroup label="Minutes">
-                        <option value="15">Every 15 minutes</option>
-                        <option value="30">Every 30 minutes</option>
-                      </optgroup>
-                      <optgroup label="Hours">
-                        <option value="60">Every 1 hour</option>
-                        <option value="120">Every 2 hours</option>
-                        <option value="180">Every 3 hours</option>
-                        <option value="360">Every 6 hours</option>
-                        <option value="720">Every 12 hours</option>
-                      </optgroup>
-                      <optgroup label="Days/Weeks">
-                        <option value="1440">Daily (every 24 hours)</option>
-                        <option value="10080">Weekly (every 7 days)</option>
-                        <option value="43200">Monthly (every 30 days)</option>
-                      </optgroup>
-                    </select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      How often to check traffic conditions
-                    </p>
+                      label="Check Interval"
+                      helperText="How often to check traffic conditions"
+                      required
+                      fullWidth
+                      optionGroups={[
+                        {
+                          label: 'Minutes',
+                          options: [
+                            { value: 15, label: 'Every 15 minutes' },
+                            { value: 30, label: 'Every 30 minutes' },
+                          ],
+                        },
+                        {
+                          label: 'Hours',
+                          options: [
+                            { value: 60, label: 'Every 1 hour' },
+                            { value: 120, label: 'Every 2 hours' },
+                            { value: 180, label: 'Every 3 hours' },
+                            { value: 360, label: 'Every 6 hours' },
+                            { value: 720, label: 'Every 12 hours' },
+                          ],
+                        },
+                        {
+                          label: 'Days/Weeks',
+                          options: [
+                            { value: 1440, label: 'Daily (every 24 hours)' },
+                            { value: 10080, label: 'Weekly (every 7 days)' },
+                            { value: 43200, label: 'Monthly (every 30 days)' },
+                          ],
+                        },
+                      ]}
+                    />
                   </FormField>
 
                   <FormField>
@@ -318,16 +324,13 @@ export default function NewDeliveryPage() {
                   </FormField>
                 </FormRow>
 
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                    Automatic Stop Conditions
-                  </h4>
-                  <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                <InfoBox variant="info" title="Automatic Stop Conditions">
+                  <ul className="space-y-1">
                     <li>✓ After reaching maximum number of checks</li>
                     <li>✓ When scheduled delivery time + 2 hours passes</li>
                     <li>✓ When delivery status changes to delivered/cancelled</li>
                   </ul>
-                </div>
+                </InfoBox>
               </>
             )}
           </FormSection>

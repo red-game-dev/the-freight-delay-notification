@@ -25,10 +25,13 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
+import { InfoBox } from '@/components/ui/InfoBox';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
 import { Toggle } from '@/components/ui/Toggle';
 import { CompactTimeline } from '@/components/ui/Timeline';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useDelivery, useDeleteDelivery } from '@/core/infrastructure/http/services/deliveries';
 import { useStartWorkflow, useCancelWorkflow } from '@/core/infrastructure/http/services/workflows';
 import { WorkflowStatusPolling } from '@/components/features/workflows/WorkflowStatusPolling';
@@ -186,7 +189,7 @@ export default function DeliveryDetailPage() {
         {/* Delivery Information */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-4">Delivery Information</h2>
+            <SectionHeader title="Delivery Information" className="mb-4" />
 
             <div className="space-y-4">
               <div>
@@ -239,7 +242,7 @@ export default function DeliveryDetailPage() {
         {/* Customer Information */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-4">Customer Information</h2>
+            <SectionHeader title="Customer Information" className="mb-4" />
 
             <div className="space-y-4">
               <div>
@@ -309,11 +312,11 @@ export default function DeliveryDetailPage() {
           <p className="text-gray-700 dark:text-gray-300">
             Are you sure you want to delete this delivery? This action cannot be undone.
           </p>
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+          <InfoBox variant="warning">
+            <p>
               <strong>Warning:</strong> Deleting this delivery will permanently remove all associated data including workflow history and notifications.
             </p>
-          </div>
+          </InfoBox>
         </div>
         <ModalFooter>
           <Button
@@ -349,11 +352,11 @@ export default function DeliveryDetailPage() {
             Are you sure you want to stop recurring traffic checks for this delivery?
           </p>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+          <InfoBox variant="info">
+            <p>
               <strong>Note:</strong> The workflow will stop monitoring traffic conditions. You can manually check traffic using the "Check Traffic & Notify" button.
             </p>
-          </div>
+          </InfoBox>
 
           <div className="border-t pt-4">
             <Toggle
