@@ -3,12 +3,32 @@
  * GET /api/workflows - List all workflow executions (database + active deliveries)
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { env } from '@/infrastructure/config/EnvValidator';
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
+
+interface WorkflowListItem {
+  id: string;
+  workflow_id: string;
+  delivery_id: string | null;
+  status: string;
+  started_at: Date;
+  completed_at: Date | null;
+  error_message: string | null;
+  source: 'database' | 'temporal';
+  tracking_number?: string;
+  settings?: {
+    type: 'recurring' | 'one-time';
+    check_interval_minutes: number;
+    max_checks: number;
+    checks_performed: number;
+    delay_threshold_minutes: number;
+    min_delay_change_threshold: number;
+    min_hours_between_notifications: number;
+    scheduled_delivery: Date;
+  };
+}
 
 /**
  * GET /api/workflows
@@ -19,54 +39,38 @@ export const GET = createApiHandler(async (request) => {
   const deliveryId = getQueryParam(request, 'deliveryId');
 
   if (deliveryId) {
-    return await db.listWorkflowExecutionsByDelivery(deliveryId);
+    // Transform filtered result to only expose safe fields
+    return Result.map(
+      await db.listWorkflowExecutionsByDelivery(deliveryId),
+      (workflows) =>
+        workflows.map((w) => ({
+          id: w.id,
+          workflow_id: w.workflow_id,
+          delivery_id: w.delivery_id,
+          status: w.status,
+          started_at: w.started_at,
+          completed_at: w.completed_at,
+          error_message: w.error_message,
+        }))
+    );
   }
 
-  // Get completed workflows from database
-  const supabase = createClient(
-    env.NEXT_PUBLIC_SUPABASE_URL!,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Get completed workflows from database via DatabaseService
+  const dbWorkflows = Result.unwrapOr(await db.listWorkflowExecutions(50), []);
 
-  const { data: dbWorkflows, error } = await supabase
-    .from('workflow_executions')
-    .select('*')
-    .order('started_at', { ascending: false })
-    .limit(50);
-
-  if (error) {
-    return Result.fail(new Error(error.message));
-  }
-
-  // Get all recent deliveries with workflow settings
-  const { data: allDeliveries } = await supabase
-    .from('deliveries')
-    .select(`
-      id,
-      tracking_number,
-      enable_recurring_checks,
-      auto_check_traffic,
-      status,
-      created_at,
-      check_interval_minutes,
-      max_checks,
-      checks_performed,
-      delay_threshold_minutes,
-      min_delay_change_threshold,
-      min_hours_between_notifications,
-      scheduled_delivery
-    `)
-    .order('created_at', { ascending: false })
-    .limit(100);
+  // Get all recent deliveries with workflow settings via DatabaseService
+  const allDeliveries = Result.unwrapOr(await db.listDeliveries(100), []);
 
   // Combine and format results
-  const workflows: any[] = [];
+  const workflows: WorkflowListItem[] = [];
 
   // Add database workflows
   if (dbWorkflows) {
     workflows.push(...dbWorkflows.map(w => ({
       ...w,
-      source: 'database',
+      started_at: w.started_at instanceof Date ? w.started_at : new Date(w.started_at),
+      completed_at: w.completed_at ? (w.completed_at instanceof Date ? w.completed_at : new Date(w.completed_at)) : null,
+      source: 'database' as const,
     })));
   }
 
@@ -99,8 +103,9 @@ export const GET = createApiHandler(async (request) => {
               delivery_id: delivery.id,
               status,
               started_at: description.startTime,
-              completed_at: description.closeTime,
-              source: 'temporal',
+              completed_at: description.closeTime || null,
+              error_message: null,
+              source: 'temporal' as const,
               tracking_number: delivery.tracking_number,
               // Add workflow settings
               settings: {

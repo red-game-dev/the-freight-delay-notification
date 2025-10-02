@@ -5,9 +5,9 @@
 
 import OpenAI from 'openai';
 import { env } from '../../config/EnvValidator';
-import { Result, success, failure } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
+import { Result, success } from '../../../core/base/utils/Result';
 import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
+import { logger, getErrorMessage } from '@/core/base/utils/Logger';
 
 export class OpenAIAdapter implements AIAdapter {
   public readonly providerName = 'OpenAI';
@@ -30,12 +30,12 @@ export class OpenAIAdapter implements AIAdapter {
 
   async generateMessage(input: MessageGenerationInput): Promise<Result<GeneratedMessage>> {
     if (!this.isAvailable()) {
-      console.log('⚠️ OpenAI API key not configured, using fallback message');
+      logger.info('⚠️ OpenAI API key not configured, using fallback message');
       return this.generateFallbackMessage(input);
     }
 
     try {
-      console.log(`🤖 [Step 3] Generating AI message with ${this.model}...`);
+      logger.info(`🤖 [Step 3] Generating AI message with ${this.model}...`);
 
       const prompt = this.createPrompt(input);
 
@@ -58,9 +58,9 @@ export class OpenAIAdapter implements AIAdapter {
       const message = completion.choices[0].message.content || this.createFallbackMessageText(input);
       const subject = this.generateSubject(input);
 
-      console.log(`✅ [Step 3] AI message generated successfully`);
-      console.log(`   Model: ${this.model}`);
-      console.log(`   Tokens: ${completion.usage?.total_tokens || 'unknown'}`);
+      logger.info(`✅ [Step 3] AI message generated successfully`);
+      logger.info(`   Model: ${this.model}`);
+      logger.info(`   Tokens: ${completion.usage?.total_tokens || 'unknown'}`);
 
       return success({
         message,
@@ -69,8 +69,8 @@ export class OpenAIAdapter implements AIAdapter {
         tokens: completion.usage?.total_tokens,
         generatedAt: new Date(),
       });
-    } catch (error: any) {
-      console.error('❌ OpenAI API error:', error.message);
+    } catch (error: unknown) {
+      logger.error('❌ OpenAI API error:', getErrorMessage(error));
 
       // Fallback to template message
       return this.generateFallbackMessage(input);
@@ -100,7 +100,7 @@ Keep it under 150 words and maintain a professional yet friendly tone.`;
   }
 
   private generateFallbackMessage(input: MessageGenerationInput): Result<GeneratedMessage> {
-    console.log('📝 Using fallback message template');
+    logger.info('📝 Using fallback message template');
 
     const message = this.createFallbackMessageText(input);
     const subject = this.generateSubject(input);

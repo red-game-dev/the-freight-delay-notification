@@ -6,6 +6,7 @@
 import { TrafficAdapter } from './TrafficAdapter.interface';
 import { Result, success } from '../../../core/base/utils/Result';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
+import { logger } from '@/core/base/utils/Logger';
 
 export class MockTrafficAdapter implements TrafficAdapter {
   public readonly providerName = 'Mock Data';
@@ -16,7 +17,7 @@ export class MockTrafficAdapter implements TrafficAdapter {
   }
 
   async getTrafficData(route: RouteInput): Promise<Result<TrafficData>> {
-    console.log(`🎭 [${this.providerName}] Using mock traffic data for testing`);
+    logger.info(`🎭 [${this.providerName}] Using mock traffic data for testing`);
 
     // Generate somewhat random but consistent delay based on route
     const routeHash = this.hashRoute(route);
@@ -51,7 +52,7 @@ export class MockTrafficAdapter implements TrafficAdapter {
       },
     };
 
-    console.log(`✅ [${this.providerName}] Generated:`, {
+    logger.info(`✅ [${this.providerName}] Generated:`, {
       route: `${route.origin} → ${route.destination}`,
       delayMinutes,
       trafficCondition,

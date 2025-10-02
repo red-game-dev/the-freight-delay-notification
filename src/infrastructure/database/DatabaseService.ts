@@ -4,7 +4,7 @@
  * Supports multi-region, redundancy, and gradual migration scenarios
  */
 
-import { logger } from '../../core/base/utils/Logger';
+import { logger, getErrorMessage } from '../../core/base/utils/Logger';
 import { Result, success, failure } from '../../core/base/utils/Result';
 import { InfrastructureError } from '../../core/base/errors/BaseError';
 import type { DatabaseAdapter } from './adapters/DatabaseAdapter.interface';
@@ -158,8 +158,8 @@ export class DatabaseService {
           return result;
         }
         logger.warn(`${operation} failed on ${adapter.name}, trying next adapter`);
-      } catch (error: any) {
-        logger.error(`${operation} error on ${adapter.name}:`, error.message);
+      } catch (error: unknown) {
+        logger.error(`${operation} error on ${adapter.name}:`, getErrorMessage(error));
       }
     }
 
@@ -252,6 +252,12 @@ export class DatabaseService {
     return this.writeToAll('updateNotification', (adapter) => adapter.updateNotification(id, input));
   }
 
+  async listNotifications(limit?: number, offset?: number) {
+    return this.readWithFallback('listNotifications', (adapter) =>
+      adapter.listNotifications(limit, offset)
+    );
+  }
+
   async listNotificationsByDelivery(deliveryId: string) {
     return this.readWithFallback('listNotificationsByDelivery', (adapter) =>
       adapter.listNotificationsByDelivery(deliveryId)
@@ -268,6 +274,12 @@ export class DatabaseService {
 
   async createTrafficSnapshot(input: Parameters<DatabaseAdapter['createTrafficSnapshot']>[0]) {
     return this.writeToAll('createTrafficSnapshot', (adapter) => adapter.createTrafficSnapshot(input));
+  }
+
+  async listTrafficSnapshots(limit?: number, offset?: number) {
+    return this.readWithFallback('listTrafficSnapshots', (adapter) =>
+      adapter.listTrafficSnapshots(limit, offset)
+    );
   }
 
   async listTrafficSnapshotsByRoute(routeId: string, limit?: number) {
@@ -296,6 +308,12 @@ export class DatabaseService {
 
   async updateWorkflowExecution(id: string, input: Parameters<DatabaseAdapter['updateWorkflowExecution']>[1]) {
     return this.writeToAll('updateWorkflowExecution', (adapter) => adapter.updateWorkflowExecution(id, input));
+  }
+
+  async listWorkflowExecutions(limit?: number, offset?: number) {
+    return this.readWithFallback('listWorkflowExecutions', (adapter) =>
+      adapter.listWorkflowExecutions(limit, offset)
+    );
   }
 
   async listWorkflowExecutionsByDelivery(deliveryId: string) {

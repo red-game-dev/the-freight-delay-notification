@@ -12,6 +12,13 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
+// Type for errors that may have additional properties
+interface UnknownError extends Error {
+  code?: string;
+  statusCode?: number;
+  data?: Record<string, unknown>;
+}
+
 export interface AppError {
   id: string;
   message: string;
@@ -121,15 +128,17 @@ export function createErrorFromException(
   source?: string,
   severity: AppError['severity'] = 'error'
 ): Omit<AppError, 'id' | 'timestamp'> {
+  const unknownError = error as UnknownError;
+
   return {
     message: error.message || 'An unexpected error occurred',
-    code: (error as any).code || (error as any).statusCode?.toString(),
+    code: unknownError.code || unknownError.statusCode?.toString(),
     source,
     severity,
     metadata: {
       name: error.name,
       stack: error.stack,
-      ...(error as any).data,
+      ...unknownError.data,
     },
   };
 }

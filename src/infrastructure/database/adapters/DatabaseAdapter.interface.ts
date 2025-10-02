@@ -66,11 +66,13 @@ export interface DatabaseAdapter {
   getNotificationById(id: string): Promise<Result<Notification | null>>;
   createNotification(input: CreateNotificationInput): Promise<Result<Notification>>;
   updateNotification(id: string, input: UpdateNotificationInput): Promise<Result<Notification>>;
+  listNotifications(limit?: number, offset?: number): Promise<Result<Notification[]>>;
   listNotificationsByDelivery(deliveryId: string): Promise<Result<Notification[]>>;
   listNotificationsByCustomer(customerId: string, limit?: number): Promise<Result<Notification[]>>;
 
   // ===== Traffic Snapshot Operations =====
   createTrafficSnapshot(input: CreateTrafficSnapshotInput): Promise<Result<TrafficSnapshot>>;
+  listTrafficSnapshots(limit?: number, offset?: number): Promise<Result<TrafficSnapshot[]>>;
   listTrafficSnapshotsByRoute(routeId: string, limit?: number): Promise<Result<TrafficSnapshot[]>>;
 
   // ===== Workflow Execution Operations =====
@@ -78,6 +80,7 @@ export interface DatabaseAdapter {
   getWorkflowExecutionByWorkflowId(workflowId: string): Promise<Result<WorkflowExecution | null>>;
   createWorkflowExecution(input: CreateWorkflowExecutionInput): Promise<Result<WorkflowExecution>>;
   updateWorkflowExecution(id: string, input: UpdateWorkflowExecutionInput): Promise<Result<WorkflowExecution>>;
+  listWorkflowExecutions(limit?: number, offset?: number): Promise<Result<WorkflowExecution[]>>;
   listWorkflowExecutionsByDelivery(deliveryId: string): Promise<Result<WorkflowExecution[]>>;
 
   // ===== Threshold Operations =====

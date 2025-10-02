@@ -3,6 +3,7 @@
  * Always-available fallback for testing without real AI service
  */
 
+import { logger } from '@/core/base/utils/Logger';
 import { Result, success } from '../../../core/base/utils/Result';
 import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
 
@@ -15,9 +16,9 @@ export class MockAIAdapter implements AIAdapter {
   }
 
   async generateMessage(input: MessageGenerationInput): Promise<Result<GeneratedMessage>> {
-    console.log(`🤖 [Mock AI] Generating mock message for delivery ${input.deliveryId}`);
-    console.log(`   Delay: ${input.delayMinutes} minutes`);
-    console.log(`   Traffic: ${input.trafficCondition}`);
+    logger.info(`🤖 [Mock AI] Generating mock message for delivery ${input.deliveryId}`);
+    logger.info(`   Delay: ${input.delayMinutes} minutes`);
+    logger.info(`   Traffic: ${input.trafficCondition}`);
 
     // Simulate AI processing delay
     await new Promise(resolve => setTimeout(resolve, 150));
@@ -25,8 +26,8 @@ export class MockAIAdapter implements AIAdapter {
     const message = this.createMockMessage(input);
     const subject = this.generateSubject(input);
 
-    console.log(`✅ [Mock AI] Mock message generated successfully`);
-    console.log(`   Subject: ${subject}`);
+    logger.info(`✅ [Mock AI] Mock message generated successfully`);
+    logger.info(`   Subject: ${subject}`);
 
     return success({
       message,

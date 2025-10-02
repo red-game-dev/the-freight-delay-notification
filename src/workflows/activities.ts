@@ -17,29 +17,31 @@ import { TrafficService } from '../infrastructure/adapters/traffic/TrafficServic
 import { NotificationService } from '@/infrastructure/adapters/notifications/NotificationService';
 import { AIService } from '@/infrastructure/adapters/ai/AIService';
 import { CheckDelayThresholdUseCase } from '@/core/engine/delivery/CheckDelayThreshold';
-import { Route } from '@/core/domain/delivery/entities/Route';
-import { Coordinates } from '@/core/domain/delivery/value-objects/Coordinates';
-import { DeliveryStatus } from '@/core/domain/delivery/value-objects/DeliveryStatus';
-import { Delivery } from '@/core/domain/delivery/entities/Delivery';
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
+import { logger, getErrorMessage } from '@/core/base/utils/Logger';
+import { ValidationError, InfrastructureError } from '@/core/base/errors/BaseError';
+import type { TrafficCondition, DeliveryStatus as DeliveryStatusType } from '@/infrastructure/database/types/database.types';
 
 // Step 1: Check Traffic Conditions
 export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
   // Defensive check for missing data
   if (!input || !input.origin || !input.destination) {
-    console.error('[Step 1] ERROR: Missing origin or destination data:', JSON.stringify(input, null, 2));
-    throw new Error('Invalid input: origin and destination are required');
+    logger.error('[Step 1] ERROR: Missing origin or destination data:', JSON.stringify(input, null, 2));
+    throw new ValidationError('Invalid input: origin and destination are required', { input });
   }
 
   if (!input.origin.address || !input.destination.address) {
-    console.error('[Step 1] ERROR: Missing addresses:', {
+    logger.error('[Step 1] ERROR: Missing addresses:', {
       originAddress: input.origin?.address,
       destinationAddress: input.destination?.address
     });
-    throw new Error('Invalid input: origin.address and destination.address are required');
+    throw new ValidationError('Invalid input: origin.address and destination.address are required', {
+      originAddress: input.origin?.address,
+      destinationAddress: input.destination?.address
+    });
   }
 
-  console.log(`[Step 1] Checking traffic from ${input.origin.address} to ${input.destination.address}`);
+  logger.info(`[Step 1] Checking traffic from ${input.origin.address} to ${input.destination.address}`);
 
   // Use TrafficService which handles all adapters and fallback
   const trafficService = new TrafficService();
@@ -66,12 +68,12 @@ export async function checkTrafficConditions(input: CheckTrafficInput): Promise<
   }
 
   // This shouldn't happen with MockTrafficAdapter as last resort
-  throw new Error(`Traffic data fetch failed: ${result.error.message}`);
+  throw new InfrastructureError(`Traffic data fetch failed: ${result.error.message}`, { error: result.error });
 }
 
 // Step 2: Evaluate Delay Against Threshold (using domain layer)
 export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEvaluationResult> {
-  console.log(`[Step 2] Evaluating delay of ${input.delayMinutes} minutes against threshold of ${input.thresholdMinutes} minutes`);
+  logger.info(`[Step 2] Evaluating delay of ${input.delayMinutes} minutes against threshold of ${input.thresholdMinutes} minutes`);
 
   // Use CheckDelayThresholdUseCase from domain layer
   const useCase = new CheckDelayThresholdUseCase();
@@ -90,7 +92,7 @@ export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEva
   const result = useCase.execute(trafficData, input.thresholdMinutes);
 
   if (!result.success) {
-    throw new Error(`Threshold check failed: ${result.error.message}`);
+    throw new InfrastructureError(`Threshold check failed: ${result.error.message}`, { error: result.error });
   }
 
   const thresholdResult = result.value;
@@ -116,7 +118,7 @@ export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEva
 
 // Step 3: Generate AI Message
 export async function generateAIMessage(input: GenerateMessageInput): Promise<MessageGenerationResult> {
-  console.log(`[Step 3] Generating AI message for delivery ${input.deliveryId}`);
+  logger.info(`[Step 3] Generating AI message for delivery ${input.deliveryId}`);
 
   const aiService = new AIService();
 
@@ -144,12 +146,12 @@ export async function generateAIMessage(input: GenerateMessageInput): Promise<Me
   }
 
   // This shouldn't happen with MockAIAdapter as last resort
-  throw new Error(`AI message generation failed: ${result.error.message}`);
+  throw new InfrastructureError(`AI message generation failed: ${result.error.message}`, { error: result.error });
 }
 
 // Step 4: Send Notification
 export async function sendNotification(input: SendNotificationInput): Promise<NotificationResult> {
-  console.log(`[Step 4] Sending notification for delivery ${input.deliveryId}`);
+  logger.info(`[Step 4] Sending notification for delivery ${input.deliveryId}`);
 
   const notificationService = new NotificationService();
 
@@ -233,7 +235,7 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
   } else {
     result.channel = 'none';
     result.sent = false;
-    console.log('⚠️ No notifications sent - all channels failed');
+    logger.info('⚠️ No notifications sent - all channels failed');
   }
 
   return result;
@@ -252,7 +254,7 @@ export async function saveTrafficSnapshot(input: {
   origin?: { address: string; coordinates?: { lat: number; lng: number } };
   destination?: { address: string; coordinates?: { lat: number; lng: number } };
 }): Promise<{ success: boolean; id: string }> {
-  console.log(`[Database] Saving traffic snapshot for route ${input.routeId}`);
+  logger.info(`[Database] Saving traffic snapshot for route ${input.routeId}`);
 
   try {
     const db = getDatabaseService();
@@ -294,14 +296,14 @@ export async function saveTrafficSnapshot(input: {
     });
 
     if (result.success) {
-      console.log(`✅ Traffic snapshot saved: ${result.value.id}`);
+      logger.info(`✅ Traffic snapshot saved: ${result.value.id}`);
       return { success: true, id: result.value.id };
     } else {
-      console.error(`❌ Failed to save traffic snapshot: ${result.error.message}`);
+      logger.error(`❌ Failed to save traffic snapshot: ${result.error.message}`);
       return { success: false, id: '' };
     }
-  } catch (error: any) {
-    console.error(`❌ Error saving traffic snapshot: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error(`❌ Error saving traffic snapshot: ${getErrorMessage(error)}`);
     return { success: false, id: '' };
   }
 }
@@ -320,7 +322,7 @@ export async function saveNotification(input: {
   error?: string;
   delayMinutes?: number;
 }): Promise<{ success: boolean; id: string }> {
-  console.log(`[Database] Saving notification for delivery ${input.deliveryId}`);
+  logger.info(`[Database] Saving notification for delivery ${input.deliveryId}`);
 
   try {
     const db = getDatabaseService();
@@ -333,14 +335,14 @@ export async function saveNotification(input: {
     });
 
     if (result.success) {
-      console.log(`✅ Notification saved: ${result.value.id}`);
+      logger.info(`✅ Notification saved: ${result.value.id}`);
       return { success: true, id: result.value.id };
     } else {
-      console.error(`❌ Failed to save notification: ${result.error.message}`);
+      logger.error(`❌ Failed to save notification: ${result.error.message}`);
       return { success: false, id: '' };
     }
-  } catch (error: any) {
-    console.error(`❌ Error saving notification: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error(`❌ Error saving notification: ${getErrorMessage(error)}`);
     return { success: false, id: '' };
   }
 }
@@ -352,7 +354,7 @@ export async function updateDeliveryStatusInDb(input: {
   deliveryId: string;
   status: 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled' | 'failed';
 }): Promise<{ success: boolean }> {
-  console.log(`[Database] Updating delivery ${input.deliveryId} status to ${input.status}`);
+  logger.info(`[Database] Updating delivery ${input.deliveryId} status to ${input.status}`);
 
   try {
     const db = getDatabaseService();
@@ -361,14 +363,14 @@ export async function updateDeliveryStatusInDb(input: {
     });
 
     if (result.success) {
-      console.log(`✅ Delivery status updated to: ${input.status}`);
+      logger.info(`✅ Delivery status updated to: ${input.status}`);
       return { success: true };
     } else {
-      console.error(`❌ Failed to update delivery status: ${result.error.message}`);
+      logger.error(`❌ Failed to update delivery status: ${result.error.message}`);
       return { success: false };
     }
-  } catch (error: any) {
-    console.error(`❌ Error updating delivery status: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error(`❌ Error updating delivery status: ${getErrorMessage(error)}`);
     return { success: false };
   }
 }
@@ -381,10 +383,10 @@ export async function saveWorkflowExecution(input: {
   runId: string;
   deliveryId: string;
   status: 'running' | 'completed' | 'failed';
-  steps?: any;
+  steps?: unknown;
   error?: string;
 }): Promise<{ success: boolean; id: string }> {
-  console.log(`[Database] Saving workflow execution ${input.workflowId}`);
+  logger.info(`[Database] Saving workflow execution ${input.workflowId}`);
 
   try {
     const db = getDatabaseService();
@@ -396,14 +398,14 @@ export async function saveWorkflowExecution(input: {
     });
 
     if (result.success) {
-      console.log(`✅ Workflow execution saved: ${result.value.id}`);
+      logger.info(`✅ Workflow execution saved: ${result.value.id}`);
       return { success: true, id: result.value.id };
     } else {
-      console.error(`❌ Failed to save workflow execution: ${result.error.message}`);
+      logger.error(`❌ Failed to save workflow execution: ${result.error.message}`);
       return { success: false, id: '' };
     }
-  } catch (error: any) {
-    console.error(`❌ Error saving workflow execution: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error(`❌ Error saving workflow execution: ${getErrorMessage(error)}`);
     return { success: false, id: '' };
   }
 }
@@ -419,25 +421,55 @@ export async function saveRouteEntity(input: {
   currentDurationSeconds?: number;
   trafficCondition?: string;
 }): Promise<{ success: boolean; routeId: string }> {
-  console.log(`[Database] Saving route entity: ${input.routeId}`);
+  logger.info(`[Database] Saving route entity: ${input.routeId}`);
 
-  // Create route entity
-  const route = Route.create({
-    originAddress: input.originAddress,
-    originCoords: Coordinates.create(input.originCoords),
-    destinationAddress: input.destinationAddress,
-    destinationCoords: Coordinates.create(input.destinationCoords),
-    distanceMeters: input.distanceMeters,
-    normalDurationSeconds: input.normalDurationSeconds,
-    currentDurationSeconds: input.currentDurationSeconds,
-    trafficCondition: input.trafficCondition as any,
-  }, input.routeId);
+  const db = getDatabaseService();
 
-  // Note: Database repository implementation would go here
-  // For now, just return success as we're using mock data
-  console.log(`✅ Route entity created: ${route.getSummary()}`);
+  // Check if route already exists
+  const existingRoute = await db.getRouteById(input.routeId);
 
-  return { success: true, routeId: input.routeId };
+  if (existingRoute.success && existingRoute.value) {
+    // Update existing route
+    logger.info(`Route ${input.routeId} already exists, updating...`);
+    const updateResult = await db.updateRoute(input.routeId, {
+      origin_address: input.originAddress,
+      origin_coords: { x: input.originCoords.lat, y: input.originCoords.lng },
+      destination_address: input.destinationAddress,
+      destination_coords: { x: input.destinationCoords.lat, y: input.destinationCoords.lng },
+      distance_meters: input.distanceMeters,
+      normal_duration_seconds: input.normalDurationSeconds,
+      current_duration_seconds: input.currentDurationSeconds,
+      traffic_condition: input.trafficCondition as TrafficCondition | undefined,
+    });
+
+    if (!updateResult.success) {
+      logger.error(`Failed to update route: ${updateResult.error.message}`);
+      throw new InfrastructureError(`Failed to update route: ${updateResult.error.message}`, { error: updateResult.error });
+    }
+
+    logger.info(`✅ Route updated: ${input.routeId}`);
+    return { success: true, routeId: input.routeId };
+  }
+
+  // Create new route
+  const createResult = await db.createRoute({
+    origin_address: input.originAddress,
+    origin_coords: { x: input.originCoords.lat, y: input.originCoords.lng },
+    destination_address: input.destinationAddress,
+    destination_coords: { x: input.destinationCoords.lat, y: input.destinationCoords.lng },
+    distance_meters: input.distanceMeters,
+    normal_duration_seconds: input.normalDurationSeconds,
+    current_duration_seconds: input.currentDurationSeconds,
+    traffic_condition: input.trafficCondition as TrafficCondition | undefined,
+  });
+
+  if (!createResult.success) {
+    logger.error(`Failed to create route: ${createResult.error.message}`);
+    throw new InfrastructureError(`Failed to create route: ${createResult.error.message}`, { error: createResult.error });
+  }
+
+  logger.info(`✅ Route created: ${createResult.value.id}`);
+  return { success: true, routeId: createResult.value.id };
 }
 
 export async function saveDeliveryEntity(input: {
@@ -449,43 +481,60 @@ export async function saveDeliveryEntity(input: {
   scheduledDelivery: string;
   delayThresholdMinutes: number;
 }): Promise<{ success: boolean; deliveryId: string }> {
-  console.log(`[Database] Saving delivery entity: ${input.trackingNumber}`);
+  logger.info(`[Database] Saving delivery entity: ${input.trackingNumber}`);
 
-  // Create delivery entity
-  const statusMap: Record<string, () => any> = {
-    'pending': () => DeliveryStatus.pending(),
-    'in_transit': () => DeliveryStatus.inTransit(),
-    'delayed': () => DeliveryStatus.delayed(),
-    'delivered': () => DeliveryStatus.delivered(),
-    'cancelled': () => DeliveryStatus.cancelled(),
-    'failed': () => DeliveryStatus.failed(),
-  };
+  const db = getDatabaseService();
 
-  const delivery = Delivery.create({
-    trackingNumber: input.trackingNumber,
-    customerId: input.customerId,
-    routeId: input.routeId,
-    status: statusMap[input.status]?.() || DeliveryStatus.pending(),
-    scheduledDelivery: new Date(input.scheduledDelivery),
-    delayThresholdMinutes: input.delayThresholdMinutes,
-  }, input.deliveryId);
+  // Check if delivery already exists
+  const existingDelivery = await db.getDeliveryById(input.deliveryId);
 
-  // Note: Database repository implementation would go here
-  // For now, just return success as we're using mock data
-  console.log(`✅ Delivery entity created: ${delivery.trackingNumber}`);
+  if (existingDelivery.success && existingDelivery.value) {
+    // Update existing delivery
+    logger.info(`Delivery ${input.deliveryId} already exists, updating...`);
+    const updateResult = await db.updateDelivery(input.deliveryId, {
+      tracking_number: input.trackingNumber,
+      status: input.status as DeliveryStatusType,
+      scheduled_delivery: new Date(input.scheduledDelivery),
+      delay_threshold_minutes: input.delayThresholdMinutes,
+    });
 
-  return { success: true, deliveryId: input.deliveryId };
+    if (!updateResult.success) {
+      logger.error(`Failed to update delivery: ${updateResult.error.message}`);
+      throw new InfrastructureError(`Failed to update delivery: ${updateResult.error.message}`, { error: updateResult.error });
+    }
+
+    logger.info(`✅ Delivery updated: ${input.deliveryId}`);
+    return { success: true, deliveryId: input.deliveryId };
+  }
+
+  // Create new delivery
+  const createResult = await db.createDelivery({
+    tracking_number: input.trackingNumber,
+    customer_id: input.customerId,
+    route_id: input.routeId,
+    status: input.status as DeliveryStatusType,
+    scheduled_delivery: new Date(input.scheduledDelivery),
+    delay_threshold_minutes: input.delayThresholdMinutes,
+  });
+
+  if (!createResult.success) {
+    logger.error(`Failed to create delivery: ${createResult.error.message}`);
+    throw new InfrastructureError(`Failed to create delivery: ${createResult.error.message}`, { error: createResult.error });
+  }
+
+  logger.info(`✅ Delivery created: ${createResult.value.id}`);
+  return { success: true, deliveryId: createResult.value.id };
 }
 
 export async function updateDeliveryStatus(input: {
   deliveryId: string;
   status: 'delayed' | 'delivered' | 'in_transit';
 }): Promise<{ success: boolean }> {
-  console.log(`[Database] Updating delivery ${input.deliveryId} status to: ${input.status}`);
+  logger.info(`[Database] Updating delivery ${input.deliveryId} status to: ${input.status}`);
 
   // Note: Repository update would go here
   // For now, just log the action
-  console.log(`✅ Delivery status updated to: ${input.status}`);
+  logger.info(`✅ Delivery status updated to: ${input.status}`);
 
   return { success: true };
 }
@@ -507,7 +556,7 @@ export async function getDeliveryDetails(input: {
     minHoursBetweenNotifications: number;
   };
 }> {
-  console.log(`[Database] Fetching delivery details for ${input.deliveryId}`);
+  logger.info(`[Database] Fetching delivery details for ${input.deliveryId}`);
 
   try {
     const db = getDatabaseService();
@@ -530,11 +579,11 @@ export async function getDeliveryDetails(input: {
         },
       };
     } else {
-      console.error(`❌ Delivery not found: ${input.deliveryId}`);
+      logger.error(`❌ Delivery not found: ${input.deliveryId}`);
       return { success: false };
     }
-  } catch (error: any) {
-    console.error(`❌ Error fetching delivery: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error(`❌ Error fetching delivery: ${getErrorMessage(error)}`);
     return { success: false };
   }
 }
@@ -545,7 +594,7 @@ export async function getDeliveryDetails(input: {
 export async function incrementChecksPerformed(input: {
   deliveryId: string;
 }): Promise<{ success: boolean; checksPerformed: number }> {
-  console.log(`[Database] Incrementing checks_performed for delivery ${input.deliveryId}`);
+  logger.info(`[Database] Incrementing checks_performed for delivery ${input.deliveryId}`);
 
   try {
     const db = getDatabaseService();
@@ -565,14 +614,14 @@ export async function incrementChecksPerformed(input: {
     });
 
     if (updateResult.success) {
-      console.log(`✅ Checks performed updated: ${newChecks}`);
+      logger.info(`✅ Checks performed updated: ${newChecks}`);
       return { success: true, checksPerformed: newChecks };
     } else {
-      console.error(`❌ Failed to increment checks_performed`);
+      logger.error(`❌ Failed to increment checks_performed`);
       return { success: false, checksPerformed: currentChecks };
     }
-  } catch (error: any) {
-    console.error(`❌ Error incrementing checks_performed: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error(`❌ Error incrementing checks_performed: ${getErrorMessage(error)}`);
     return { success: false, checksPerformed: 0 };
   }
 }
@@ -590,14 +639,14 @@ export async function getLastNotification(input: {
     channel: string;
   } | null
 }> {
-  console.log(`[Database] Fetching last notification for delivery ${input.deliveryId}`);
+  logger.info(`[Database] Fetching last notification for delivery ${input.deliveryId}`);
 
   try {
     const db = getDatabaseService();
     const notificationsResult = await db.listNotificationsByDelivery(input.deliveryId);
 
     if (!notificationsResult.success || !notificationsResult.value || notificationsResult.value.length === 0) {
-      console.log(`📭 No previous notifications found for delivery ${input.deliveryId}`);
+      logger.info(`📭 No previous notifications found for delivery ${input.deliveryId}`);
       return { success: true, notification: null };
     }
 
@@ -607,7 +656,7 @@ export async function getLastNotification(input: {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )[0];
 
-    console.log(`📬 Last notification found: ${lastNotification.delay_minutes} min delay at ${lastNotification.sent_at || lastNotification.created_at}`);
+    logger.info(`📬 Last notification found: ${lastNotification.delay_minutes} min delay at ${lastNotification.sent_at || lastNotification.created_at}`);
 
     return {
       success: true,
@@ -617,8 +666,8 @@ export async function getLastNotification(input: {
         channel: lastNotification.channel,
       },
     };
-  } catch (error: any) {
-    console.error(`❌ Error fetching last notification: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error(`❌ Error fetching last notification: ${getErrorMessage(error)}`);
     return { success: false, notification: null };
   }
 }

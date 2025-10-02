@@ -27,26 +27,28 @@ export async function fetchJson<T>(
     });
 
     if (!response.ok) {
-      let errorData: any;
+      let errorData: unknown;
       let errorMessage: string;
 
       try {
         errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || response.statusText;
+        const data = errorData as Record<string, unknown>;
+        errorMessage = (data.message as string) || (data.error as string) || response.statusText;
       } catch {
         errorMessage = response.statusText || `HTTP ${response.status}`;
         errorData = { message: errorMessage };
       }
 
       // Map to appropriate HttpError based on status code
+      const errorContext = typeof errorData === 'object' && errorData !== null ? errorData as Record<string, unknown> : undefined;
       switch (response.status) {
         case 400:
-          throw new BadRequestError(errorMessage, errorData);
+          throw new BadRequestError(errorMessage, errorContext);
         case 404:
-          throw new NotFoundHttpError(errorMessage, errorData);
+          throw new NotFoundHttpError(errorMessage, errorContext);
         case 500:
         default:
-          throw new InternalServerError(errorMessage, errorData);
+          throw new InternalServerError(errorMessage, errorContext);
       }
     }
 

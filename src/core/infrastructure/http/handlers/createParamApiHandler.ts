@@ -21,16 +21,18 @@ import { createErrorResponse } from './createErrorResponse';
 export function createParamApiHandler<T = any>(
   handler: (
     request: NextRequest,
-    context: { params: any }
+    context: { params: Record<string, string> }
   ) => Promise<Result<T>>,
   options?: ApiHandlerOptions
 ) {
   return async (
     request: NextRequest,
-    context: { params: any }
+    context: { params: Promise<Record<string, string>> | Record<string, string> }
   ): Promise<NextResponse<ApiResponse<T>>> => {
     try {
-      const result = await handler(request, context);
+      // Handle Next.js 15's async params
+      const params = context.params instanceof Promise ? await context.params : context.params;
+      const result = await handler(request, { params });
       return handleResult(result, options);
     } catch (error) {
       const wrappedError =

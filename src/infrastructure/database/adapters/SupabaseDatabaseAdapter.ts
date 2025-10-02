@@ -31,6 +31,25 @@ import {
   UpdateThresholdInput,
   Coordinates,
 } from '../types/database.types';
+import { logger, getErrorMessage, hasMessage, hasCode, hasName, hasCause } from '@/core/base/utils/Logger';
+
+// Types for Supabase joined queries
+interface DeliveryWithJoins {
+  [key: string]: unknown;
+  current_location?: string | { x: number; y: number } | null;
+  metadata?: Record<string, unknown>;
+  customers?: {
+    name: string;
+    email: string;
+    phone: string | null;
+  };
+  routes?: {
+    origin_address: string;
+    destination_address: string;
+    distance_meters: number;
+    normal_duration_seconds: number;
+  };
+}
 
 export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   public readonly name = 'Supabase';
@@ -60,8 +79,8 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
           },
         }
       );
-    } catch (error: any) {
-      console.error('Failed to initialize Supabase client:', error.message);
+    } catch (error: unknown) {
+      logger.error('Failed to initialize Supabase client:', getErrorMessage(error));
       this.client = null;
     }
   }
@@ -88,11 +107,30 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   }
 
   // ===== Helper: Convert POINT to Coordinates =====
-  private pointToCoordinates(point: string): Coordinates {
-    // PostgreSQL POINT format: "(lng,lat)" or "lng,lat"
-    const cleaned = point.replace(/[()]/g, '');
-    const [lng, lat] = cleaned.split(',').map(Number);
-    return { x: lat, y: lng, lat, lng };
+  private pointToCoordinates(point: string | { x: number; y: number } | null | undefined): Coordinates | null {
+    if (!point) return null;
+
+    // If already an object with x/y (PostGIS can return parsed objects)
+    if (typeof point === 'object' && 'x' in point && 'y' in point) {
+      return {
+        x: point.x,
+        y: point.y,
+        lat: point.x,
+        lng: point.y,
+      };
+    }
+
+    // If string format "(lng,lat)" or "lng,lat"
+    if (typeof point === 'string') {
+      const cleaned = point.replace(/[()]/g, '');
+      const parts = cleaned.split(',').map(s => parseFloat(s.trim()));
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        const [lng, lat] = parts;
+        return { x: lat, y: lng, lat, lng };
+      }
+    }
+
+    return null;
   }
 
   // ===== Helper: Convert Coordinates to POINT =====
@@ -117,12 +155,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
           // Not found
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get customer: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Customer);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get customer: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -138,12 +176,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         if (error.code === 'PGRST116') {
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get customer: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Customer);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get customer: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get customer: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -156,12 +194,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to create customer: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to create customer: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Customer);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to create customer: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to create customer: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -173,12 +211,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list customers: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list customers: ${getErrorMessage(error)}`, { error }));
       }
 
       return success((data as Customer[]) || []);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list customers: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list customers: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -195,19 +233,19 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         if (error.code === 'PGRST116') {
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get route: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get route: ${getErrorMessage(error)}`, { error }));
       }
 
       // Convert POINT to Coordinates
       const route: Route = {
         ...data,
-        origin_coords: this.pointToCoordinates(data.origin_coords),
-        destination_coords: this.pointToCoordinates(data.destination_coords),
+        origin_coords: this.pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: this.pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       };
 
       return success(route);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get route: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get route: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -226,18 +264,18 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to create route: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to create route: ${getErrorMessage(error)}`, { error }));
       }
 
       const route: Route = {
         ...data,
-        origin_coords: this.pointToCoordinates(data.origin_coords),
-        destination_coords: this.pointToCoordinates(data.destination_coords),
+        origin_coords: this.pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: this.pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       };
 
       return success(route);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to create route: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to create route: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -261,18 +299,18 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to update route: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to update route: ${getErrorMessage(error)}`, { error }));
       }
 
       const route: Route = {
         ...data,
-        origin_coords: this.pointToCoordinates(data.origin_coords),
-        destination_coords: this.pointToCoordinates(data.destination_coords),
+        origin_coords: this.pointToCoordinates(data.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: this.pointToCoordinates(data.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       };
 
       return success(route);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to update route: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to update route: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -284,18 +322,18 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list routes: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list routes: ${getErrorMessage(error)}`, { error }));
       }
 
       const routes = (data || []).map(route => ({
         ...route,
-        origin_coords: this.pointToCoordinates(route.origin_coords),
-        destination_coords: this.pointToCoordinates(route.destination_coords),
+        origin_coords: this.pointToCoordinates(route.origin_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
+        destination_coords: this.pointToCoordinates(route.destination_coords) || { x: 0, y: 0, lat: 0, lng: 0 },
       }));
 
       return success(routes as Route[]);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list routes: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list routes: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -316,23 +354,25 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         if (error.code === 'PGRST116') {
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get delivery: ${getErrorMessage(error)}`, { error }));
       }
+
+      const joinedData = data as DeliveryWithJoins;
 
       const delivery: Delivery = {
         ...data,
         current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
-        customer_name: (data as any).customers?.name || '',
-        customer_email: (data as any).customers?.email || '',
-        customer_phone: (data as any).customers?.phone || '',
-        origin: (data as any).routes?.origin_address || '',
-        destination: (data as any).routes?.destination_address || '',
+        customer_name: joinedData.customers?.name || '',
+        customer_email: joinedData.customers?.email || '',
+        customer_phone: joinedData.customers?.phone || '',
+        origin: joinedData.routes?.origin_address || '',
+        destination: joinedData.routes?.destination_address || '',
         notes: data.metadata?.notes || '',
-      } as any;
+      } as Delivery;
 
       return success(delivery);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get delivery: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -352,23 +392,25 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         if (error.code === 'PGRST116') {
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get delivery: ${getErrorMessage(error)}`, { error }));
       }
+
+      const joinedData = data as DeliveryWithJoins;
 
       const delivery: Delivery = {
         ...data,
         current_location: data.current_location ? this.pointToCoordinates(data.current_location) : null,
-        customer_name: (data as any).customers?.name || '',
-        customer_email: (data as any).customers?.email || '',
-        customer_phone: (data as any).customers?.phone || '',
-        origin: (data as any).routes?.origin_address || '',
-        destination: (data as any).routes?.destination_address || '',
+        customer_name: joinedData.customers?.name || '',
+        customer_email: joinedData.customers?.email || '',
+        customer_phone: joinedData.customers?.phone || '',
+        origin: joinedData.routes?.origin_address || '',
+        destination: joinedData.routes?.destination_address || '',
         notes: data.metadata?.notes || '',
-      } as any;
+      } as Delivery;
 
       return success(delivery);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get delivery: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get delivery: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -381,7 +423,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to create delivery: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to create delivery: ${getErrorMessage(error)}`, { error }));
       }
 
       const delivery: Delivery = {
@@ -390,8 +432,8 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       };
 
       return success(delivery);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to create delivery: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to create delivery: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -440,7 +482,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .eq('id', id);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to update delivery: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to update delivery: ${getErrorMessage(error)}`, { error }));
       }
 
       // Re-fetch with joins to return complete data
@@ -449,8 +491,8 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         return failure(new InfrastructureError('Failed to fetch updated delivery'));
       }
       return success(updatedDelivery.value);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to update delivery: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to update delivery: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -467,10 +509,10 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list deliveries: ${getErrorMessage(error)}`, { error }));
       }
 
-      const deliveries = (data || []).map((delivery: any) => ({
+      const deliveries = (data || []).map((delivery: DeliveryWithJoins) => ({
         ...delivery,
         current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
         customer_name: delivery.customers?.name || '',
@@ -481,9 +523,9 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         notes: delivery.metadata?.notes || '',
       }));
 
-      return success(deliveries as Delivery[]);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+      return success(deliveries as unknown as Delivery[]);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list deliveries: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -501,10 +543,10 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .limit(limit);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list deliveries: ${getErrorMessage(error)}`, { error }));
       }
 
-      const deliveries = (data || []).map((delivery: any) => ({
+      const deliveries = (data || []).map((delivery: DeliveryWithJoins) => ({
         ...delivery,
         current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
         customer_name: delivery.customers?.name || '',
@@ -515,9 +557,9 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         notes: delivery.metadata?.notes || '',
       }));
 
-      return success(deliveries as Delivery[]);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+      return success(deliveries as unknown as Delivery[]);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list deliveries: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -535,10 +577,10 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .limit(limit);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list deliveries: ${getErrorMessage(error)}`, { error }));
       }
 
-      const deliveries = (data || []).map((delivery: any) => ({
+      const deliveries = (data || []).map((delivery: DeliveryWithJoins) => ({
         ...delivery,
         current_location: delivery.current_location ? this.pointToCoordinates(delivery.current_location) : null,
         customer_name: delivery.customers?.name || '',
@@ -549,9 +591,9 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         notes: delivery.metadata?.notes || '',
       }));
 
-      return success(deliveries as Delivery[]);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list deliveries: ${error.message}`, { error }));
+      return success(deliveries as unknown as Delivery[]);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list deliveries: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -568,12 +610,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         if (error.code === 'PGRST116') {
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get notification: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get notification: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Notification);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get notification: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get notification: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -586,12 +628,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to create notification: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to create notification: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Notification);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to create notification: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to create notification: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -605,12 +647,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to update notification: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to update notification: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Notification);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to update notification: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to update notification: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -623,12 +665,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .order('created_at', { ascending: false });
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list notifications: ${getErrorMessage(error)}`, { error }));
       }
 
       return success((data as Notification[]) || []);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list notifications: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -642,12 +684,30 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .limit(limit);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list notifications: ${getErrorMessage(error)}`, { error }));
       }
 
       return success((data as Notification[]) || []);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list notifications: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list notifications: ${getErrorMessage(error)}`, { error }));
+    }
+  }
+
+  async listNotifications(limit = 100, offset = 0): Promise<Result<Notification[]>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list notifications: ${getErrorMessage(error)}`, { error }));
+      }
+
+      return success((data as Notification[]) || []);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list notifications: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -667,12 +727,30 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to create traffic snapshot: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to create traffic snapshot: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as TrafficSnapshot);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to create traffic snapshot: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to create traffic snapshot: ${getErrorMessage(error)}`, { error }));
+    }
+  }
+
+  async listTrafficSnapshots(limit = 100, offset = 0): Promise<Result<TrafficSnapshot[]>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('traffic_snapshots')
+        .select('*')
+        .order('snapshot_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list traffic snapshots: ${getErrorMessage(error)}`, { error }));
+      }
+
+      return success((data as TrafficSnapshot[]) || []);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list traffic snapshots: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -686,12 +764,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .limit(limit);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list traffic snapshots: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list traffic snapshots: ${getErrorMessage(error)}`, { error }));
       }
 
       return success((data as TrafficSnapshot[]) || []);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list traffic snapshots: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list traffic snapshots: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -708,12 +786,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         if (error.code === 'PGRST116') {
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get workflow execution: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as WorkflowExecution);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get workflow execution: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -729,12 +807,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         if (error.code === 'PGRST116') {
           return success(null);
         }
-        return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get workflow execution: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as WorkflowExecution);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get workflow execution: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get workflow execution: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -747,12 +825,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to create workflow execution: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to create workflow execution: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as WorkflowExecution);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to create workflow execution: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to create workflow execution: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -766,12 +844,30 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to update workflow execution: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to update workflow execution: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as WorkflowExecution);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to update workflow execution: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to update workflow execution: ${getErrorMessage(error)}`, { error }));
+    }
+  }
+
+  async listWorkflowExecutions(limit = 50, offset = 0): Promise<Result<WorkflowExecution[]>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('workflow_executions')
+        .select('*')
+        .order('started_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to list workflow executions: ${getErrorMessage(error)}`, { error }));
+      }
+
+      return success((data as WorkflowExecution[]) || []);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list workflow executions: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -784,12 +880,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .order('started_at', { ascending: false });
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list workflow executions: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list workflow executions: ${getErrorMessage(error)}`, { error }));
       }
 
       return success((data as WorkflowExecution[]) || []);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list workflow executions: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list workflow executions: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -804,12 +900,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .maybeSingle();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to get threshold: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get threshold: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Threshold | null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get threshold: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get threshold: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -822,12 +918,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .maybeSingle();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to get default threshold: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to get default threshold: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Threshold | null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to get default threshold: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get default threshold: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -840,12 +936,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to create threshold: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to create threshold: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Threshold);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to create threshold: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to create threshold: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -859,12 +955,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .single();
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to update threshold: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to update threshold: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(data as Threshold);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to update threshold: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to update threshold: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -886,12 +982,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .eq('id', id);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to delete threshold: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to delete threshold: ${getErrorMessage(error)}`, { error }));
       }
 
       return success(undefined);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to delete threshold: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to delete threshold: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -904,12 +1000,12 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        return failure(new InfrastructureError(`Failed to list thresholds: ${error.message}`, { error }));
+        return failure(new InfrastructureError(`Failed to list thresholds: ${getErrorMessage(error)}`, { error }));
       }
 
       return success((data as Threshold[]) || []);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Failed to list thresholds: ${error.message}`, { error }));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to list thresholds: ${getErrorMessage(error)}`, { error }));
     }
   }
 }

@@ -6,6 +6,8 @@
  * so they must be accessed via process.env directly in client components
  */
 
+import { logger } from "@/core/base/utils/Logger";
+
 interface ClientEnv {
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?: string;
   NEXT_PUBLIC_SUPABASE_URL?: string;
@@ -39,7 +41,7 @@ export function validateClientEnv(required: (keyof ClientEnv)[]): void {
   const missing = required.filter(key => !clientEnv[key]);
 
   if (missing.length > 0) {
-    console.warn(
+    logger.warn(
       `⚠️ Missing client environment variables: ${missing.join(', ')}\n` +
       'These should be defined in .env.local with NEXT_PUBLIC_ prefix'
     );

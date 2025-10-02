@@ -9,12 +9,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../queryKeys';
 import { useNotificationStore, useErrorStore, createErrorFromException } from '@/stores';
 import { updateThreshold } from './updateThreshold';
+import type { UpdateThresholdInput } from '../types';
 
 export function useUpdateThreshold() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateThreshold(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateThresholdInput }) => updateThreshold(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.thresholds.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.thresholds.all });

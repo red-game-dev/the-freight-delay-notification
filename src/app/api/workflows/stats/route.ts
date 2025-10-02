@@ -3,37 +3,30 @@
  * GET /api/workflows/stats - Get workflow execution statistics
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { env } from '@/infrastructure/config/EnvValidator';
-import { createApiHandler } from '@/core/infrastructure/http';
+import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
+import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
+import { logger } from '@/core/base/utils/Logger';
 
 /**
  * GET /api/workflows/stats
  * Get workflow execution statistics from database
  */
 export const GET = createApiHandler(async (request) => {
-  const supabase = createClient(
-    env.NEXT_PUBLIC_SUPABASE_URL!,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const db = getDatabaseService();
+  const deliveryId = getQueryParam(request, 'deliveryId');
 
-  // Get all workflow executions
-  const { data: workflows, error } = await supabase
-    .from('workflow_executions')
-    .select('status');
+  logger.info('📊 [Workflows Stats API] Fetching workflow statistics via DatabaseService');
 
-  if (error) {
-    return Result.fail(new Error(error.message));
-  }
+  // Get workflow executions and transform to stats using Result.map
+  const workflowsResult = deliveryId
+    ? await db.listWorkflowExecutionsByDelivery(deliveryId)
+    : await db.listWorkflowExecutions(100);
 
-  // Calculate stats
-  const stats = {
-    total: workflows?.length || 0,
-    running: workflows?.filter(w => w.status === 'running').length || 0,
-    completed: workflows?.filter(w => w.status === 'completed').length || 0,
-    failed: workflows?.filter(w => w.status === 'failed').length || 0,
-  };
-
-  return Result.ok(stats);
+  return Result.map(workflowsResult, (workflows) => ({
+    total: workflows.length,
+    running: workflows.filter(w => w.status === 'running').length,
+    completed: workflows.filter(w => w.status === 'completed').length,
+    failed: workflows.filter(w => w.status === 'failed').length,
+  }));
 });

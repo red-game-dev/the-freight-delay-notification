@@ -39,23 +39,11 @@ export function Navigation() {
             </Link>
           </div>
 
-          {/* Desktop navigation - Center/Right */}
-          <nav className="hidden md:flex items-center space-x-6 flex-1 justify-end mr-4">
-            {navigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  pathname === item.href ? 'text-primary' : ''
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
+          {/* Spacer to push theme toggle to the right */}
+          <div className="flex-1" />
 
           {/* Theme toggle - Desktop only */}
-          <div className="hidden md:block">
+          <div className="hidden md:block mr-4">
             <ThemeToggle />
           </div>
 

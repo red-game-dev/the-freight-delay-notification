@@ -5,6 +5,7 @@
 
 import { Result, success } from '../../base/utils/Result';
 import type { TrafficData } from '../../../types/shared/traffic.types';
+import { logger } from '@/core/base/utils/Logger';
 
 export interface ThresholdCheckResult {
   exceedsThreshold: boolean;
@@ -39,13 +40,13 @@ export class CheckDelayThresholdUseCase {
 
     // PDF requirement: Log key steps
     if (exceedsThreshold) {
-      console.log(`🚨 Step 2: Threshold EXCEEDED - proceeding to notification`);
-      console.log(`   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`);
-      console.log(`   Decision: PROCEED to Step 3 (Generate AI message)`);
+      logger.info(`🚨 Step 2: Threshold EXCEEDED - proceeding to notification`);
+      logger.info(`   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`);
+      logger.info(`   Decision: PROCEED to Step 3 (Generate AI message)`);
     } else {
-      console.log(`✅ Step 2: Delay within threshold - NO action needed`);
-      console.log(`   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`);
-      console.log(`   Decision: SKIP remaining steps`);
+      logger.info(`✅ Step 2: Delay within threshold - NO action needed`);
+      logger.info(`   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`);
+      logger.info(`   Decision: SKIP remaining steps`);
     }
 
     return success(result);

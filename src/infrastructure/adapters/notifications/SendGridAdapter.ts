@@ -9,6 +9,7 @@ import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
 import { EmailBlacklistChecker } from '../../../core/shared/constants/email-blacklist';
+import { logger, getErrorMessage, hasCode } from '@/core/base/utils/Logger';
 
 export class SendGridAdapter implements NotificationAdapter {
   public readonly providerName = 'SendGrid';
@@ -44,8 +45,8 @@ export class SendGridAdapter implements NotificationAdapter {
     // Check email blacklist
     if (EmailBlacklistChecker.isBlacklisted(input.to)) {
       const reason = EmailBlacklistChecker.getBlacklistReason(input.to);
-      console.log(`⚠️ [${this.providerName}] Email blocked: ${input.to}`);
-      console.log(`   Reason: ${reason}`);
+      logger.info(`⚠️ [${this.providerName}] Email blocked: ${input.to}`);
+      logger.info(`   Reason: ${reason}`);
 
       return failure(new InfrastructureError(
         `Email address is blacklisted: ${reason}`,
@@ -58,7 +59,7 @@ export class SendGridAdapter implements NotificationAdapter {
     }
 
     try {
-      console.log(`📧 [${this.providerName}] Sending email to ${input.to}...`);
+      logger.info(`📧 [${this.providerName}] Sending email to ${input.to}...`);
 
       const msg = {
         to: input.to,
@@ -73,21 +74,21 @@ export class SendGridAdapter implements NotificationAdapter {
 
       const [response] = await sgMail.send(msg);
 
-      console.log(`✅ [${this.providerName}] Email sent successfully`);
+      logger.info(`✅ [${this.providerName}] Email sent successfully`);
 
       return success({
         success: true,
         messageId: response.headers['x-message-id'] as string,
         channel: this.channel,
       });
-    } catch (error: any) {
-      console.error(`❌ [${this.providerName}] Error:`, error.message);
+    } catch (error: unknown) {
+      logger.error(`❌ [${this.providerName}] Error:`, getErrorMessage(error));
 
       return failure(new InfrastructureError(
         `Failed to send email via ${this.providerName}`,
         {
-          error: error.message,
-          code: error.code,
+          error: getErrorMessage(error),
+          code: hasCode(error) ? error.code : undefined,
           recipient: input.to
         }
       ));

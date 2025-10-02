@@ -7,6 +7,7 @@ import { env } from '../../config/EnvValidator';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
+import { logger, getErrorMessage  } from '@/core/base/utils/Logger';
 
 export class MapboxClient {
   private baseUrl = 'https://api.mapbox.com';
@@ -24,14 +25,14 @@ export class MapboxClient {
     try {
       // Check if API token is configured
       if (!this.accessToken) {
-        console.log('⚠️ Mapbox access token not configured, skipping...');
+        logger.info('⚠️ Mapbox access token not configured, skipping...');
         return failure(new InfrastructureError(
           'Mapbox access token not configured',
           { route }
         ));
       }
 
-      console.log(`🗺️ Fetching Mapbox traffic data (fallback)...`);
+      logger.info(`🗺️ Fetching Mapbox traffic data (fallback)...`);
 
       // Convert addresses to coordinates if not provided
       let origin: string, destination: string;
@@ -121,7 +122,7 @@ export class MapboxClient {
       };
 
       // PDF Requirement: Console logging for key steps
-      console.log(`📊 Mapbox traffic data:`, {
+      logger.info(`📊 Mapbox traffic data:`, {
         route: `${route.origin} → ${route.destination}`,
         delayMinutes,
         trafficCondition,
@@ -131,11 +132,11 @@ export class MapboxClient {
       });
 
       return success(trafficData);
-    } catch (error: any) {
-      console.error('❌ Mapbox API error:', error.message);
+    } catch (error: unknown) {
+      logger.error('❌ Mapbox API error:', getErrorMessage(error));
       return failure(new InfrastructureError(
         'Failed to fetch traffic data from Mapbox',
-        { error: error.message, route }
+        { error: getErrorMessage(error), route }
       ));
     }
   }
@@ -160,10 +161,10 @@ export class MapboxClient {
 
       const [lng, lat] = data.features[0].center;
       return success({ lat, lng });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return failure(new InfrastructureError(
         'Geocoding failed',
-        { address, error: error.message }
+        { address, error: getErrorMessage(error) }
       ));
     }
   }

@@ -3,9 +3,9 @@
  * GET /api/traffic - List recent traffic snapshots
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { env } from '@/infrastructure/config/EnvValidator';
+import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler } from '@/core/infrastructure/http';
+import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
 
 /**
@@ -13,20 +13,22 @@ import { Result } from '@/core/base/utils/Result';
  * Returns recent traffic snapshots with route information
  */
 export const GET = createApiHandler(async () => {
-  const supabase = createClient(
-    env.NEXT_PUBLIC_SUPABASE_URL!,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const db = getDatabaseService();
+
+  logger.info('🚦 [Traffic API] Fetching traffic snapshots via DatabaseService');
+
+  return Result.map(
+    await db.listTrafficSnapshots(100),
+    (snapshots) => {
+      logger.info(`🚦 [Traffic API] Retrieved ${snapshots.length} traffic snapshots`);
+      return snapshots.map(snapshot => ({
+        id: snapshot.id,
+        route_id: snapshot.route_id,
+        traffic_condition: snapshot.traffic_condition,
+        delay_minutes: snapshot.delay_minutes,
+        duration_seconds: snapshot.duration_seconds,
+        snapshot_at: snapshot.snapshot_at,
+      }));
+    }
   );
-
-  const { data, error } = await supabase
-    .from('traffic_snapshots')
-    .select('*')
-    .order('snapshot_at', { ascending: false })
-    .limit(100);
-
-  if (error) {
-    return Result.fail(new Error(error.message));
-  }
-
-  return Result.ok(data || []);
 });

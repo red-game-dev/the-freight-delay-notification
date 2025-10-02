@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { logger } from '@/core/base/utils/Logger';
+import { logger, getErrorMessage, hasMessage, hasCode, hasName, hasCause } from '@/core/base/utils/Logger';
 import { toHttpError } from '@/core/base/errors/HttpError';
 import type { ApiResponse, ApiHandlerOptions } from '../types';
 import { isDevelopment } from '@/core/base/utils/environment';

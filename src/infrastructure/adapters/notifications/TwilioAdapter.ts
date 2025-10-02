@@ -8,6 +8,7 @@ import { env } from '../../config/EnvValidator';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
+import { logger, getErrorMessage, hasCode } from '@/core/base/utils/Logger';
 
 export class TwilioAdapter implements NotificationAdapter {
   public readonly providerName = 'Twilio';
@@ -33,7 +34,7 @@ export class TwilioAdapter implements NotificationAdapter {
 
   async send(input: NotificationInput): Promise<Result<NotificationResult>> {
     if (!this.isAvailable()) {
-      console.log('⚠️ Twilio credentials not configured');
+      logger.info('⚠️ Twilio credentials not configured');
       return failure(new InfrastructureError(
         'Twilio credentials not configured',
         { provider: 'twilio' }
@@ -41,7 +42,7 @@ export class TwilioAdapter implements NotificationAdapter {
     }
 
     try {
-      console.log(`📱 [Twilio] Sending SMS to ${input.to}...`);
+      logger.info(`📱 [Twilio] Sending SMS to ${input.to}...`);
 
       // Truncate message if too long (SMS has 160 char limit per segment)
       const smsMessage = this.formatSMSMessage(input.message, input.deliveryId);
@@ -52,23 +53,23 @@ export class TwilioAdapter implements NotificationAdapter {
         to: input.to,
       });
 
-      console.log(`✅ [Twilio] SMS sent successfully`);
-      console.log(`   Message SID: ${message.sid}`);
-      console.log(`   Status: ${message.status}`);
+      logger.info(`✅ [Twilio] SMS sent successfully`);
+      logger.info(`   Message SID: ${message.sid}`);
+      logger.info(`   Status: ${message.status}`);
 
       return success({
         success: true,
         messageId: message.sid,
         channel: this.channel,
       });
-    } catch (error: any) {
-      console.error('❌ [Twilio] Error:', error.message);
+    } catch (error: unknown) {
+      logger.error('❌ [Twilio] Error:', getErrorMessage(error));
 
       return failure(new InfrastructureError(
         'Failed to send SMS via Twilio',
         {
-          error: error.message,
-          code: error.code,
+          error: getErrorMessage(error),
+          code: hasCode(error) ? error.code : undefined,
           recipient: input.to
         }
       ));

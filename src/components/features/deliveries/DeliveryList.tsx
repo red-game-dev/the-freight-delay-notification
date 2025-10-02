@@ -13,6 +13,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Skeleton, SkeletonTable } from '@/components/ui/Skeleton';
 import { MapPin, Clock } from 'lucide-react';
 import { useDeliveries } from '@/core/infrastructure/http/services/deliveries';
+import type { Delivery } from '@/core/infrastructure/http/services/deliveries/types';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'default' as const },
@@ -75,7 +76,7 @@ export function DeliveryList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {deliveries.map((delivery: any) => {
+          {deliveries.map((delivery: Delivery) => {
             const config = statusConfig[delivery.status as keyof typeof statusConfig];
             return (
               <TableRow key={delivery.id} className="cursor-pointer hover:bg-muted/50">

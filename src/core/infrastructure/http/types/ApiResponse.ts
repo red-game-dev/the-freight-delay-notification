@@ -13,7 +13,7 @@ export interface ApiResponse<T = any> {
   error?: {
     message: string;
     code?: string;
-    details?: any;
+    details?: unknown;
   };
   meta?: {
     timestamp: string;

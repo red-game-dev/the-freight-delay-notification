@@ -6,16 +6,16 @@
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler, parseJsonBody, validateRequiredFields, getQueryParam } from '@/core/infrastructure/http';
-import { BadRequestError } from '@/core/base/errors/HttpError';
-import { DeliveryStatus } from '@/infrastructure/database/types/database.types';
+import type { DeliveryStatus } from '@/infrastructure/database/types/database.types';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { WorkflowIdReusePolicy } from '@temporalio/client';
-import type { DelayNotificationWorkflowInput } from '@/workflows/types';
 import { getGeocodingService } from '@/infrastructure/adapters/geocoding/GeocodingService';
+import { logger } from '@/core/base/utils/Logger';
+import { Result } from '@/core/base/utils/Result';
 
 /**
  * GET /api/deliveries
- * List all deliveries with optional filtering
+ * List all deliveries with optional filtering - returns sanitized delivery data
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
@@ -24,11 +24,33 @@ export const GET = createApiHandler(async (request) => {
   const offset = parseInt(getQueryParam(request, 'offset') || '0');
   const status = getQueryParam(request, 'status');
 
-  if (status) {
-    return await db.listDeliveriesByStatus(status, limit);
-  }
+  const deliveriesResult = status
+    ? await db.listDeliveriesByStatus(status, limit)
+    : await db.listDeliveries(limit, offset);
 
-  return await db.listDeliveries(limit, offset);
+  // Transform result to only expose safe fields
+  return Result.map(deliveriesResult, (deliveries) =>
+    deliveries.map((d) => ({
+      id: d.id,
+      tracking_number: d.tracking_number,
+      customer_id: d.customer_id,
+      route_id: d.route_id,
+      status: d.status,
+      scheduled_delivery: d.scheduled_delivery,
+      delay_threshold_minutes: d.delay_threshold_minutes,
+      auto_check_traffic: d.auto_check_traffic,
+      enable_recurring_checks: d.enable_recurring_checks,
+      checks_performed: d.checks_performed,
+      created_at: d.created_at,
+      updated_at: d.updated_at,
+      customer_name: d.customer_name,
+      customer_email: d.customer_email,
+      customer_phone: d.customer_phone,
+      origin: d.origin,
+      destination: d.destination,
+      notes: d.notes,
+    }))
+  );
 });
 
 /**
@@ -83,22 +105,22 @@ export const POST = createApiHandler(async (request) => {
   }
 
   // Step 2: Geocode addresses to get coordinates
-  console.log(`🌍 Geocoding addresses: ${body.origin} → ${body.destination}`);
+  logger.info(`🌍 Geocoding addresses: ${body.origin} → ${body.destination}`);
 
   const originGeocodingResult = await geocodingService.geocodeAddress(body.origin);
   if (!originGeocodingResult.success) {
-    console.error(`❌ Failed to geocode origin: ${body.origin}`, originGeocodingResult.error);
+    logger.error(`❌ Failed to geocode origin: ${body.origin}`, originGeocodingResult.error);
     return originGeocodingResult;
   }
 
   const destinationGeocodingResult = await geocodingService.geocodeAddress(body.destination);
   if (!destinationGeocodingResult.success) {
-    console.error(`❌ Failed to geocode destination: ${body.destination}`, destinationGeocodingResult.error);
+    logger.error(`❌ Failed to geocode destination: ${body.destination}`, destinationGeocodingResult.error);
     return destinationGeocodingResult;
   }
 
-  console.log(`✅ Geocoded origin: ${body.origin} → (${originGeocodingResult.value.lat}, ${originGeocodingResult.value.lng})`);
-  console.log(`✅ Geocoded destination: ${body.destination} → (${destinationGeocodingResult.value.lat}, ${destinationGeocodingResult.value.lng})`);
+  logger.info(`✅ Geocoded origin: ${body.origin} → (${originGeocodingResult.value.lat}, ${originGeocodingResult.value.lng})`);
+  logger.info(`✅ Geocoded destination: ${body.destination} → (${destinationGeocodingResult.value.lat}, ${destinationGeocodingResult.value.lng})`);
 
   // Step 3: Create route with geocoded coordinates
   const routeResult = await db.createRoute({
@@ -142,10 +164,10 @@ export const POST = createApiHandler(async (request) => {
   }
 
   // Step 4: If auto_check_traffic or enable_recurring_checks is enabled, trigger workflow
-  console.log(`🔍 Checking workflow triggers - auto_check: ${body.auto_check_traffic}, recurring: ${body.enable_recurring_checks}`);
+  logger.info(`🔍 Checking workflow triggers - auto_check: ${body.auto_check_traffic}, recurring: ${body.enable_recurring_checks}`);
 
   if (body.auto_check_traffic || body.enable_recurring_checks) {
-    console.log(`🚀 Auto-triggering workflow for delivery ${deliveryResult.value.id}`);
+    logger.info(`🚀 Auto-triggering workflow for delivery ${deliveryResult.value.id}`);
     try {
       // Construct base workflow input from the data we just created
       const baseWorkflowInput = {
@@ -195,8 +217,8 @@ export const POST = createApiHandler(async (request) => {
           workflowIdReusePolicy: WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
         });
 
-        console.log(`✅ Auto-triggered recurring workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);
-        console.log(`   Check interval: ${body.check_interval_minutes || 30} minutes, Max checks: ${maxChecks === -1 ? 'unlimited' : maxChecks}`);
+        logger.info(`✅ Auto-triggered recurring workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);
+        logger.info(`   Check interval: ${body.check_interval_minutes || 30} minutes, Max checks: ${maxChecks === -1 ? 'unlimited' : maxChecks}`);
       } else {
         // Trigger one-time DelayNotificationWorkflow
         const workflowId = `delay-notification-${deliveryResult.value.id}`;
@@ -208,10 +230,10 @@ export const POST = createApiHandler(async (request) => {
           workflowIdReusePolicy: WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY,
         });
 
-        console.log(`✅ Auto-triggered one-time workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);
+        logger.info(`✅ Auto-triggered one-time workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);
       }
-    } catch (error: any) {
-      console.error('Failed to auto-trigger workflow:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to auto-trigger workflow:', error);
       // Don't fail the delivery creation if workflow trigger fails
       // The user can still manually trigger it later
     }

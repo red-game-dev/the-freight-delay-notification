@@ -62,7 +62,7 @@ export interface TrafficCheckResult {
     unit: string;
   };
   timestamp: string; // When the check was performed
-  rawData?: any; // Original API response for debugging
+  rawData?: unknown; // Original API response for debugging
 }
 
 // Step 2: Threshold Check Activity Types

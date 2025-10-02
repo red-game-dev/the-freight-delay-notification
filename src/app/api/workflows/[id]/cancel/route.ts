@@ -6,7 +6,9 @@
 
 import { createParamApiHandler, parseJsonBody } from '@/core/infrastructure/http';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
-import { success } from '@/core/base/utils/Result';
+import { success, Result } from '@/core/base/utils/Result';
+import { logger, getErrorMessage, hasMessage } from '@/core/base/utils/Logger';
+import { InfrastructureError } from '@/core/base/errors/BaseError';
 
 export const POST = createParamApiHandler(async (request, context) => {
   const params = await context.params;
@@ -30,11 +32,11 @@ export const POST = createParamApiHandler(async (request, context) => {
     if (force) {
       // Force terminate the workflow immediately
       await handle.terminate('Force terminated by user');
-      console.log(`✅ Workflow ${workflowId} force terminated by user request`);
+      logger.info(`✅ Workflow ${workflowId} force terminated by user request`);
     } else {
       // Graceful cancel via signal
       await handle.cancel();
-      console.log(`✅ Workflow ${workflowId} canceled by user request`);
+      logger.info(`✅ Workflow ${workflowId} canceled by user request`);
     }
 
     return success({
@@ -42,17 +44,17 @@ export const POST = createParamApiHandler(async (request, context) => {
       workflowId,
       forced: force,
     });
-  } catch (error: any) {
-    console.error(`❌ Failed to ${force ? 'terminate' : 'cancel'} workflow ${workflowId}:`, error);
+  } catch (error: unknown) {
+    logger.error(`❌ Failed to ${force ? 'terminate' : 'cancel'} workflow ${workflowId}:`, error);
 
     // If workflow doesn't exist or already completed, return success
-    if (error.message?.includes('not found') || error.message?.includes('already completed')) {
+    if (hasMessage(error) && error.message.includes('not found') || hasMessage(error) && error.message.includes('already completed')) {
       return success({
         message: 'Workflow already completed or does not exist',
         workflowId,
       });
     }
 
-    throw error;
+    return Result.fail(new InfrastructureError(`Failed to ${force ? 'terminate' : 'cancel'} workflow: ${getErrorMessage(error)}`, { cause: error }));
   }
 });

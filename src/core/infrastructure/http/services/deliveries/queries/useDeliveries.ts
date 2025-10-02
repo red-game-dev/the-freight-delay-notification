@@ -8,6 +8,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../../../queryKeys';
 import { listDeliveries } from './listDeliveries';
+import type { Delivery } from '../types';
 
 export function useDeliveries(filters?: Record<string, string>) {
   return useQuery({
@@ -20,7 +21,7 @@ export function useDeliveries(filters?: Record<string, string>) {
 
       // Check if any delivery is active (not in terminal state)
       const hasActiveDeliveries = data.some(
-        (delivery: any) => !['delivered', 'cancelled'].includes(delivery.status)
+        (delivery: Delivery) => !['delivered', 'cancelled'].includes(delivery.status)
       );
 
       return hasActiveDeliveries ? 30000 : false; // 30 seconds if active, no refresh if all terminal

@@ -7,6 +7,8 @@
  * @see src/infrastructure/config/ClientEnv.ts for client-side env vars
  */
 
+import { logger } from '@/core/base/utils/Logger';
+import { ValidationError } from '@/core/base/errors/BaseError';
 import { z } from 'zod';
 
 const envSchema = z.object({
@@ -77,9 +79,9 @@ function validateEnv(): EnvConfig {
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.errors.map(e => e.path.join('.')).join(', ');
-      console.error('❌ Environment validation failed:', missingVars);
-      console.error('Please check your .env file and ensure all required variables are set.');
-      throw new Error(`Missing or invalid environment variables: ${missingVars}`);
+      logger.error('❌ Environment validation failed:', missingVars);
+      logger.error('Please check your .env file and ensure all required variables are set.');
+      throw new ValidationError(`Missing or invalid environment variables: ${missingVars}`, { errors: error.errors });
     }
     throw error;
   }

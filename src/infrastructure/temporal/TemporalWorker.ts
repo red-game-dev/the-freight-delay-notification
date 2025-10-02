@@ -1,6 +1,8 @@
 import { Worker, NativeConnection } from '@temporalio/worker';
 import * as activities from '../../workflows/activities';
 import { env } from '../config/EnvValidator';
+import { logger } from '../../core/base/utils/Logger';
+import { InfrastructureError } from '../../core/base/errors/BaseError';
 import path from 'path';
 
 let worker: Worker | null = null;
@@ -24,14 +26,14 @@ export async function createTemporalWorker(): Promise<Worker> {
       maxConcurrentWorkflowTaskExecutions: 5,
     });
 
-    console.log('✅ Temporal worker created successfully');
-    console.log(`   Task Queue: ${env.TEMPORAL_TASK_QUEUE}`);
-    console.log(`   Namespace: ${env.TEMPORAL_NAMESPACE}`);
+    logger.info('✅ Temporal worker created successfully');
+    logger.info(`   Task Queue: ${env.TEMPORAL_TASK_QUEUE}`);
+    logger.info(`   Namespace: ${env.TEMPORAL_NAMESPACE}`);
 
     return worker;
   } catch (error) {
-    console.error('❌ Failed to create Temporal worker:', error);
-    throw new Error('Could not create Temporal worker');
+    logger.error('❌ Failed to create Temporal worker:', error);
+    throw new InfrastructureError('Could not create Temporal worker', { cause: error });
   }
 }
 
@@ -40,15 +42,15 @@ export async function startWorker(): Promise<void> {
     worker = await createTemporalWorker();
   }
 
-  console.log('🏃 Starting Temporal worker...');
+  logger.info('🏃 Starting Temporal worker...');
   await worker.run();
 }
 
 export async function stopWorker(): Promise<void> {
   if (worker) {
-    console.log('🛑 Shutting down Temporal worker...');
+    logger.info('🛑 Shutting down Temporal worker...');
     await worker.shutdown();
     worker = null;
-    console.log('✅ Temporal worker stopped');
+    logger.info('✅ Temporal worker stopped');
   }
 }

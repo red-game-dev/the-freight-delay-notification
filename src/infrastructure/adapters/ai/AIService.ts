@@ -9,6 +9,7 @@ import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
 import { OpenAIAdapter } from './OpenAIAdapter';
 import { MockAIAdapter } from './MockAIAdapter';
+import { logger } from '@/core/base/utils/Logger';
 
 export class AIService {
   private adapters: AIAdapter[] = [];
@@ -31,8 +32,8 @@ export class AIService {
       .filter(adapter => adapter.isAvailable())
       .sort((a, b) => a.priority - b.priority);
 
-    console.log('🤖 [AIService] Initialized adapters:');
-    console.log(`   Available: ${this.adapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
+    logger.info('🤖 [AIService] Initialized adapters:');
+    logger.info(`   Available: ${this.adapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
   }
 
   /**
@@ -46,25 +47,25 @@ export class AIService {
       ));
     }
 
-    console.log(`\n🤖 [AIService] Generating message for delivery ${input.deliveryId}...`);
-    console.log(`   Trying ${this.adapters.length} adapter(s) in priority order`);
+    logger.info(`\n🤖 [AIService] Generating message for delivery ${input.deliveryId}...`);
+    logger.info(`   Trying ${this.adapters.length} adapter(s) in priority order`);
 
     const errors: Array<{ adapter: string; error: string }> = [];
 
     // Try each adapter in priority order
     for (const adapter of this.adapters) {
-      console.log(`\n🔄 [AIService] Trying ${adapter.providerName}...`);
+      logger.info(`\n🔄 [AIService] Trying ${adapter.providerName}...`);
 
       const result = await adapter.generateMessage(input);
 
       if (result.success) {
-        console.log(`✅ [AIService] Successfully generated message via ${adapter.providerName}`);
+        logger.info(`✅ [AIService] Successfully generated message via ${adapter.providerName}`);
         return result;
       }
 
       // Log failure and try next adapter
       const errorMessage = !result.success ? result.error?.message || 'Unknown error' : 'Unknown error';
-      console.log(`⚠️ [AIService] ${adapter.providerName} failed: ${errorMessage}`);
+      logger.info(`⚠️ [AIService] ${adapter.providerName} failed: ${errorMessage}`);
       errors.push({
         adapter: adapter.providerName,
         error: errorMessage,
@@ -72,7 +73,7 @@ export class AIService {
     }
 
     // All adapters failed (this should never happen with MockAIAdapter as fallback)
-    console.error('❌ [AIService] All AI adapters failed');
+    logger.error('❌ [AIService] All AI adapters failed');
 
     return failure(new InfrastructureError(
       'All AI adapters failed',

@@ -7,15 +7,46 @@
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createParamApiHandler, parseJsonBody } from '@/core/infrastructure/http';
+import { Result } from '@/core/base/utils/Result';
+import type { UpdateDeliveryInput, DeliveryStatus } from '@/infrastructure/database/types/database.types';
 
 /**
  * GET /api/deliveries/[id]
- * Get delivery by ID
+ * Get delivery by ID - returns sanitized delivery data
  */
 export const GET = createParamApiHandler(async (request, context) => {
   const params = await context.params;
   const db = getDatabaseService();
-  return await db.getDeliveryById(params.id);
+
+  // Transform result to only expose safe fields
+  return Result.map(
+    await db.getDeliveryById(params.id),
+    (delivery) => delivery ? {
+      id: delivery.id,
+      tracking_number: delivery.tracking_number,
+      customer_id: delivery.customer_id,
+      route_id: delivery.route_id,
+      status: delivery.status,
+      scheduled_delivery: delivery.scheduled_delivery,
+      delay_threshold_minutes: delivery.delay_threshold_minutes,
+      auto_check_traffic: delivery.auto_check_traffic,
+      enable_recurring_checks: delivery.enable_recurring_checks,
+      check_interval_minutes: delivery.check_interval_minutes,
+      max_checks: delivery.max_checks,
+      checks_performed: delivery.checks_performed,
+      min_delay_change_threshold: delivery.min_delay_change_threshold,
+      min_hours_between_notifications: delivery.min_hours_between_notifications,
+      metadata: delivery.metadata,
+      created_at: delivery.created_at,
+      updated_at: delivery.updated_at,
+      customer_name: delivery.customer_name,
+      customer_email: delivery.customer_email,
+      customer_phone: delivery.customer_phone,
+      origin: delivery.origin,
+      destination: delivery.destination,
+      notes: delivery.notes,
+    } : null
+  );
 });
 
 /**
@@ -45,12 +76,12 @@ export const PATCH = createParamApiHandler(async (request, context) => {
   const db = getDatabaseService();
 
   // Build update object
-  const updateData: any = {};
+  const updateData: Partial<UpdateDeliveryInput> = {};
   if (body.tracking_number) updateData.tracking_number = body.tracking_number;
   if (body.origin) updateData.origin = body.origin;
   if (body.destination) updateData.destination = body.destination;
   if (body.scheduled_delivery) updateData.scheduled_delivery = new Date(body.scheduled_delivery);
-  if (body.status) updateData.status = body.status;
+  if (body.status) updateData.status = body.status as DeliveryStatus;
   if (body.customer_name) updateData.customer_name = body.customer_name;
   if (body.customer_email) updateData.customer_email = body.customer_email;
   if (body.customer_phone !== undefined) updateData.customer_phone = body.customer_phone;
@@ -62,7 +93,16 @@ export const PATCH = createParamApiHandler(async (request, context) => {
   if (body.min_delay_change_threshold !== undefined) updateData.min_delay_change_threshold = body.min_delay_change_threshold;
   if (body.min_hours_between_notifications !== undefined) updateData.min_hours_between_notifications = body.min_hours_between_notifications;
 
-  return await db.updateDelivery(params.id, updateData);
+  // Transform result to only expose safe fields
+  return Result.map(
+    await db.updateDelivery(params.id, updateData),
+    (delivery) => ({
+      id: delivery.id,
+      tracking_number: delivery.tracking_number,
+      status: delivery.status,
+      updated_at: delivery.updated_at,
+    })
+  );
 });
 
 /**
@@ -74,5 +114,8 @@ export const DELETE = createParamApiHandler(async (request, context) => {
   const db = getDatabaseService();
 
   // Soft delete - mark as cancelled
-  return await db.updateDelivery(params.id, { status: 'cancelled' });
+  const result = await db.updateDelivery(params.id, { status: 'cancelled' });
+
+  // Return only success/failure, no data (204 No Content)
+  return Result.map(result, () => null);
 }, { successStatus: 204 });

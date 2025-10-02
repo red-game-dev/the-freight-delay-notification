@@ -8,6 +8,7 @@ import type { Result } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import type { DatabaseAdapter } from './DatabaseAdapter.interface';
 import { env } from '../../config/EnvValidator';
+import { getErrorMessage } from '@/core/base/utils/Logger';
 import type {
   Customer,
   CreateCustomerInput,
@@ -530,8 +531,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const customer = this.customers.get(id);
       return success(customer || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get customer: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get customer: ${getErrorMessage(error)}`));
     }
   }
 
@@ -539,8 +540,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const customer = Array.from(this.customers.values()).find((c) => c.email === email);
       return success(customer || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get customer by email: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get customer by email: ${getErrorMessage(error)}`));
     }
   }
 
@@ -557,8 +558,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       };
       this.customers.set(customer.id, customer);
       return success(customer);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to create customer: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to create customer: ${getErrorMessage(error)}`));
     }
   }
 
@@ -566,8 +567,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const customers = Array.from(this.customers.values()).slice(offset, offset + limit);
       return success(customers);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list customers: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list customers: ${getErrorMessage(error)}`));
     }
   }
 
@@ -577,8 +578,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const route = this.routes.get(id);
       return success(route || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get route: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get route: ${getErrorMessage(error)}`));
     }
   }
 
@@ -599,8 +600,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       };
       this.routes.set(route.id, route);
       return success(route);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to create route: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to create route: ${getErrorMessage(error)}`));
     }
   }
 
@@ -618,8 +619,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       };
       this.routes.set(id, updated);
       return success(updated);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to update route: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to update route: ${getErrorMessage(error)}`));
     }
   }
 
@@ -627,8 +628,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const routes = Array.from(this.routes.values()).slice(offset, offset + limit);
       return success(routes);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list routes: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list routes: ${getErrorMessage(error)}`));
     }
   }
 
@@ -638,8 +639,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const delivery = this.deliveries.get(id);
       return success(delivery || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get delivery: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get delivery: ${getErrorMessage(error)}`));
     }
   }
 
@@ -647,8 +648,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const delivery = Array.from(this.deliveries.values()).find((d) => d.tracking_number === trackingNumber);
       return success(delivery || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get delivery by tracking number: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get delivery by tracking number: ${getErrorMessage(error)}`));
     }
   }
 
@@ -677,8 +678,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       };
       this.deliveries.set(delivery.id, delivery);
       return success(delivery);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to create delivery: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to create delivery: ${getErrorMessage(error)}`));
     }
   }
 
@@ -709,8 +710,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
 
       this.deliveries.set(id, updated);
       return success(updated);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to update delivery: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to update delivery: ${getErrorMessage(error)}`));
     }
   }
 
@@ -718,8 +719,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const deliveries = Array.from(this.deliveries.values()).slice(offset, offset + limit);
       return success(deliveries);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list deliveries: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list deliveries: ${getErrorMessage(error)}`));
     }
   }
 
@@ -729,8 +730,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         .filter((d) => d.customer_id === customerId)
         .slice(0, limit);
       return success(deliveries);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list deliveries by customer: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list deliveries by customer: ${getErrorMessage(error)}`));
     }
   }
 
@@ -740,8 +741,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         .filter((d) => d.status === status)
         .slice(0, limit);
       return success(deliveries);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list deliveries by status: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list deliveries by status: ${getErrorMessage(error)}`));
     }
   }
 
@@ -751,8 +752,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const notification = this.notifications.get(id);
       return success(notification || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get notification: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get notification: ${getErrorMessage(error)}`));
     }
   }
 
@@ -773,8 +774,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       };
       this.notifications.set(notification.id, notification);
       return success(notification);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to create notification: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to create notification: ${getErrorMessage(error)}`));
     }
   }
 
@@ -795,8 +796,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
 
       this.notifications.set(id, updated);
       return success(updated);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to update notification: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to update notification: ${getErrorMessage(error)}`));
     }
   }
 
@@ -804,8 +805,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const notifications = Array.from(this.notifications.values()).filter((n) => n.delivery_id === deliveryId);
       return success(notifications);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list notifications by delivery: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list notifications by delivery: ${getErrorMessage(error)}`));
     }
   }
 
@@ -815,8 +816,18 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         .filter((n) => n.customer_id === customerId)
         .slice(0, limit);
       return success(notifications);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list notifications by customer: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list notifications by customer: ${getErrorMessage(error)}`));
+    }
+  }
+
+  async listNotifications(limit = 100, offset = 0): Promise<Result<Notification[]>> {
+    try {
+      const notifications = Array.from(this.notifications.values())
+        .slice(offset, offset + limit);
+      return success(notifications);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list notifications: ${getErrorMessage(error)}`));
     }
   }
 
@@ -836,11 +847,21 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         ...(input.affected_area && { affected_area: input.affected_area }),
         ...(input.incident_type && { incident_type: input.incident_type }),
         ...(input.incident_location && { incident_location: input.incident_location }),
-      } as any;
+      };
       this.trafficSnapshots.set(snapshot.id, snapshot);
       return success(snapshot);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to create traffic snapshot: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to create traffic snapshot: ${getErrorMessage(error)}`));
+    }
+  }
+
+  async listTrafficSnapshots(limit = 100, offset = 0): Promise<Result<TrafficSnapshot[]>> {
+    try {
+      const snapshots = Array.from(this.trafficSnapshots.values())
+        .slice(offset, offset + limit);
+      return success(snapshots);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list traffic snapshots: ${getErrorMessage(error)}`));
     }
   }
 
@@ -850,8 +871,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         .filter((s) => s.route_id === routeId)
         .slice(0, limit);
       return success(snapshots);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list traffic snapshots: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list traffic snapshots: ${getErrorMessage(error)}`));
     }
   }
 
@@ -861,8 +882,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const execution = this.workflowExecutions.get(id);
       return success(execution || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get workflow execution: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get workflow execution: ${getErrorMessage(error)}`));
     }
   }
 
@@ -870,8 +891,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const execution = Array.from(this.workflowExecutions.values()).find((e) => e.workflow_id === workflowId);
       return success(execution || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get workflow execution by workflow ID: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get workflow execution by workflow ID: ${getErrorMessage(error)}`));
     }
   }
 
@@ -889,8 +910,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       };
       this.workflowExecutions.set(execution.id, execution);
       return success(execution);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to create workflow execution: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to create workflow execution: ${getErrorMessage(error)}`));
     }
   }
 
@@ -910,8 +931,18 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
 
       this.workflowExecutions.set(id, updated);
       return success(updated);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to update workflow execution: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to update workflow execution: ${getErrorMessage(error)}`));
+    }
+  }
+
+  async listWorkflowExecutions(limit = 50, offset = 0): Promise<Result<WorkflowExecution[]>> {
+    try {
+      const executions = Array.from(this.workflowExecutions.values())
+        .slice(offset, offset + limit);
+      return success(executions);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list workflow executions: ${getErrorMessage(error)}`));
     }
   }
 
@@ -919,8 +950,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const executions = Array.from(this.workflowExecutions.values()).filter((e) => e.delivery_id === deliveryId);
       return success(executions);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list workflow executions by delivery: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list workflow executions by delivery: ${getErrorMessage(error)}`));
     }
   }
 
@@ -930,8 +961,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const threshold = this.thresholds.get(id);
       return success(threshold || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get threshold: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get threshold: ${getErrorMessage(error)}`));
     }
   }
 
@@ -939,8 +970,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const threshold = Array.from(this.thresholds.values()).find((t) => t.is_default);
       return success(threshold || null);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to get default threshold: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get default threshold: ${getErrorMessage(error)}`));
     }
   }
 
@@ -965,8 +996,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
 
       this.thresholds.set(threshold.id, threshold);
       return success(threshold);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to create threshold: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to create threshold: ${getErrorMessage(error)}`));
     }
   }
 
@@ -997,8 +1028,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
 
       this.thresholds.set(id, updated);
       return success(updated);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to update threshold: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to update threshold: ${getErrorMessage(error)}`));
     }
   }
 
@@ -1016,8 +1047,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
 
       this.thresholds.delete(id);
       return success(undefined);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to delete threshold: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to delete threshold: ${getErrorMessage(error)}`));
     }
   }
 
@@ -1025,8 +1056,8 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     try {
       const thresholds = Array.from(this.thresholds.values()).slice(offset, offset + limit);
       return success(thresholds);
-    } catch (error: any) {
-      return failure(new InfrastructureError(`Mock: Failed to list thresholds: ${error.message}`));
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to list thresholds: ${getErrorMessage(error)}`));
     }
   }
 

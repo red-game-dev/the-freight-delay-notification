@@ -14,7 +14,7 @@ export class HttpError extends InfrastructureError {
   constructor(
     message: string,
     public readonly statusCode: number,
-    context?: any
+    context?: Record<string, unknown>
   ) {
     super(message, { ...context, statusCode });
   }
@@ -36,7 +36,7 @@ export class HttpError extends InfrastructureError {
  * 400 Bad Request
  */
 export class BadRequestError extends HttpError {
-  constructor(message: string, context?: any) {
+  constructor(message: string, context?: Record<string, unknown>) {
     super(message, 400, context);
   }
 }
@@ -45,7 +45,7 @@ export class BadRequestError extends HttpError {
  * 401 Unauthorized
  */
 export class UnauthorizedError extends HttpError {
-  constructor(message: string = 'Unauthorized', context?: any) {
+  constructor(message: string = 'Unauthorized', context?: Record<string, unknown>) {
     super(message, 401, context);
   }
 }
@@ -54,7 +54,7 @@ export class UnauthorizedError extends HttpError {
  * 403 Forbidden
  */
 export class ForbiddenError extends HttpError {
-  constructor(message: string = 'Forbidden', context?: any) {
+  constructor(message: string = 'Forbidden', context?: Record<string, unknown>) {
     super(message, 403, context);
   }
 }
@@ -63,7 +63,7 @@ export class ForbiddenError extends HttpError {
  * 404 Not Found
  */
 export class NotFoundHttpError extends HttpError {
-  constructor(message: string = 'Resource not found', context?: any) {
+  constructor(message: string = 'Resource not found', context?: Record<string, unknown>) {
     super(message, 404, context);
   }
 }
@@ -72,7 +72,7 @@ export class NotFoundHttpError extends HttpError {
  * 409 Conflict
  */
 export class ConflictHttpError extends HttpError {
-  constructor(message: string, context?: any) {
+  constructor(message: string, context?: Record<string, unknown>) {
     super(message, 409, context);
   }
 }
@@ -81,7 +81,7 @@ export class ConflictHttpError extends HttpError {
  * 422 Unprocessable Entity
  */
 export class UnprocessableEntityError extends HttpError {
-  constructor(message: string, context?: any) {
+  constructor(message: string, context?: Record<string, unknown>) {
     super(message, 422, context);
   }
 }
@@ -90,7 +90,7 @@ export class UnprocessableEntityError extends HttpError {
  * 429 Too Many Requests
  */
 export class TooManyRequestsError extends HttpError {
-  constructor(message: string = 'Too many requests', context?: any) {
+  constructor(message: string = 'Too many requests', context?: Record<string, unknown>) {
     super(message, 429, context);
   }
 }
@@ -99,7 +99,7 @@ export class TooManyRequestsError extends HttpError {
  * 500 Internal Server Error
  */
 export class InternalServerError extends HttpError {
-  constructor(message: string = 'Internal server error', context?: any) {
+  constructor(message: string = 'Internal server error', context?: Record<string, unknown>) {
     super(message, 500, context);
   }
 }
@@ -108,7 +108,7 @@ export class InternalServerError extends HttpError {
  * 503 Service Unavailable
  */
 export class ServiceUnavailableError extends HttpError {
-  constructor(message: string = 'Service unavailable', context?: any) {
+  constructor(message: string = 'Service unavailable', context?: Record<string, unknown>) {
     super(message, 503, context);
   }
 }

@@ -3,6 +3,7 @@
  * Always-available fallback for testing without real SMS service
  */
 
+import { logger } from '@/core/base/utils/Logger';
 import { Result, success } from '../../../core/base/utils/Result';
 import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
 
@@ -16,12 +17,12 @@ export class MockSMSAdapter implements NotificationAdapter {
   }
 
   async send(input: NotificationInput): Promise<Result<NotificationResult>> {
-    console.log(`📱 [Mock SMS] Simulating SMS send to ${input.to}`);
+    logger.info(`📱 [Mock SMS] Simulating SMS send to ${input.to}`);
 
     // Format SMS message (same logic as real TwilioAdapter)
     const smsMessage = this.formatSMSMessage(input.message, input.deliveryId);
-    console.log(`   Message: ${smsMessage}`);
-    console.log(`   Length: ${smsMessage.length} characters`);
+    logger.info(`   Message: ${smsMessage}`);
+    logger.info(`   Length: ${smsMessage.length} characters`);
 
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -29,8 +30,8 @@ export class MockSMSAdapter implements NotificationAdapter {
     // Generate deterministic mock message ID
     const mockMessageId = `mock-sms-${Date.now()}-${input.deliveryId}`;
 
-    console.log(`✅ [Mock SMS] SMS simulated successfully`);
-    console.log(`   Mock Message ID: ${mockMessageId}`);
+    logger.info(`✅ [Mock SMS] SMS simulated successfully`);
+    logger.info(`   Mock Message ID: ${mockMessageId}`);
 
     return success({
       success: true,

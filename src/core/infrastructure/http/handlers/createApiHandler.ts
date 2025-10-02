@@ -19,12 +19,12 @@ import { createErrorResponse } from './createErrorResponse';
  * });
  */
 export function createApiHandler<T = any>(
-  handler: (request: NextRequest, context?: any) => Promise<Result<T>>,
+  handler: (request: NextRequest, context?: Record<string, unknown>) => Promise<Result<T>>,
   options?: ApiHandlerOptions
 ) {
   return async (
     request: NextRequest,
-    context?: any
+    context?: Record<string, unknown>
   ): Promise<NextResponse<ApiResponse<T>>> => {
     try {
       const result = await handler(request, context);

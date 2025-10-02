@@ -1,6 +1,11 @@
 /**
  * Temporal Workflow Definition for Freight Delay Notification
  * Implements the 4-step process as specified in the PDF
+ *
+ * IMPORTANT: Workflows must use console.* for logging (NOT logger)
+ * Reason: Temporal workflows must be deterministic and replay-safe.
+ * Using external dependencies like logger breaks determinism during replay.
+ * Activities (activities.ts) can use logger since they're not replayed.
  */
 
 import { proxyActivities, defineSignal, defineQuery, setHandler, sleep } from '@temporalio/workflow';

@@ -16,6 +16,7 @@ import { SendGridAdapter } from './SendGridAdapter';
 import { TwilioAdapter } from './TwilioAdapter';
 import { MockEmailAdapter } from './MockEmailAdapter';
 import { MockSMSAdapter } from './MockSMSAdapter';
+import { logger } from '@/core/base/utils/Logger';
 
 export class NotificationService {
   private emailAdapters: NotificationAdapter[] = [];
@@ -45,9 +46,9 @@ export class NotificationService {
       .filter(adapter => adapter.channel === 'sms' && adapter.isAvailable())
       .sort((a, b) => a.priority - b.priority);
 
-    console.log('📬 [NotificationService] Initialized adapters:');
-    console.log(`   Email adapters: ${this.emailAdapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
-    console.log(`   SMS adapters: ${this.smsAdapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
+    logger.info('📬 [NotificationService] Initialized adapters:');
+    logger.info(`   Email adapters: ${this.emailAdapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
+    logger.info(`   SMS adapters: ${this.smsAdapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
   }
 
   /**
@@ -63,25 +64,25 @@ export class NotificationService {
       ));
     }
 
-    console.log(`\n📤 [NotificationService] Sending ${channel} notification...`);
-    console.log(`   Trying ${adapters.length} adapter(s) in priority order`);
+    logger.info(`\n📤 [NotificationService] Sending ${channel} notification...`);
+    logger.info(`   Trying ${adapters.length} adapter(s) in priority order`);
 
     const errors: Array<{ adapter: string; error: string }> = [];
 
     // Try each adapter in priority order
     for (const adapter of adapters) {
-      console.log(`\n🔄 [NotificationService] Trying ${adapter.providerName}...`);
+      logger.info(`\n🔄 [NotificationService] Trying ${adapter.providerName}...`);
 
       const result = await adapter.send(input);
 
       if (result.success) {
-        console.log(`✅ [NotificationService] Successfully sent via ${adapter.providerName}`);
+        logger.info(`✅ [NotificationService] Successfully sent via ${adapter.providerName}`);
         return result;
       }
 
       // Log failure and try next adapter
       const errorMessage = !result.success ? result.error?.message || 'Unknown error' : 'Unknown error';
-      console.log(`⚠️ [NotificationService] ${adapter.providerName} failed: ${errorMessage}`);
+      logger.info(`⚠️ [NotificationService] ${adapter.providerName} failed: ${errorMessage}`);
       errors.push({
         adapter: adapter.providerName,
         error: errorMessage,
@@ -89,7 +90,7 @@ export class NotificationService {
     }
 
     // All adapters failed
-    console.error(`❌ [NotificationService] All ${channel} adapters failed`);
+    logger.error(`❌ [NotificationService] All ${channel} adapters failed`);
 
     return failure(new InfrastructureError(
       `All ${channel} notification adapters failed`,
@@ -109,7 +110,7 @@ export class NotificationService {
     email: Result<NotificationResult>;
     sms: Result<NotificationResult>;
   }> {
-    console.log('\n📬 [NotificationService] Sending notifications via both channels...');
+    logger.info('\n📬 [NotificationService] Sending notifications via both channels...');
 
     // Send both in parallel
     const [emailResult, smsResult] = await Promise.all([

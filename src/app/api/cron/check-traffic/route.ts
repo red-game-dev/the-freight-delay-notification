@@ -6,12 +6,16 @@
  * or any other scheduling service to monitor real-time traffic conditions.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { TrafficService } from '@/infrastructure/adapters/traffic/TrafficService';
 import { getDatabaseService } from '@/infrastructure/database';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { DelayNotificationWorkflow } from '@/workflows/workflows';
 import { env } from '@/infrastructure/config/EnvValidator';
+import { logger, getErrorMessage } from '@/core/base/utils/Logger';
+import { Result } from '@/core/base/utils/Result';
+import { UnauthorizedError, InfrastructureError } from '@/core/base/errors/BaseError';
+import { createApiHandler } from '@/core/infrastructure/http';
 
 // Prevent response caching
 export const dynamic = 'force-dynamic';
@@ -25,16 +29,16 @@ interface TrafficCheckResult {
   errors: string[];
 }
 
-export async function GET(request: NextRequest) {
+export const GET = createApiHandler(async (request: NextRequest) => {
   // Verify authorization (cron secret or API key)
   const authHeader = request.headers.get('authorization');
   const cronSecret = env.CRON_SECRET;
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return Result.fail(new UnauthorizedError('Invalid or missing authorization token'));
   }
 
-  console.log('🚦 [Traffic Monitor] Starting traffic check cycle...');
+  logger.info('🚦 [Traffic Monitor] Starting traffic check cycle...');
 
   const result: TrafficCheckResult = {
     routesChecked: 0,
@@ -52,18 +56,18 @@ export async function GET(request: NextRequest) {
     const routesResult = await db.listRoutes(1000, 0);
 
     if (!routesResult.success) {
-      throw new Error(`Failed to fetch routes: ${routesResult.error.message}`);
+      throw new InfrastructureError(`Failed to fetch routes: ${routesResult.error.message}`, { error: routesResult.error });
     }
 
     const routes = routesResult.value;
 
     if (!routes || !Array.isArray(routes)) {
-      console.error('❌ [Debug] Invalid routes structure:', routesResult);
-      throw new Error(`Invalid routes data structure`);
+      logger.error('❌ [Debug] Invalid routes structure:', routesResult);
+      throw new InfrastructureError('Invalid routes data structure', { routesResult });
     }
 
-    console.log(`📍 [Traffic Monitor] Found ${routes.length} routes to check`);
-    console.log(`📍 [Traffic Monitor] Sample route coords:`, {
+    logger.info(`📍 [Traffic Monitor] Found ${routes.length} routes to check`);
+    logger.info(`📍 [Traffic Monitor] Sample route coords:`, {
       origin: routes[0]?.origin_coords,
       destination: routes[0]?.destination_coords,
     });
@@ -73,11 +77,14 @@ export async function GET(request: NextRequest) {
     const delayedResult = await db.listDeliveriesByStatus('delayed');
 
     if (!inTransitResult.success || !delayedResult.success) {
-      throw new Error('Failed to fetch active deliveries');
+      throw new InfrastructureError('Failed to fetch active deliveries', {
+        inTransitError: inTransitResult.success ? null : inTransitResult.error,
+        delayedError: delayedResult.success ? null : delayedResult.error
+      });
     }
 
     const activeDeliveries = [...inTransitResult.value, ...delayedResult.value];
-    console.log(`📦 [Traffic Monitor] Found ${activeDeliveries.length} active deliveries`);
+    logger.info(`📦 [Traffic Monitor] Found ${activeDeliveries.length} active deliveries`);
 
     // Create a map of route_id to deliveries for quick lookup
     const deliveriesByRoute = new Map<string, typeof activeDeliveries>();
@@ -99,7 +106,7 @@ export async function GET(request: NextRequest) {
           route.destination_coords.x == null ||
           route.destination_coords.y == null
         ) {
-          console.log(`⏭️  [Traffic Monitor] Skipping route ${route.id} - missing coordinates`);
+          logger.info(`⏭️  [Traffic Monitor] Skipping route ${route.id} - missing coordinates`);
           continue;
         }
 
@@ -112,13 +119,13 @@ export async function GET(request: NextRequest) {
         });
 
         if (!trafficResult.success) {
-          console.error(`❌ [Traffic Monitor] Failed to fetch traffic for route ${route.id}:`, trafficResult.error.message);
+          logger.error(`❌ [Traffic Monitor] Failed to fetch traffic for route ${route.id}:`, trafficResult.error.message);
           result.errors.push(`Route ${route.id}: ${trafficResult.error.message}`);
           continue;
         }
 
         const trafficData = trafficResult.value;
-        console.log(`🚦 [Traffic Monitor] Got traffic data:`, {
+        logger.info(`🚦 [Traffic Monitor] Got traffic data:`, {
           route: route.id,
           delay: trafficData.delayMinutes,
           condition: trafficData.trafficCondition,
@@ -172,10 +179,10 @@ export async function GET(request: NextRequest) {
         const updateRouteResult = await db.updateRoute(route.id, updateData);
 
         if (!updateRouteResult.success) {
-          console.error(`❌ [Traffic Monitor] Failed to update route ${route.id}:`, updateRouteResult.error);
+          logger.error(`❌ [Traffic Monitor] Failed to update route ${route.id}:`, updateRouteResult.error);
           result.errors.push(`Failed to update route ${route.id}: ${updateRouteResult.error.message}`);
         } else {
-          console.log(`✅ [Traffic Monitor] Updated route ${route.id} with traffic: ${trafficData.trafficCondition.toUpperCase()} (${trafficData.delayMinutes}min delay)`);
+          logger.info(`✅ [Traffic Monitor] Updated route ${route.id} with traffic: ${trafficData.trafficCondition.toUpperCase()} (${trafficData.delayMinutes}min delay)`);
         }
 
         // 5. Save traffic snapshot to database (historical log)
@@ -192,7 +199,7 @@ export async function GET(request: NextRequest) {
         });
 
         if (!snapshotResult.success) {
-          console.error(`❌ [Traffic Monitor] Failed to save snapshot for route ${route.id}:`, snapshotResult.error);
+          logger.error(`❌ [Traffic Monitor] Failed to save snapshot for route ${route.id}:`, snapshotResult.error);
           result.errors.push(`Failed to save snapshot for route ${route.id}: ${snapshotResult.error.message}`);
           continue;
         }
@@ -211,7 +218,7 @@ export async function GET(request: NextRequest) {
             const notificationsResult = await db.listNotificationsByDelivery(delivery.id);
 
             if (!notificationsResult.success) {
-              console.warn(`⚠️ [Traffic Monitor] Could not fetch notifications for delivery ${delivery.id}`);
+              logger.warn(`⚠️ [Traffic Monitor] Could not fetch notifications for delivery ${delivery.id}`);
               continue;
             }
 
@@ -257,38 +264,38 @@ export async function GET(request: NextRequest) {
                 });
 
                 result.notificationsTriggered++;
-                console.log(`📧 [Traffic Monitor] Triggered notification for delivery ${delivery.tracking_number} (${trafficData.delayMinutes}min delay)`);
-              } catch (workflowError: any) {
-                console.error(`❌ [Traffic Monitor] Failed to trigger workflow for ${delivery.tracking_number}:`, workflowError.message);
-                result.errors.push(`Workflow trigger failed for ${delivery.tracking_number}: ${workflowError.message}`);
+                logger.info(`📧 [Traffic Monitor] Triggered notification for delivery ${delivery.tracking_number} (${trafficData.delayMinutes}min delay)`);
+              } catch (workflowError: unknown) {
+                logger.error(`❌ [Traffic Monitor] Failed to trigger workflow for ${delivery.tracking_number}:`, getErrorMessage(workflowError));
+                result.errors.push(`Workflow trigger failed for ${delivery.tracking_number}: ${getErrorMessage(workflowError)}`);
               }
             } else {
-              console.log(`⏭️ [Traffic Monitor] Skipping notification for ${delivery.tracking_number} (recently notified)`);
+              logger.info(`⏭️ [Traffic Monitor] Skipping notification for ${delivery.tracking_number} (recently notified)`);
             }
           }
         }
-      } catch (routeError: any) {
-        console.error(`❌ [Traffic Monitor] Error processing route ${route.id}:`, routeError.message);
-        result.errors.push(`Route ${route.id}: ${routeError.message}`);
+      } catch (routeError: unknown) {
+        logger.error(`❌ [Traffic Monitor] Error processing route ${route.id}:`, getErrorMessage(routeError));
+        result.errors.push(`Route ${route.id}: ${getErrorMessage(routeError)}`);
       }
     }
 
-    console.log('✅ [Traffic Monitor] Traffic check cycle completed', result);
+    logger.info('✅ [Traffic Monitor] Traffic check cycle completed', result);
 
-    return NextResponse.json({
+    return Result.ok({
       success: true,
       timestamp: new Date().toISOString(),
       result,
     });
 
-  } catch (error: any) {
-    console.error('❌ [Traffic Monitor] Fatal error:', error);
+  } catch (error: unknown) {
+    logger.error('❌ [Traffic Monitor] Fatal error:', error);
 
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      result,
-    }, { status: 500 });
+    return Result.fail(
+      new InfrastructureError(`Traffic monitoring failed: ${getErrorMessage(error)}`, {
+        cause: error,
+        context: { partialResult: result },
+      })
+    );
   }
-}
+});

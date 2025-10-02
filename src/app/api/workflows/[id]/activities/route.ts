@@ -5,14 +5,45 @@
 
 import { createParamApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
+import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
+import { logger, hasMessage, hasName } from '@/core/base/utils/Logger';
+import { NotFoundError } from '@/core/base/errors/BaseError';
 
 /**
  * GET /api/workflows/[id]/activities
- * Get activities for a workflow (mock for now)
+ * Get activities/events for a workflow from Temporal
  */
 export const GET = createParamApiHandler(async (request, { params }) => {
-  // TODO: Implement actual activities retrieval when we have the method in DatabaseService
-  const activities: any[] = [];
+  const workflowId = params.id;
 
-  return Result.ok(activities);
+  try {
+    const client = await getTemporalClient();
+    const handle = client.workflow.getHandle(workflowId);
+
+    // Get workflow description to check if it exists
+    const description = await handle.describe();
+
+    // Note: Temporal's fetchHistory() returns IHistory which requires special handling
+    // For now, return basic workflow info without detailed activity breakdown
+    // Full activity history would require using Temporal's history API directly
+    logger.info(`📊 Workflow ${workflowId} exists with status: ${description.status.name}`);
+
+    return Result.ok({
+      workflowId,
+      status: description.status.name,
+      startTime: description.startTime,
+      closeTime: description.closeTime,
+      // Activity details would require more complex history parsing
+      activities: [],
+      message: 'Detailed activity tracking not yet implemented - use Temporal UI for full history',
+    });
+
+  } catch (error: unknown) {
+    if (hasMessage(error) && error.message.includes('not found') || hasName(error) && error.name === 'WorkflowNotFoundError') {
+      return Result.fail(new NotFoundError(`Workflow ${workflowId} not found in Temporal`));
+    }
+
+    logger.error(`❌ Failed to fetch workflow info for ${workflowId}:`, error);
+    return Result.fail(new NotFoundError(`Workflow ${workflowId} not found`));
+  }
 });

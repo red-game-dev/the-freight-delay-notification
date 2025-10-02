@@ -1,5 +1,7 @@
 import { Client, Connection } from '@temporalio/client';
 import { env } from '../config/EnvValidator';
+import { logger } from '@/core/base/utils/Logger';
+import { InfrastructureError } from '@/core/base/errors/BaseError';
 
 let temporalClient: Client | null = null;
 let temporalConnection: Connection | null = null;
@@ -21,14 +23,14 @@ export async function createTemporalClient(): Promise<Client> {
       namespace: env.TEMPORAL_NAMESPACE,
     });
 
-    console.log('✅ Temporal client connected successfully');
-    console.log(`   Address: ${env.TEMPORAL_ADDRESS}`);
-    console.log(`   Namespace: ${env.TEMPORAL_NAMESPACE}`);
+    logger.info('✅ Temporal client connected successfully');
+    logger.info(`   Address: ${env.TEMPORAL_ADDRESS}`);
+    logger.info(`   Namespace: ${env.TEMPORAL_NAMESPACE}`);
 
     return temporalClient;
   } catch (error) {
-    console.error('❌ Failed to connect to Temporal server:', error);
-    throw new Error('Could not establish connection to Temporal server');
+    logger.error('❌ Failed to connect to Temporal server:', error);
+    throw new InfrastructureError('Could not establish connection to Temporal server', { cause: error });
   }
 }
 
@@ -44,6 +46,6 @@ export async function closeTemporalConnection(): Promise<void> {
     await temporalConnection.close();
     temporalConnection = null;
     temporalClient = null;
-    console.log('✅ Temporal connection closed');
+    logger.info('✅ Temporal connection closed');
   }
 }

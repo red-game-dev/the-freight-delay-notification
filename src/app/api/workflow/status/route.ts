@@ -3,21 +3,19 @@
  * GET /api/workflow/status?workflowId=xxx
  */
 
-import { NextRequest } from 'next/server';
+import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
+import { logger, getErrorMessage, hasMessage, hasName, hasCause } from '@/core/base/utils/Logger';
+import { Result } from '@/core/base/utils/Result';
+import { ValidationError, NotFoundError, InfrastructureError } from '@/core/base/errors/BaseError';
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const workflowId = searchParams.get('workflowId');
+export const GET = createApiHandler(async (request) => {
+  const workflowId = getQueryParam(request, 'workflowId');
 
-    if (!workflowId) {
-      return Response.json(
-        { error: 'Missing required parameter: workflowId' },
-        { status: 400 }
-      );
-    }
+  if (!workflowId) {
+    return Result.fail(new ValidationError('Missing required parameter: workflowId'));
+  }
 
     // Get Temporal client
     const client = await getTemporalClient();
@@ -38,38 +36,38 @@ export async function GET(request: NextRequest) {
       if (description.status.name === 'RUNNING') {
         try {
           internalStatus = await handle.query('workflowStatus');
-        } catch (queryError: any) {
+        } catch (queryError: unknown) {
           // Handle query failures (e.g., workflow task failed)
-          const errorMsg = queryError.message || '';
-          const causeMsg = queryError.cause?.message || '';
+          const errorMsg = getErrorMessage(queryError);
+          const causeMsg = hasCause(queryError) && hasMessage(queryError.cause) ? (queryError.cause as { message: string }).message : '';
 
           if (errorMsg.includes('Workflow Task in failed state')) {
-            console.log(`⚠️ Cannot query workflow ${workflowId} - task in failed state`);
+            logger.warn(`⚠️ Cannot query workflow ${workflowId} - task in failed state`);
 
             // Check if it's a non-determinism error
             if (causeMsg.includes('Nondeterminism') || causeMsg.includes('does not match')) {
-              console.log(`⚠️ Non-determinism detected: ${causeMsg}`);
+              logger.warn(`⚠️ Non-determinism detected: ${causeMsg}`);
               error = 'Workflow code was updated after this workflow started. Please cancel this workflow and start a new one.';
             } else {
               error = 'Workflow task in failed state - check Temporal UI for details';
             }
             // Continue without internal status - we'll use the error message
           } else {
-            throw queryError;
+            return Result.fail(new InfrastructureError(`Failed to query workflow: ${getErrorMessage(queryError)}`, { cause: queryError }));
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Workflow not found - check database for completed workflow
-      if (error.message?.includes('not found') || error.name === 'WorkflowNotFoundError') {
-        console.log(`⚠️ Workflow ${workflowId} not found in Temporal, checking database...`);
+      if (hasMessage(error) && error.message.includes('not found') || hasName(error) && error.name === 'WorkflowNotFoundError') {
+        logger.info(`⚠️ Workflow ${workflowId} not found in Temporal, checking database...`);
 
         const db = getDatabaseService();
         const workflowExecution = await db.getWorkflowExecutionByWorkflowId(workflowId);
 
         if (workflowExecution.success && workflowExecution.value) {
           // Return data from database
-          return Response.json({
+          return Result.ok({
             success: true,
             id: workflowId,
             workflow_id: workflowId,
@@ -85,23 +83,16 @@ export async function GET(request: NextRequest) {
         }
 
         // Workflow not in Temporal or database - return not found
-        return Response.json(
-          {
-            error: 'Workflow not found',
-            details: 'Workflow does not exist in Temporal or database history',
-            workflowId,
-          },
-          { status: 404 }
-        );
+        return Result.fail(new NotFoundError(`Workflow does not exist in Temporal or database history: ${workflowId}`));
       }
 
-      // Other error - rethrow
-      throw error;
+      // Other error - convert to infrastructure error
+      return Result.fail(new InfrastructureError(`Failed to query workflow: ${getErrorMessage(error)}`, { cause: error }));
     }
 
     // At this point, description should exist (we would have returned earlier if not found)
     if (!description) {
-      throw new Error('Unexpected: description is null after successful query');
+      return Result.fail(new InfrastructureError('Unexpected: description is null after successful query'));
     }
 
     // Determine workflow status based on execution state
@@ -112,17 +103,23 @@ export async function GET(request: NextRequest) {
       try {
         result = await handle.result();
         status = result?.success === false ? 'failed' : 'completed';
-      } catch (err: any) {
+      } catch (err: unknown) {
         status = 'failed';
-        error = err.message;
+        error = getErrorMessage(err);
       }
     } else if (description.status.name === 'FAILED') {
       status = 'failed';
       // Try to get the failure reason
       try {
         await handle.result();
-      } catch (err: any) {
-        error = err.message || err.cause?.message || 'Workflow failed';
+      } catch (err: unknown) {
+        if (hasMessage(err)) {
+          error = err.message;
+        } else if (hasCause(err) && hasMessage(err.cause)) {
+          error = (err.cause as { message: string }).message;
+        } else {
+          error = 'Workflow failed';
+        }
       }
     } else if (description.status.name === 'CANCELLED') {
       status = 'cancelled';
@@ -139,7 +136,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return normalized response that matches frontend expectations
-    return Response.json({
+    return Result.ok({
       success: true,
       id: workflowId,
       workflow_id: workflowId,
@@ -151,16 +148,6 @@ export async function GET(request: NextRequest) {
       steps: result?.steps || null,
       internalStatus, // Keep internal status for debugging
       result, // Keep full result for reference
+      source: 'temporal', // Indicate this came from Temporal
     });
-
-  } catch (error: any) {
-    console.error('❌ Failed to query workflow:', error);
-    return Response.json(
-      {
-        error: 'Failed to query workflow status',
-        details: error.message,
-      },
-      { status: 500 }
-    );
-  }
-}
+});

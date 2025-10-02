@@ -97,9 +97,15 @@ export interface Delivery {
   checks_performed: number;
   min_delay_change_threshold: number;
   min_hours_between_notifications: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  origin?: string;
+  destination?: string;
+  notes?: string;
 }
 
 export interface CreateDeliveryInput {

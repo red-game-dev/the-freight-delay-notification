@@ -3,6 +3,7 @@
  * Always-available fallback for testing without real email service
  */
 
+import { logger } from '@/core/base/utils/Logger';
 import { Result, success } from '../../../core/base/utils/Result';
 import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
 
@@ -16,10 +17,10 @@ export class MockEmailAdapter implements NotificationAdapter {
   }
 
   async send(input: NotificationInput): Promise<Result<NotificationResult>> {
-    console.log(`📧 [Mock Email] Simulating email send to ${input.to}`);
-    console.log(`   Subject: ${input.subject || 'Delivery Update'}`);
-    console.log(`   Message Preview: ${input.message.substring(0, 100)}...`);
-    console.log(`   Delivery ID: ${input.deliveryId}`);
+    logger.info(`📧 [Mock Email] Simulating email send to ${input.to}`);
+    logger.info(`   Subject: ${input.subject || 'Delivery Update'}`);
+    logger.info(`   Message Preview: ${input.message.substring(0, 100)}...`);
+    logger.info(`   Delivery ID: ${input.deliveryId}`);
 
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -27,8 +28,8 @@ export class MockEmailAdapter implements NotificationAdapter {
     // Generate deterministic mock message ID
     const mockMessageId = `mock-email-${Date.now()}-${input.deliveryId}`;
 
-    console.log(`✅ [Mock Email] Email simulated successfully`);
-    console.log(`   Mock Message ID: ${mockMessageId}`);
+    logger.info(`✅ [Mock Email] Email simulated successfully`);
+    logger.info(`   Mock Message ID: ${mockMessageId}`);
 
     return success({
       success: true,

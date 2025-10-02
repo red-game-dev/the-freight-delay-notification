@@ -9,6 +9,7 @@ import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 import { env } from '../../config/EnvValidator';
+import { logger, getErrorMessage } from '@/core/base/utils/Logger';
 
 export class GoogleMapsAdapter implements TrafficAdapter {
   public readonly providerName = 'Google Maps';
@@ -35,7 +36,7 @@ export class GoogleMapsAdapter implements TrafficAdapter {
     }
 
     try {
-      console.log(`🗺️ [${this.providerName}] Fetching traffic data...`);
+      logger.info(`🗺️ [${this.providerName}] Fetching traffic data...`);
 
       const response = await this.client.directions({
         params: {
@@ -85,7 +86,7 @@ export class GoogleMapsAdapter implements TrafficAdapter {
         },
       };
 
-      console.log(`✅ [${this.providerName}] Success:`, {
+      logger.info(`✅ [${this.providerName}] Success:`, {
         route: `${route.origin} → ${route.destination}`,
         delayMinutes,
         trafficCondition,
@@ -93,11 +94,11 @@ export class GoogleMapsAdapter implements TrafficAdapter {
       });
 
       return success(trafficData);
-    } catch (error: any) {
-      console.error(`❌ [${this.providerName}] Error:`, error.message);
+    } catch (error: unknown) {
+      logger.error(`❌ [${this.providerName}] Error:`, getErrorMessage(error));
       return failure(new InfrastructureError(
         `${this.providerName} request failed`,
-        { error: error.message, route }
+        { error: getErrorMessage(error), route }
       ));
     }
   }
@@ -121,7 +122,7 @@ export class GoogleMapsAdapter implements TrafficAdapter {
     }
 
     try {
-      console.log(`🌍 [${this.providerName}] Geocoding address: ${address}`);
+      logger.info(`🌍 [${this.providerName}] Geocoding address: ${address}`);
 
       const response = await this.client.geocode({
         params: {
@@ -143,17 +144,17 @@ export class GoogleMapsAdapter implements TrafficAdapter {
 
       const location = response.data.results[0].geometry.location;
 
-      console.log(`✅ [${this.providerName}] Geocoded: ${address} → (${location.lat}, ${location.lng})`);
+      logger.info(`✅ [${this.providerName}] Geocoded: ${address} → (${location.lat}, ${location.lng})`);
 
       return success({
         lat: location.lat,
         lng: location.lng,
       });
-    } catch (error: any) {
-      console.error(`❌ [${this.providerName}] Geocoding error:`, error.message);
+    } catch (error: unknown) {
+      logger.error(`❌ [${this.providerName}] Geocoding error:`, getErrorMessage(error));
       return failure(new InfrastructureError(
         `${this.providerName} geocoding request failed`,
-        { error: error.message, address }
+        { error: getErrorMessage(error), address }
       ));
     }
   }

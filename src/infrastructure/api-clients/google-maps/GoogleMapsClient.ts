@@ -8,6 +8,7 @@ import { env } from '../../config/EnvValidator';
 import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
+import { logger, getErrorMessage } from '@/core/base/utils/Logger';
 
 export class GoogleMapsClient {
   private client: Client;
@@ -26,14 +27,14 @@ export class GoogleMapsClient {
     try {
       // Check if API key is configured
       if (!this.apiKey) {
-        console.log('⚠️ Google Maps API key not configured, skipping...');
+        logger.info('⚠️ Google Maps API key not configured, skipping...');
         return failure(new InfrastructureError(
           'Google Maps API key not configured',
           { route }
         ));
       }
 
-      console.log(`🗺️ Fetching Google Maps traffic data...`);
+      logger.info(`🗺️ Fetching Google Maps traffic data...`);
 
       // Get directions with traffic data
       const response = await this.client.directions({
@@ -95,7 +96,7 @@ export class GoogleMapsClient {
       };
 
       // PDF Requirement: Console logging for key steps
-      console.log(`📊 Google Maps traffic data:`, {
+      logger.info(`📊 Google Maps traffic data:`, {
         route: `${route.origin} → ${route.destination}`,
         delayMinutes,
         trafficCondition,
@@ -105,11 +106,11 @@ export class GoogleMapsClient {
       });
 
       return success(trafficData);
-    } catch (error: any) {
-      console.error('❌ Google Maps API error:', error.message);
+    } catch (error: unknown) {
+      logger.error('❌ Google Maps API error:', getErrorMessage(error));
       return failure(new InfrastructureError(
         'Failed to fetch traffic data from Google Maps',
-        { error: error.message, route }
+        { error: getErrorMessage(error), route }
       ));
     }
   }

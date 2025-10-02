@@ -8,6 +8,7 @@ import { Result, success, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 import { env } from '../../config/EnvValidator';
+import { logger, getErrorMessage } from '@/core/base/utils/Logger';
 
 export class MapboxAdapter implements TrafficAdapter {
   public readonly providerName = 'Mapbox';
@@ -33,7 +34,7 @@ export class MapboxAdapter implements TrafficAdapter {
     }
 
     try {
-      console.log(`🗺️ [${this.providerName}] Fetching traffic data...`);
+      logger.info(`🗺️ [${this.providerName}] Fetching traffic data...`);
 
       // Get coordinates for the route
       const coordinates = await this.getCoordinates(route);
@@ -93,7 +94,7 @@ export class MapboxAdapter implements TrafficAdapter {
         },
       };
 
-      console.log(`✅ [${this.providerName}] Success:`, {
+      logger.info(`✅ [${this.providerName}] Success:`, {
         route: `${route.origin} → ${route.destination}`,
         delayMinutes,
         trafficCondition,
@@ -101,11 +102,11 @@ export class MapboxAdapter implements TrafficAdapter {
       });
 
       return success(result);
-    } catch (error: any) {
-      console.error(`❌ [${this.providerName}] Error:`, error.message);
+    } catch (error: unknown) {
+      logger.error(`❌ [${this.providerName}] Error:`, getErrorMessage(error));
       return failure(new InfrastructureError(
         `${this.providerName} request failed`,
-        { error: error.message, route }
+        { error: getErrorMessage(error), route }
       ));
     }
   }
@@ -140,10 +141,10 @@ export class MapboxAdapter implements TrafficAdapter {
         origin: `${originResult.value.lng},${originResult.value.lat}`,
         destination: `${destResult.value.lng},${destResult.value.lat}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return failure(new InfrastructureError(
         'Geocoding failed',
-        { error: error.message }
+        { error: getErrorMessage(error) }
       ));
     }
   }
@@ -165,10 +166,10 @@ export class MapboxAdapter implements TrafficAdapter {
 
       const [lng, lat] = data.features[0].center;
       return success({ lat, lng });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return failure(new InfrastructureError(
         'Geocoding request failed',
-        { address, error: error.message }
+        { address, error: getErrorMessage(error) }
       ));
     }
   }

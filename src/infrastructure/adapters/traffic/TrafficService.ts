@@ -10,6 +10,7 @@ import { MockTrafficAdapter } from './MockTrafficAdapter';
 import { Result, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
+import { logger } from '@/core/base/utils/Logger';
 
 export class TrafficService {
   private adapters: TrafficAdapter[] = [];
@@ -33,9 +34,9 @@ export class TrafficService {
       .filter(adapter => {
         const available = adapter.isAvailable();
         if (available) {
-          console.log(`✅ [TrafficService] ${adapter.providerName} adapter is available (priority: ${adapter.priority})`);
+          logger.info(`✅ [TrafficService] ${adapter.providerName} adapter is available (priority: ${adapter.priority})`);
         } else {
-          console.log(`⚠️ [TrafficService] ${adapter.providerName} adapter is not configured`);
+          logger.info(`⚠️ [TrafficService] ${adapter.providerName} adapter is not configured`);
         }
         return available;
       });
@@ -45,7 +46,7 @@ export class TrafficService {
       this.adapters = [new MockTrafficAdapter()];
     }
 
-    console.log(`📊 [TrafficService] ${this.adapters.length} adapter(s) available for traffic data`);
+    logger.info(`📊 [TrafficService] ${this.adapters.length} adapter(s) available for traffic data`);
   }
 
   /**
@@ -53,22 +54,22 @@ export class TrafficService {
    * Automatically falls back through all available adapters
    */
   async getTrafficData(route: RouteInput): Promise<Result<TrafficData>> {
-    console.log(`🚦 [TrafficService] Fetching traffic data: ${route.origin} → ${route.destination}`);
+    logger.info(`🚦 [TrafficService] Fetching traffic data: ${route.origin} → ${route.destination}`);
 
     const errors: Array<{ provider: string; error: string }> = [];
 
     // Try each adapter in priority order
     for (const adapter of this.adapters) {
-      console.log(`🔄 [TrafficService] Trying ${adapter.providerName}...`);
+      logger.info(`🔄 [TrafficService] Trying ${adapter.providerName}...`);
 
       const result = await adapter.getTrafficData(route);
 
       if (result.success) {
-        console.log(`✅ [TrafficService] Success with ${adapter.providerName}`);
+        logger.info(`✅ [TrafficService] Success with ${adapter.providerName}`);
 
         // Log if we had to use fallback
         if (errors.length > 0) {
-          console.log(`📝 [TrafficService] Used fallback after ${errors.length} failed attempt(s)`);
+          logger.info(`📝 [TrafficService] Used fallback after ${errors.length} failed attempt(s)`);
         }
 
         return result;
@@ -80,11 +81,11 @@ export class TrafficService {
         error: result.error.message
       });
 
-      console.log(`⚠️ [TrafficService] ${adapter.providerName} failed: ${result.error.message}`);
+      logger.info(`⚠️ [TrafficService] ${adapter.providerName} failed: ${result.error.message}`);
     }
 
     // All adapters failed (shouldn't happen with MockTrafficAdapter)
-    console.error(`❌ [TrafficService] All ${this.adapters.length} adapter(s) failed`);
+    logger.error(`❌ [TrafficService] All ${this.adapters.length} adapter(s) failed`);
 
     return failure(new InfrastructureError(
       'All traffic data adapters failed',
