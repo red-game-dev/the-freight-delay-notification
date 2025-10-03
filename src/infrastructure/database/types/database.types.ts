@@ -153,6 +153,7 @@ export interface Notification {
   delivery_id: string;
   customer_id: string;
   channel: NotificationChannel;
+  recipient: string;
   status: NotificationStatus;
   message: string;
   delay_minutes: number | null;
@@ -166,6 +167,7 @@ export interface CreateNotificationInput {
   delivery_id: string;
   customer_id: string;
   channel: NotificationChannel;
+  recipient: string;
   message: string;
   delay_minutes?: number;
 }

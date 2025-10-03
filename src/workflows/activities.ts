@@ -337,6 +337,7 @@ export async function saveNotification(input: {
       delivery_id: input.deliveryId,
       customer_id: input.customerId,
       channel: input.channel,
+      recipient: input.recipient,
       message: input.message,
       delay_minutes: input.delayMinutes,
     });

@@ -52,11 +52,14 @@ export const GET = createApiHandler(async (request) => {
       delivery_id: n.delivery_id,
       customer_id: n.customer_id,
       channel: n.channel,
+      recipient: n.recipient,
       message: n.message,
       status: n.status,
       delay_minutes: n.delay_minutes,
       sent_at: n.sent_at,
       created_at: n.created_at,
+      external_id: n.external_id,
+      error_message: n.error_message,
     }));
 
     const paginatedResponse = createPaginatedResponse(sanitizedNotifications, page, limit);
