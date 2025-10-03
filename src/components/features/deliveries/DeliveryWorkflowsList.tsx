@@ -10,21 +10,14 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { Loader2, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
 import type { Workflow } from '@/core/infrastructure/http/services/workflows';
+import { getWorkflowStatusConfig } from '@/core/utils/workflowStatusUtils';
 
 interface DeliveryWorkflowsListProps {
   deliveryId: string;
 }
-
-const statusConfig = {
-  running: { label: 'Running', variant: 'info' as const, icon: Clock },
-  completed: { label: 'Completed', variant: 'success' as const, icon: CheckCircle },
-  failed: { label: 'Failed', variant: 'error' as const, icon: XCircle },
-  cancelled: { label: 'Cancelled', variant: 'default' as const, icon: XCircle },
-  timed_out: { label: 'Timed Out', variant: 'warning' as const, icon: AlertCircle },
-};
 
 export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps) {
   const { data, isLoading, error } = useWorkflows({ delivery_id: deliveryId });
@@ -74,7 +67,7 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
         ) : (
           <div className="space-y-3">
             {workflows.map((workflow) => {
-              const statusInfo = statusConfig[workflow.status];
+              const statusInfo = getWorkflowStatusConfig(workflow.status);
               const StatusIcon = statusInfo.icon;
 
               return (

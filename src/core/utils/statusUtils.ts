@@ -3,6 +3,8 @@
  * Functions for mapping statuses to UI variants
  */
 
+import { getTrafficConfig } from './trafficUtils';
+
 export type BadgeVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
 
 /**
@@ -23,6 +25,7 @@ export function getDeliveryStatusVariant(status: string): BadgeVariant {
 
 /**
  * Get badge variant for notification status
+ * @deprecated Use getNotificationStatusConfig from notificationStatusUtils instead
  */
 export function getNotificationStatusVariant(status: string): BadgeVariant {
   const statusMap: Record<string, BadgeVariant> = {
@@ -38,14 +41,9 @@ export function getNotificationStatusVariant(status: string): BadgeVariant {
 
 /**
  * Get badge variant for traffic condition
+ * Uses the centralized traffic configuration from trafficUtils
  */
 export function getTrafficConditionVariant(condition: string): BadgeVariant {
-  const conditionMap: Record<string, BadgeVariant> = {
-    light: 'success',
-    moderate: 'info',
-    heavy: 'warning',
-    severe: 'error',
-  };
-
-  return conditionMap[condition.toLowerCase()] || 'default';
+  const config = getTrafficConfig(condition);
+  return config.variant;
 }

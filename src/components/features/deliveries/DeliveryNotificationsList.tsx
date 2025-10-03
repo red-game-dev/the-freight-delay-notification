@@ -10,25 +10,14 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { Loader2, Mail, MessageSquare, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useNotifications } from '@/core/infrastructure/http/services/notifications';
 import type { Notification } from '@/core/infrastructure/http/services/notifications';
+import { getNotificationChannelConfig, getNotificationStatusConfig } from '@/core/utils/notificationStatusUtils';
 
 interface DeliveryNotificationsListProps {
   deliveryId: string;
 }
-
-const channelConfig = {
-  email: { label: 'Email', icon: Mail },
-  sms: { label: 'SMS', icon: MessageSquare },
-};
-
-const statusConfig = {
-  pending: { label: 'Pending', variant: 'default' as const, icon: Clock },
-  sent: { label: 'Sent', variant: 'success' as const, icon: CheckCircle },
-  failed: { label: 'Failed', variant: 'error' as const, icon: XCircle },
-  skipped: { label: 'Skipped', variant: 'default' as const, icon: XCircle },
-};
 
 export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsListProps) {
   const { data, isLoading, error } = useNotifications({ delivery_id: deliveryId });
@@ -78,8 +67,8 @@ export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsL
         ) : (
           <div className="space-y-3">
             {notifications.map((notification) => {
-              const channelInfo = channelConfig[notification.channel];
-              const statusInfo = statusConfig[notification.status];
+              const channelInfo = getNotificationChannelConfig(notification.channel);
+              const statusInfo = getNotificationStatusConfig(notification.status);
               const ChannelIcon = channelInfo.icon;
               const StatusIcon = statusInfo.icon;
 

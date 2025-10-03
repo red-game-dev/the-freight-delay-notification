@@ -63,12 +63,11 @@ export default function DeliveryDetailPage() {
   const [showCancelWorkflowModal, setShowCancelWorkflowModal] = React.useState(false);
   const [forceCancel, setForceCancel] = React.useState(false);
 
-  // Construct the correct workflow ID based on delivery settings using workflow utils
   const workflowId = delivery
     ? createWorkflowId(
         delivery.enable_recurring_checks ? WorkflowType.RECURRING_CHECK : WorkflowType.DELAY_NOTIFICATION,
         delivery.id,
-        false // Don't include timestamp for stable IDs
+        false
       )
     : null;
 
@@ -76,7 +75,6 @@ export default function DeliveryDetailPage() {
     if (!delivery) return;
     try {
       await startWorkflow.mutateAsync(delivery.id);
-      // No need to set state - workflowId is already constructed above
     } catch (error) {
       console.error('Failed to start workflow:', error);
     }

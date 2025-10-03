@@ -22,18 +22,15 @@ import { useTrafficSnapshots } from '@/core/infrastructure/http/services/traffic
 import type { TrafficSnapshot, AffectedDelivery } from '@/core/infrastructure/http/services/traffic/queries/listTrafficSnapshots';
 import { Button } from '@/components/ui/Button';
 import { TrafficMap } from '@/components/features/monitoring/TrafficMap';
-
-const trafficConfig = {
-  light: { label: 'Light', variant: 'success' as const, color: 'text-green-600' },
-  moderate: { label: 'Moderate', variant: 'warning' as const, color: 'text-yellow-600' },
-  heavy: { label: 'Heavy', variant: 'error' as const, color: 'text-orange-600' },
-  severe: { label: 'Severe', variant: 'error' as const, color: 'text-red-600' },
-};
+import { enrichSnapshot, countByCondition, TRAFFIC_CONFIG } from '@/core/utils/trafficUtils';
+import { buildGoogleMapsDirectionsUrl } from '@/core/utils/mapsUtils';
+import { useRouteMap } from '@/core/hooks/useRouteMap';
 
 type TrafficCondition = 'all' | 'light' | 'moderate' | 'heavy' | 'severe';
 
 export default function MonitoringPage() {
   const { data: routes, isLoading: routesLoading } = useRoutes();
+  const routeMap = useRouteMap(routes);
   const [trafficPage, setTrafficPage] = React.useState(1);
   const { data: trafficResponse, isLoading: trafficLoading } = useTrafficSnapshots({ page: trafficPage.toString(), limit: '10' });
   const [selectedFilter, setSelectedFilter] = React.useState<TrafficCondition>('all');
@@ -59,16 +56,9 @@ export default function MonitoringPage() {
     return trafficSnapshots.filter(s => s.traffic_condition === selectedFilter);
   }, [trafficSnapshots, selectedFilter]);
 
-  // Count by traffic condition
+  // Count by traffic condition using utility
   const conditionCounts = React.useMemo(() => {
-    if (!trafficSnapshots) return { all: 0, light: 0, moderate: 0, heavy: 0, severe: 0 };
-    return {
-      all: trafficSnapshots.length,
-      light: trafficSnapshots.filter(s => s.traffic_condition === 'light').length,
-      moderate: trafficSnapshots.filter(s => s.traffic_condition === 'moderate').length,
-      heavy: trafficSnapshots.filter(s => s.traffic_condition === 'heavy').length,
-      severe: trafficSnapshots.filter(s => s.traffic_condition === 'severe').length,
-    };
+    return countByCondition(trafficSnapshots);
   }, [trafficSnapshots]);
 
   // Toggle expanded state for deliveries
@@ -211,21 +201,12 @@ export default function MonitoringPage() {
           <div className="max-h-[800px] overflow-y-auto">
             <List>
               {filteredSnapshots.map((snapshot: TrafficSnapshot) => {
-              const route = routes?.find(r => r.id === snapshot.route_id);
-              const config = trafficConfig[snapshot.traffic_condition as keyof typeof trafficConfig];
-
-              // Get additional incident details
-              const description = snapshot.description;
-              const severity = snapshot.severity || 'minor';
-              const affectedArea = snapshot.affected_area;
-              const incidentType = snapshot.incident_type;
-
-              // Create Google Maps URL
-              const originAddr = route?.origin_address || '';
-              const destAddr = route?.destination_address || '';
-              const googleMapsUrl = originAddr && destAddr
-                ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originAddr)}&destination=${encodeURIComponent(destAddr)}&travelmode=driving`
-                : null;
+              const route = routeMap.get(snapshot.route_id);
+              const enriched = enrichSnapshot(snapshot);
+              const googleMapsUrl = buildGoogleMapsDirectionsUrl(
+                route?.origin_address || '',
+                route?.destination_address || ''
+              );
 
               return (
                 <ListItem key={snapshot.id}>
@@ -239,12 +220,12 @@ export default function MonitoringPage() {
                         <span className="font-medium truncate">
                           {route?.origin_address || 'Unknown Route'}
                         </span>
-                        <Badge variant={config.variant}>
-                          {config.label}
+                        <Badge variant={enriched.config.variant}>
+                          {enriched.config.label}
                         </Badge>
-                        {severity && severity !== 'minor' && (
+                        {enriched.severity !== 'minor' && (
                           <Badge variant="error" className="text-xs">
-                            {severity.toUpperCase()}
+                            {enriched.severity.toUpperCase()}
                           </Badge>
                         )}
                       </div>
@@ -255,31 +236,31 @@ export default function MonitoringPage() {
                       </p>
 
                       {/* Incident description */}
-                      {description && (
+                      {enriched.description && (
                         <p className="text-sm mb-2 text-gray-700 dark:text-gray-300">
-                          {description}
+                          {enriched.description}
                         </p>
                       )}
 
                       {/* Affected area */}
-                      {affectedArea && (
+                      {enriched.affected_area && (
                         <p className="text-xs text-muted-foreground mb-2">
-                          Affected area: {affectedArea}
+                          Affected area: {enriched.affected_area}
                         </p>
                       )}
 
                       {/* Metrics row */}
                       <div className="flex items-center gap-4 mt-2 flex-wrap text-xs">
-                        <span className={`font-medium ${config.color}`}>
-                          +{snapshot.delay_minutes} min delay
+                        <span className={`font-medium ${enriched.config.color}`}>
+                          +{enriched.delay_minutes} min delay
                         </span>
-                        {incidentType && (
+                        {enriched.formatted_incident_type && (
                           <span className="text-muted-foreground capitalize">
-                            {incidentType.replace('_', ' ')}
+                            {enriched.formatted_incident_type}
                           </span>
                         )}
                         <span className="text-muted-foreground">
-                          {new Date(snapshot.snapshot_at).toLocaleString()}
+                          {new Date(enriched.snapshot_at).toLocaleString()}
                         </span>
                       </div>
 

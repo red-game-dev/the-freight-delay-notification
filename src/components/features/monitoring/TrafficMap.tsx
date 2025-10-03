@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/Select';
 import { Loader2 } from 'lucide-react';
 import { clientEnv } from '@/infrastructure/config/ClientEnv';
 import type { TrafficConditionFilter, TrafficCondition } from '@/core/types/traffic';
+import { getTrafficColor, getSeverityColor, compareTrafficSeverity } from '@/core/utils/trafficUtils';
 
 interface Route {
   id: string;
@@ -232,7 +233,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
           .sort((a, b) => b.id.localeCompare(a.id))[0];
 
         const trafficCondition = route.traffic_condition || latestSnapshot?.traffic_condition || 'light';
-        const color = getRouteColor(trafficCondition);
+        const color = getTrafficColor(trafficCondition);
 
         return {
           id: route.id,
@@ -259,13 +260,10 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
 
     console.log('🗺️ [TrafficMap] After filter:', filtered.length, 'routes');
 
-    // Sort by severity: severe > heavy > moderate > light
-    return filtered.sort((a, b) => {
-      const severityOrder = { severe: 4, heavy: 3, moderate: 2, light: 1 };
-      const aSeverity = severityOrder[a.trafficCondition as keyof typeof severityOrder] || 0;
-      const bSeverity = severityOrder[b.trafficCondition as keyof typeof severityOrder] || 0;
-      return bSeverity - aSeverity; // Descending order (severe first)
-    });
+    // Sort by severity using utility
+    return filtered.sort((a, b) =>
+      compareTrafficSeverity(a.trafficCondition, b.trafficCondition)
+    );
   }, [routes, trafficSnapshots, trafficFilter]);
 
   const onLoad = React.useCallback((map: google.maps.Map) => {
@@ -485,7 +483,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
               icon={{
                 path: google.maps.SymbolPath.CIRCLE,
                 scale: 10,
-                fillColor: getMarkerColor(snapshot.severity || 'minor'),
+                fillColor: getSeverityColor(snapshot.severity || 'minor'),
                 fillOpacity: 0.8,
                 strokeColor: '#ffffff',
                 strokeWeight: 2,
@@ -512,7 +510,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
                     Delay: +{snapshot.delay_minutes} min
                   </p>
                   {snapshot.severity && (
-                    <p className="text-xs font-semibold mt-1" style={{ color: getMarkerColor(snapshot.severity) }}>
+                    <p className="text-xs font-semibold mt-1" style={{ color: getSeverityColor(snapshot.severity) }}>
                       Severity: {snapshot.severity.toUpperCase()}
                     </p>
                   )}
@@ -535,24 +533,4 @@ function LoadingElement() {
       </div>
     </div>
   );
-}
-
-function getMarkerColor(severity: string): string {
-  const colors: Record<string, string> = {
-    minor: '#eab308',    // yellow
-    moderate: '#f97316', // orange
-    major: '#ef4444',    // red
-    severe: '#dc2626',   // dark red
-  };
-  return colors[severity] || colors.minor;
-}
-
-function getRouteColor(trafficCondition: string): string {
-  const colors: Record<string, string> = {
-    light: '#22c55e',    // green - normal traffic
-    moderate: '#eab308', // yellow - moderate traffic
-    heavy: '#f97316',    // orange - heavy traffic
-    severe: '#ef4444',   // red - severe traffic
-  };
-  return colors[trafficCondition.toLowerCase()] || colors.light;
 }
