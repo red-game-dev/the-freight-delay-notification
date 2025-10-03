@@ -12,7 +12,7 @@ import { WorkflowIdReusePolicy } from '@temporalio/client';
 import { getGeocodingService } from '@/infrastructure/adapters/geocoding/GeocodingService';
 import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
-import { generateRecurringWorkflowId, generateWorkflowId } from '@/core/utils/workflowUtils';
+import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
 import { ensureDateISO } from '@/core/utils/typeConversion';
 import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
 
@@ -219,7 +219,7 @@ export const POST = createApiHandler(async (request) => {
           maxChecks,
         };
 
-        const workflowId = generateRecurringWorkflowId(deliveryResult.value.id);
+        const workflowId = createWorkflowId(WorkflowType.RECURRING_CHECK, deliveryResult.value.id, false);
 
         const handle = await client.workflow.start('RecurringTrafficCheckWorkflow', {
           taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',
@@ -232,7 +232,7 @@ export const POST = createApiHandler(async (request) => {
         logger.info(`   Check interval: ${body.check_interval_minutes || 30} minutes, Max checks: ${maxChecks === -1 ? 'unlimited' : maxChecks}`);
       } else {
         // Trigger one-time DelayNotificationWorkflow
-        const workflowId = generateWorkflowId(deliveryResult.value.id, false);
+        const workflowId = createWorkflowId(WorkflowType.DELAY_NOTIFICATION, deliveryResult.value.id, false);
 
         const handle = await client.workflow.start('DelayNotificationWorkflow', {
           taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',

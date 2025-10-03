@@ -14,6 +14,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow } from 'lucide-react';
 import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
 import { formatNextScheduledTime } from '@/core/utils/dateUtils';
+import { isWorkflowType, WorkflowType } from '@/core/utils/workflowUtils';
 import Link from 'next/link';
 
 const statusConfig = {
@@ -87,7 +88,7 @@ export function WorkflowTimeline() {
               )
             : null;
 
-          const isRecurring = workflowId?.startsWith('recurring-check-');
+          const isRecurring = workflowId ? isWorkflowType(workflowId, WorkflowType.RECURRING_CHECK) : false;
           const trackingNumber = (execution as any).tracking_number;
           const settings = (execution as any).settings;
 

@@ -19,7 +19,7 @@ import type {
   WorkflowStatusQuery,
 } from './types';
 import { getCurrentISOTimestamp } from '../core/utils/dateUtils';
-import { generateWorkflowId, generateRecurringWorkflowId } from '../core/utils/workflowUtils';
+import { createWorkflowId, WorkflowType } from '../core/utils/workflowUtils';
 
 // Import all activities with retry policies and timeouts
 const {
@@ -223,7 +223,7 @@ export async function DelayNotificationWorkflow(
 
     // Save workflow execution to database
     await saveWorkflowExecution({
-      workflowId: generateWorkflowId(input.deliveryId),
+      workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId),
       runId: `run-${Date.now()}`,
       deliveryId: input.deliveryId,
       status: 'completed',
@@ -239,7 +239,7 @@ export async function DelayNotificationWorkflow(
     // Save failed workflow execution to database
     try {
       await saveWorkflowExecution({
-        workflowId: generateWorkflowId(input.deliveryId),
+        workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId),
         runId: `run-${Date.now()}`,
         deliveryId: input.deliveryId,
         status: 'failed',
@@ -533,7 +533,7 @@ export async function RecurringTrafficCheckWorkflow(
 
     // Save workflow execution
     await saveWorkflowExecution({
-      workflowId: generateRecurringWorkflowId(input.deliveryId),
+      workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, false),
       runId: `run-${Date.now()}`,
       deliveryId: input.deliveryId,
       status: 'completed',
@@ -549,7 +549,7 @@ export async function RecurringTrafficCheckWorkflow(
     // Save failed workflow execution
     try {
       await saveWorkflowExecution({
-        workflowId: generateRecurringWorkflowId(input.deliveryId),
+        workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, false),
         runId: `run-${Date.now()}`,
         deliveryId: input.deliveryId,
         status: 'failed',

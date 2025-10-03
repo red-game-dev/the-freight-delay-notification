@@ -219,7 +219,6 @@ export default function MonitoringPage() {
               const severity = (snapshot as any).severity || 'minor';
               const affectedArea = (snapshot as any).affected_area;
               const incidentType = (snapshot as any).incident_type;
-              const incidentLocation = (snapshot as any).incident_location;
 
               // Create Google Maps URL
               const originAddr = route?.origin_address || '';
@@ -227,13 +226,6 @@ export default function MonitoringPage() {
               const googleMapsUrl = originAddr && destAddr
                 ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originAddr)}&destination=${encodeURIComponent(destAddr)}&travelmode=driving`
                 : null;
-
-              const severityColors = {
-                minor: 'text-yellow-600 dark:text-yellow-400',
-                moderate: 'text-orange-600 dark:text-orange-400',
-                major: 'text-red-600 dark:text-red-400',
-                severe: 'text-red-700 dark:text-red-500',
-              };
 
               return (
                 <ListItem key={snapshot.id}>

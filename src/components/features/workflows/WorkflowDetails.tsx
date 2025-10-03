@@ -9,6 +9,7 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Clock } from 'lucide-react';
 import { formatNextScheduledTime } from '@/core/utils/dateUtils';
+import { isWorkflowType, WorkflowType } from '@/core/utils/workflowUtils';
 import Link from 'next/link';
 
 interface WorkflowDetailsProps {
@@ -43,7 +44,7 @@ export function WorkflowDetails({
   showLink = true,
   compact = false,
 }: WorkflowDetailsProps) {
-  const isRecurring = workflowId?.startsWith('recurring-check-');
+  const isRecurring = workflowId ? isWorkflowType(workflowId, WorkflowType.RECURRING_CHECK) : false;
   const isRunning = status === 'running';
 
   // Calculate duration

@@ -15,7 +15,7 @@ import { env } from '@/infrastructure/config/EnvValidator';
 import { logger, getErrorMessage } from '@/core/base/utils/Logger';
 import { getCurrentISOTimestamp, subtractHours } from '@/core/utils/dateUtils';
 import { capitalizeFirstLetter } from '@/core/utils/stringUtils';
-import { generateWorkflowId } from '@/core/utils/workflowUtils';
+import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
 import { Result } from '@/core/base/utils/Result';
 import { UnauthorizedError, InfrastructureError } from '@/core/base/errors/BaseError';
 import { createApiHandler } from '@/core/infrastructure/http';
@@ -239,7 +239,7 @@ export const GET = createApiHandler(async (request: NextRequest) => {
                 // Trigger delay notification workflow
                 await temporalClient.workflow.start(DelayNotificationWorkflow, {
                   taskQueue: env.TEMPORAL_TASK_QUEUE || 'freight-delay-notifications',
-                  workflowId: generateWorkflowId(delivery.tracking_number),
+                  workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, delivery.tracking_number),
                   args: [{
                     deliveryId: delivery.id,
                     trackingNumber: delivery.tracking_number,

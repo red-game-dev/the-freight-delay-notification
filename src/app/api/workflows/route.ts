@@ -7,7 +7,7 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
-import { generateRecurringWorkflowId, generateWorkflowId } from '@/core/utils/workflowUtils';
+import { createWorkflowId, parseWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
 import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
 
 interface WorkflowListItem {
@@ -94,8 +94,8 @@ export const GET = createApiHandler(async (request) => {
     for (const delivery of allDeliveries) {
       // Check both recurring and one-time workflow patterns
       const workflowIds = [
-        generateRecurringWorkflowId(delivery.id),
-        generateWorkflowId(delivery.id, false),
+        createWorkflowId(WorkflowType.RECURRING_CHECK, delivery.id, false),
+        createWorkflowId(WorkflowType.DELAY_NOTIFICATION, delivery.id, false),
       ];
 
       for (const workflowId of workflowIds) {
@@ -122,7 +122,7 @@ export const GET = createApiHandler(async (request) => {
               tracking_number: delivery.tracking_number,
               // Add workflow settings
               settings: {
-                type: workflowId.startsWith('recurring-check-') ? 'recurring' : 'one-time',
+                type: parseWorkflowId(workflowId)?.type === WorkflowType.RECURRING_CHECK ? 'recurring' : 'one-time',
                 check_interval_minutes: delivery.check_interval_minutes,
                 max_checks: delivery.max_checks,
                 checks_performed: delivery.checks_performed,
