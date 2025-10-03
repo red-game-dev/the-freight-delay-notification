@@ -6,10 +6,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { GoogleMap, useLoadScript, DirectionsRenderer } from '@react-google-maps/api';
+import { GoogleMap, DirectionsRenderer } from '@react-google-maps/api';
 import { Alert } from '@/components/ui/Alert';
 import { Loader2 } from 'lucide-react';
-import { clientEnv } from '@/infrastructure/config/ClientEnv';
+import { useGoogleMaps } from '@/providers/GoogleMapsProvider';
 
 interface DeliveryMapProps {
   origin: string;
@@ -31,10 +31,7 @@ const mapOptions: google.maps.MapOptions = {
 };
 
 export function DeliveryMap({ origin, destination, className }: DeliveryMapProps) {
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: clientEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places'],
-  });
+  const { isLoaded, loadError } = useGoogleMaps();
 
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [error, setError] = useState<string | null>(null);

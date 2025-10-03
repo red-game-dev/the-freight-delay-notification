@@ -6,6 +6,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { LayoutList, LayoutGrid, List } from 'lucide-react';
 import { cn } from '@/core/base/utils/cn';
 import { useViewMode } from '@/stores';
@@ -29,7 +30,23 @@ export function ViewModeSwitcher({
   className,
   showLabels = false,
 }: ViewModeSwitcherProps) {
-  const { viewMode, setViewMode } = useViewMode(pageKey);
+  const { viewMode: storeViewMode, setViewMode: storeSetViewMode } = useViewMode(pageKey);
+
+  // Use local state to prevent hydration mismatch
+  // Initialize with default 'list' on both server and client
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Sync with store after hydration
+  useEffect(() => {
+    setIsHydrated(true);
+    setViewMode(storeViewMode as ViewMode);
+  }, [storeViewMode]);
+
+  const handleSetViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    storeSetViewMode(mode);
+  };
 
   return (
     <div
@@ -43,7 +60,7 @@ export function ViewModeSwitcher({
       {modes.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
-          onClick={() => setViewMode(value)}
+          onClick={() => handleSetViewMode(value)}
           className={cn(
             'inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             viewMode === value
@@ -64,8 +81,16 @@ export function ViewModeSwitcher({
 /**
  * Hook to get current view mode for a page
  * Use this in components that need to render differently based on view mode
+ *
+ * Note: Returns 'list' as default during SSR, then syncs with store after hydration
  */
 export function usePageViewMode(pageKey: string): ViewMode {
-  const { viewMode } = useViewMode(pageKey);
-  return viewMode as ViewMode;
+  const { viewMode: storeViewMode } = useViewMode(pageKey);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  useEffect(() => {
+    setViewMode(storeViewMode as ViewMode);
+  }, [storeViewMode]);
+
+  return viewMode;
 }

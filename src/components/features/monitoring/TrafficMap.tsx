@@ -7,12 +7,13 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { GoogleMap, useLoadScript, DirectionsRenderer, Marker, InfoWindow, TrafficLayer, Polyline } from '@react-google-maps/api';
+import { GoogleMap, DirectionsRenderer, Marker, InfoWindow, TrafficLayer, Polyline } from '@react-google-maps/api';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Select } from '@/components/ui/Select';
 import { Loader2 } from 'lucide-react';
+import { useGoogleMaps } from '@/providers/GoogleMapsProvider';
 import { clientEnv } from '@/infrastructure/config/ClientEnv';
 import type { TrafficConditionFilter, TrafficCondition } from '@/core/types/traffic';
 import { getTrafficColor, getSeverityColor, compareTrafficSeverity } from '@/core/utils/trafficUtils';
@@ -63,13 +64,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   const [selectedRoute, setSelectedRoute] = useState<string | null>(selectedRouteId || null);
   const [trafficFilter, setTrafficFilter] = useState<TrafficConditionFilter>('all');
 
-  // Get Google Maps API key from client env
-  const apiKey = clientEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-  // Load Google Maps API
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || '',
-  });
+  const { isLoaded, loadError } = useGoogleMaps();
 
   // Calculate map center based on ALL routes
   const mapCenter = useMemo(() => {
@@ -285,14 +280,6 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
     });
     return counts;
   }, [routePolylines]);
-
-  if (!apiKey) {
-    return (
-      <Alert variant="warning" title="Google Maps API Key Missing">
-        Please add <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to your environment variables to enable the interactive map.
-      </Alert>
-    );
-  }
 
   if (loadError) {
     return (
