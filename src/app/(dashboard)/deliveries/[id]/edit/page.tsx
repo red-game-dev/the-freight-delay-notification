@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -50,10 +50,10 @@ export default function EditDeliveryPage() {
     watch,
   } = useForm<UpdateDeliveryInput>();
 
-  const [status, setStatus] = React.useState<Delivery['status']>('pending');
+  const [status, setStatus] = useState<Delivery['status']>('pending');
 
   // Pre-populate form when delivery loads
-  React.useEffect(() => {
+  useEffect(() => {
     if (delivery) {
       setValue('tracking_number', delivery.tracking_number);
       setValue('origin', delivery.origin);

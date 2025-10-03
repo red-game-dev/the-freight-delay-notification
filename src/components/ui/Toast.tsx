@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, ReactNode, createContext, useCallback, useContext, useState } from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { generateShortId } from '@/core/utils/idUtils';
 import { Button } from './Button';
@@ -25,10 +25,10 @@ interface ToastContextValue {
   removeToast: (id: string) => void;
 }
 
-const ToastContext = React.createContext<ToastContextValue | undefined>(undefined);
+const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export const useToast = () => {
-  const context = React.useContext(ToastContext);
+  const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within ToastProvider');
   }
@@ -36,13 +36,13 @@ export const useToast = () => {
 };
 
 interface ToastProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
-  const [toasts, setToasts] = React.useState<Toast[]>([]);
+export const ToastProvider: FC<ToastProviderProps> = ({ children }) => {
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = React.useCallback(
+  const showToast = useCallback(
     (message: string, variant: ToastVariant = 'info', duration = 5000) => {
       const id = generateShortId();
       const newToast: Toast = { id, message, variant, duration };
@@ -58,7 +58,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     []
   );
 
-  const removeToast = React.useCallback((id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
@@ -75,7 +75,7 @@ interface ToastContainerProps {
   onRemove: (id: string) => void;
 }
 
-const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => {
+const ToastContainer: FC<ToastContainerProps> = ({ toasts, onRemove }) => {
   if (toasts.length === 0) return null;
 
   return (
@@ -111,7 +111,7 @@ const variantConfig = {
   },
 };
 
-const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
+const ToastItem: FC<ToastItemProps> = ({ toast, onRemove }) => {
   const config = variantConfig[toast.variant];
   const Icon = config.icon;
 

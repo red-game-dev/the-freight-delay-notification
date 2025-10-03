@@ -5,18 +5,18 @@
 
 'use client';
 
-import * as React from 'react';
+import { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes, forwardRef, useId } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export type InputSize = 'sm' | 'md' | 'lg';
 export type InputState = 'default' | 'success' | 'error' | 'warning';
 
-export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   helperText?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
   fullWidth?: boolean;
   size?: InputSize;
   state?: InputState;
@@ -29,7 +29,7 @@ const sizeClasses: Record<InputSize, string> = {
   lg: 'px-4 py-3 text-lg',
 };
 
-const getStateIcon = (state: InputState): React.ReactNode => {
+const getStateIcon = (state: InputState): ReactNode => {
   switch (state) {
     case 'success':
       return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
@@ -42,7 +42,7 @@ const getStateIcon = (state: InputState): React.ReactNode => {
   }
 };
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
       label,
@@ -61,7 +61,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const inputId = React.useId();
+    const inputId = useId();
     const actualId = id || inputId;
     const actualState = error ? 'error' : state;
     const stateIcon = showStateIcon && !rightIcon && actualState !== 'default' ? getStateIcon(actualState) : null;
@@ -132,7 +132,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
 Input.displayName = 'Input';
 
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   helperText?: string;
@@ -141,7 +141,7 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   state?: InputState;
 }
 
-export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   (
     {
       label,
@@ -157,7 +157,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     },
     ref
   ) => {
-    const textareaId = React.useId();
+    const textareaId = useId();
     const actualId = id || textareaId;
     const actualState = error ? 'error' : state;
 

@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -59,9 +59,9 @@ export default function DeliveryDetailPage() {
   const cancelWorkflow = useCancelWorkflow();
   const deleteDelivery = useDeleteDelivery();
 
-  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
-  const [showCancelWorkflowModal, setShowCancelWorkflowModal] = React.useState(false);
-  const [forceCancel, setForceCancel] = React.useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showCancelWorkflowModal, setShowCancelWorkflowModal] = useState(false);
+  const [forceCancel, setForceCancel] = useState(false);
 
   const workflowId = delivery
     ? createWorkflowId(

@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { NextThemeProvider } from '@/providers/NextThemeProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
@@ -11,7 +12,7 @@ const ToastContainer = dynamic(
 );
 
 interface ProvidersProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function Providers({ children }: ProvidersProps) {

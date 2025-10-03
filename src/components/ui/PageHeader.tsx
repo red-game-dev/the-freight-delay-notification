@@ -3,17 +3,17 @@
  * Consistent page title and description layout
  */
 
-import * as React from 'react';
+import { FC, ReactNode } from 'react';
 import { cn } from '@/core/base/utils/cn';
 
 export interface PageHeaderProps {
   title: string;
   description?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
   className?: string;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({
+export const PageHeader: FC<PageHeaderProps> = ({
   title,
   description,
   children,

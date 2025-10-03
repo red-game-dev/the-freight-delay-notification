@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { GoogleMap, useLoadScript, DirectionsRenderer } from '@react-google-maps/api';
 import { Alert } from '@/components/ui/Alert';
 import { Loader2 } from 'lucide-react';
@@ -36,12 +36,12 @@ export function DeliveryMap({ origin, destination, className }: DeliveryMapProps
     libraries: ['places'],
   });
 
-  const [directions, setDirections] = React.useState<google.maps.DirectionsResult | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const [isLoadingDirections, setIsLoadingDirections] = React.useState(false);
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingDirections, setIsLoadingDirections] = useState(false);
 
   // Fetch directions when origin/destination change
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLoaded || !origin || !destination) return;
 
     const directionsService = new google.maps.DirectionsService();

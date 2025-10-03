@@ -11,7 +11,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useMemo } from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { useErrorStore, useNotificationStore } from '@/stores';
 import { useShallow } from 'zustand/react/shallow';
@@ -80,7 +80,7 @@ export function ToastContainer() {
   );
 
   // Combine and sort by timestamp (newest first)
-  const toasts: ToastItem[] = React.useMemo(() => {
+  const toasts: ToastItem[] = useMemo(() => {
     const errorToasts: ToastItem[] = errors.map((error) => ({ type: 'error' as const, data: error }));
     const notificationToasts: ToastItem[] = notifications.map((notification) => ({
       type: 'notification' as const,

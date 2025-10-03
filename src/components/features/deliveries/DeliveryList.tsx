@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
@@ -25,7 +25,7 @@ const statusConfig = {
 };
 
 export function DeliveryList() {
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const { data: response, isLoading, error } = useDeliveries({ page: currentPage.toString(), limit: '10' });
 
   const deliveries = response?.data || [];

@@ -3,7 +3,7 @@
  * Reusable filter controls for lists and tables
  */
 
-import * as React from 'react';
+import { FC } from 'react';
 import { cn } from '@/core/base/utils/cn';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -37,7 +37,7 @@ export interface FiltersProps {
   compact?: boolean;
 }
 
-export const Filters: React.FC<FiltersProps> = ({
+export const Filters: FC<FiltersProps> = ({
   filters,
   onFilterChange,
   onClearAll,

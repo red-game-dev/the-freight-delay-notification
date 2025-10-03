@@ -5,14 +5,14 @@
 
 'use client';
 
-import * as React from 'react';
+import { KeyboardEvent, MouseEvent, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 
 export interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
   side?: 'left' | 'right';
   title?: string;
   showOverlay?: boolean;
@@ -32,11 +32,11 @@ export function Drawer({
   closeOnEsc = true,
   showCloseButton = true,
 }: DrawerProps) {
-  const drawerRef = React.useRef<HTMLDivElement>(null);
-  const previousActiveElement = React.useRef<HTMLElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
 
   // Handle ESC key press
-  const handleEscKey = React.useCallback(
+  const handleEscKey = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape' && closeOnEsc) {
         onClose();
@@ -46,8 +46,8 @@ export function Drawer({
   );
 
   // Handle overlay click
-  const handleOverlayClick = React.useCallback(
-    (e: React.MouseEvent) => {
+  const handleOverlayClick = useCallback(
+    (e: MouseEvent) => {
       e.stopPropagation();
       if (closeOnOverlay) {
         onClose();
@@ -57,7 +57,7 @@ export function Drawer({
   );
 
   // Lock body scroll when open
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       const scrollbarWidth =
         window.innerWidth - document.documentElement.clientWidth;
@@ -75,7 +75,7 @@ export function Drawer({
   }, [isOpen]);
 
   // Handle keyboard events and focus management
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) return;
 
     // Store current active element
@@ -102,7 +102,7 @@ export function Drawer({
   }, [isOpen, closeOnEsc, handleEscKey]);
 
   // Trap focus within drawer
-  const handleKeyDown = React.useCallback((event: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key !== 'Tab' || !drawerRef.current) return;
 
     const focusableElements = drawerRef.current.querySelectorAll(

@@ -4,7 +4,7 @@
  * Supports optgroups and react-hook-form integration
  */
 
-import * as React from 'react';
+import { SelectHTMLAttributes, forwardRef, useId } from 'react';
 import { cn } from '@/core/base/utils/cn';
 import { AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react';
 
@@ -19,7 +19,7 @@ export interface SelectOptionGroup {
   options: SelectOption[];
 }
 
-export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
+export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   label?: string;
   helperText?: string;
   error?: string;
@@ -35,7 +35,7 @@ const sizeClasses = {
   lg: 'px-4 py-3 text-lg',
 };
 
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   (
     {
       label,
@@ -53,7 +53,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     },
     ref
   ) => {
-    const selectId = React.useId();
+    const selectId = useId();
     const actualId = id || selectId;
 
     return (

@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, forwardRef } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { Input, type InputProps } from './Input';
 
@@ -20,7 +20,7 @@ export interface DateTimePickerProps extends Omit<InputProps, 'type' | 'leftIcon
  * DateTimePicker - Input for selecting dates and times
  * Uses native HTML5 datetime inputs with custom styling
  */
-export const DateTimePicker = React.forwardRef<HTMLInputElement, DateTimePickerProps>(
+export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
   ({ showIcon = true, dateType = 'datetime-local', ...props }, ref) => {
     const icon = dateType === 'time' ? <Clock className="h-4 w-4" /> : <Calendar className="h-4 w-4" />;
 
@@ -48,7 +48,7 @@ export interface DateRangePickerProps {
 /**
  * DateRangePicker - Input for selecting a date range
  */
-export const DateRangePicker: React.FC<DateRangePickerProps> = ({
+export const DateRangePicker: FC<DateRangePickerProps> = ({
   startDate,
   endDate,
   onStartChange,

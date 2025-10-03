@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { CompactTimeline } from '@/components/ui/Timeline';
 import { SkeletonWorkflow } from '@/components/ui/Skeleton';
@@ -26,7 +26,7 @@ const statusConfig = {
 };
 
 export function WorkflowTimeline() {
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const { data: response, isLoading } = useWorkflows({ page: currentPage.toString(), limit: '10' });
 
   const workflows = response?.data || [];

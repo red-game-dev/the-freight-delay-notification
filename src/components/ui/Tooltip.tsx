@@ -5,23 +5,23 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, ReactNode, useRef, useState } from 'react';
 
 export interface TooltipProps {
-  content: React.ReactNode;
-  children: React.ReactNode;
+  content: ReactNode;
+  children: ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
 }
 
-export const Tooltip: React.FC<TooltipProps> = ({
+export const Tooltip: FC<TooltipProps> = ({
   content,
   children,
   position = 'top',
   delay = 200,
 }) => {
-  const [isVisible, setIsVisible] = React.useState(false);
-  const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
+  const [isVisible, setIsVisible] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const showTooltip = () => {
     timeoutRef.current = setTimeout(() => {

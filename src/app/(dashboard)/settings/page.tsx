@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -27,8 +27,8 @@ import {
 import type { Threshold, CreateThresholdInput } from '@/core/infrastructure/http/services/thresholds';
 
 export default function SettingsPage() {
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [editingThreshold, setEditingThreshold] = React.useState<Threshold | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingThreshold, setEditingThreshold] = useState<Threshold | null>(null);
 
   const { data: thresholds, isLoading } = useThresholds();
   const createThreshold = useCreateThreshold();
@@ -175,14 +175,14 @@ interface ThresholdModalProps {
 }
 
 function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: ThresholdModalProps) {
-  const [name, setName] = React.useState('');
-  const [delayMinutes, setDelayMinutes] = React.useState('30');
-  const [channels, setChannels] = React.useState<Array<'email' | 'sms'>>(['email']);
-  const [isDefault, setIsDefault] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [name, setName] = useState('');
+  const [delayMinutes, setDelayMinutes] = useState('30');
+  const [channels, setChannels] = useState<Array<'email' | 'sms'>>(['email']);
+  const [isDefault, setIsDefault] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pre-populate form when editing
-  React.useEffect(() => {
+  useEffect(() => {
     if (threshold) {
       setName(threshold.name);
       setDelayMinutes(threshold.delay_minutes.toString());
@@ -196,7 +196,7 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
     }
   }, [threshold]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 

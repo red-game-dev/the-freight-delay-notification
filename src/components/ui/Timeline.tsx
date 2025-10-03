@@ -5,17 +5,17 @@
 
 'use client';
 
-import * as React from 'react';
+import { Fragment, ReactNode } from 'react';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
 
 export interface TimelineItem {
   id: string;
-  title: React.ReactNode;
-  description?: React.ReactNode;
+  title: ReactNode;
+  description?: ReactNode;
   timestamp?: string;
   status?: 'completed' | 'in_progress' | 'pending' | 'failed';
-  icon?: React.ReactNode;
-  metadata?: React.ReactNode;
+  icon?: ReactNode;
+  metadata?: ReactNode;
 }
 
 export interface TimelineProps {
@@ -120,7 +120,7 @@ export function CompactTimeline({ steps, className = '' }: CompactTimelineProps)
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {steps.map((step, idx) => (
-        <React.Fragment key={step.id}>
+        <Fragment key={step.id}>
           <div
             className={`h-2 w-2 rounded-full ${
               step.status === 'completed'
@@ -140,7 +140,7 @@ export function CompactTimeline({ steps, className = '' }: CompactTimelineProps)
               }`}
             />
           )}
-        </React.Fragment>
+        </Fragment>
       ))}
     </div>
   );

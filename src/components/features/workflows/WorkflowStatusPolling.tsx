@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
@@ -71,7 +71,7 @@ const statusConfig = {
   },
 };
 
-export const WorkflowStatusPolling: React.FC<WorkflowStatusPollingProps> = ({
+export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
   workflowId,
   enabled = true,
   pollInterval = 2000,
@@ -81,7 +81,7 @@ export const WorkflowStatusPolling: React.FC<WorkflowStatusPollingProps> = ({
 }) => {
   // Determine if workflow is in a terminal state (completed, failed, cancelled, timed_out)
   // We'll update this after fetching workflow data
-  const [isTerminal, setIsTerminal] = React.useState(false);
+  const [isTerminal, setIsTerminal] = useState(false);
 
   // Poll workflow status - stop polling when workflow reaches terminal state
   const {
@@ -93,7 +93,7 @@ export const WorkflowStatusPolling: React.FC<WorkflowStatusPollingProps> = ({
   });
 
   // Update terminal state when workflow data changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (workflow) {
       const terminalStates = ['completed', 'failed', 'cancelled', 'timed_out'];
       setIsTerminal(terminalStates.includes(workflow.status));

@@ -4,10 +4,10 @@
 
 'use client';
 
-import * as React from 'react';
+import { ReactNode } from 'react';
 
 export interface TableProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -22,7 +22,7 @@ export function Table({ children, className = '' }: TableProps) {
 }
 
 export interface TableHeaderProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -35,7 +35,7 @@ export function TableHeader({ children, className = '' }: TableHeaderProps) {
 }
 
 export interface TableBodyProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -48,7 +48,7 @@ export function TableBody({ children, className = '' }: TableBodyProps) {
 }
 
 export interface TableRowProps {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick?: () => void;
   className?: string;
 }
@@ -69,7 +69,7 @@ export function TableRow({ children, onClick, className = '' }: TableRowProps) {
 }
 
 export interface TableHeadProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -84,7 +84,7 @@ export function TableHead({ children, className = '' }: TableHeadProps) {
 }
 
 export interface TableCellProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 

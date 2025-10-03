@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC } from 'react';
 
 export interface ProgressProps {
   value: number;
@@ -29,7 +29,7 @@ const variantStyles = {
   error: 'bg-red-600',
 };
 
-export const Progress: React.FC<ProgressProps> = ({
+export const Progress: FC<ProgressProps> = ({
   value,
   max = 100,
   size = 'md',
@@ -67,7 +67,7 @@ export interface CircularProgressProps {
   showLabel?: boolean;
 }
 
-export const CircularProgress: React.FC<CircularProgressProps> = ({
+export const CircularProgress: FC<CircularProgressProps> = ({
   value,
   size = 48,
   strokeWidth = 4,

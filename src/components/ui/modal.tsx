@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, ReactNode, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 
@@ -13,7 +13,7 @@ export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
   position?: 'center' | 'right' | 'left';
@@ -33,7 +33,7 @@ const positionStyles = {
   left: 'items-center justify-start pl-4',
 };
 
-export const Modal: React.FC<ModalProps> = ({
+export const Modal: FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
@@ -42,7 +42,7 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   position = 'center',
 }) => {
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -103,10 +103,10 @@ Modal.displayName = 'Modal';
 
 export interface ModalFooterProps {
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
-export const ModalFooter: React.FC<ModalFooterProps> = ({ className = '', children }) => {
+export const ModalFooter: FC<ModalFooterProps> = ({ className = '', children }) => {
   return (
     <div className={`flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 ${className}`}>
       {children}

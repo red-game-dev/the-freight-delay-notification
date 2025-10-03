@@ -5,17 +5,17 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, ReactNode, forwardRef } from 'react';
 
 export interface FormFieldProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
 /**
  * FormField - Provides consistent spacing between form fields
  */
-export const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
+export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
   ({ children, className = '' }, ref) => {
     return (
       <div ref={ref} className={`mb-4 ${className}`}>
@@ -28,7 +28,7 @@ export const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
 FormField.displayName = 'FormField';
 
 export interface FormRowProps {
-  children: React.ReactNode;
+  children: ReactNode;
   columns?: 1 | 2 | 3 | 4;
   className?: string;
 }
@@ -36,7 +36,7 @@ export interface FormRowProps {
 /**
  * FormRow - Organizes form fields in a grid layout
  */
-export const FormRow: React.FC<FormRowProps> = ({ children, columns = 2, className = '' }) => {
+export const FormRow: FC<FormRowProps> = ({ children, columns = 2, className = '' }) => {
   const gridCols = {
     1: 'grid-cols-1',
     2: 'grid-cols-1 md:grid-cols-2',
@@ -52,14 +52,14 @@ FormRow.displayName = 'FormRow';
 export interface FormSectionProps {
   title?: string;
   description?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
 /**
  * FormSection - Groups related form fields with optional title and description
  */
-export const FormSection: React.FC<FormSectionProps> = ({
+export const FormSection: FC<FormSectionProps> = ({
   title,
   description,
   children,

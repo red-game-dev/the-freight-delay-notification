@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { ButtonHTMLAttributes, FC, ReactNode, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/core/base/utils/cn';
 
@@ -22,12 +22,12 @@ export type ButtonVariant =
 
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
   fullWidth?: boolean;
   iconOnly?: boolean;
 }
@@ -60,7 +60,7 @@ const iconOnlySizes: Record<ButtonSize, string> = {
   xl: 'h-14 w-14',
 };
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       variant = 'default',
@@ -117,10 +117,10 @@ export interface ButtonGroupProps {
   spacing?: 'xs' | 'sm' | 'md' | 'lg';
   direction?: 'horizontal' | 'vertical';
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
-export const ButtonGroup: React.FC<ButtonGroupProps> = ({
+export const ButtonGroup: FC<ButtonGroupProps> = ({
   spacing = 'sm',
   direction = 'horizontal',
   className = '',

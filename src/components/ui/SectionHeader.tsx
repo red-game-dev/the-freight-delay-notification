@@ -3,13 +3,13 @@
  * Consistent section title and description for cards/sections
  */
 
-import * as React from 'react';
+import { FC, ReactNode } from 'react';
 import { cn } from '@/core/base/utils/cn';
 
 export interface SectionHeaderProps {
   title: string;
   description?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 }
@@ -29,7 +29,7 @@ const sizeClasses = {
   },
 };
 
-export const SectionHeader: React.FC<SectionHeaderProps> = ({
+export const SectionHeader: FC<SectionHeaderProps> = ({
   title,
   description,
   children,

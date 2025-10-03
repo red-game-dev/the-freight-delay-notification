@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
@@ -40,7 +40,7 @@ const sizeClasses: Record<SelectSize, string> = {
   lg: 'px-4 py-3 text-lg',
 };
 
-const getStateIcon = (state: SelectState): React.ReactNode => {
+const getStateIcon = (state: SelectState): ReactNode => {
   switch (state) {
     case 'success':
       return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
@@ -53,7 +53,7 @@ const getStateIcon = (state: SelectState): React.ReactNode => {
   }
 };
 
-export const Dropdown: React.FC<DropdownProps> = ({
+export const Dropdown: FC<DropdownProps> = ({
   options,
   value,
   onChange,
@@ -69,16 +69,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
   required,
   id,
 }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-  const selectId = React.useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectId = useId();
   const actualId = id || selectId;
   const actualState = error ? 'error' : state;
   const stateIcon = actualState !== 'default' ? getStateIcon(actualState) : null;
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -90,7 +90,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   }, []);
 
   // Handle keyboard navigation
-  const handleKeyDown = (event: React.KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent) => {
     if (disabled) return;
 
     switch (event.key) {

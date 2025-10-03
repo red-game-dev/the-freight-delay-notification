@@ -5,12 +5,12 @@
 
 'use client';
 
-import * as React from 'react';
+import { ReactNode } from 'react';
 
 export interface StatCardProps {
   title: string;
   value: string | number;
-  icon: React.ReactNode;
+  icon: ReactNode;
   trend?: {
     value: number;
     isPositive: boolean;
@@ -57,7 +57,7 @@ export function StatCard({
 }
 
 export interface StatGridProps {
-  children: React.ReactNode;
+  children: ReactNode;
   columns?: 2 | 3 | 4;
 }
 

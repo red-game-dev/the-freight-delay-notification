@@ -5,10 +5,10 @@
 
 'use client';
 
-import * as React from 'react';
+import { FC, HTMLAttributes, ReactNode, forwardRef } from 'react';
 import { cn } from '@/core/base/utils/cn';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
   variant?: 'default' | 'elevated' | 'outlined';
 }
@@ -19,7 +19,7 @@ const variantStyles = {
   outlined: 'bg-card border-2',
 };
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
+export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ interactive = false, variant = 'default', className, children, ...props }, ref) => {
     return (
       <div
@@ -41,14 +41,14 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 Card.displayName = 'Card';
 
 export interface CardHeaderProps {
-  title?: React.ReactNode;
-  subtitle?: React.ReactNode;
-  actions?: React.ReactNode;
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  actions?: ReactNode;
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
-export const CardHeader: React.FC<CardHeaderProps> = ({
+export const CardHeader: FC<CardHeaderProps> = ({
   title,
   subtitle,
   actions,
@@ -74,10 +74,10 @@ CardHeader.displayName = 'CardHeader';
 
 export interface CardBodyProps {
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
-export const CardBody: React.FC<CardBodyProps> = ({ className, children }) => {
+export const CardBody: FC<CardBodyProps> = ({ className, children }) => {
   return <div className={cn('p-6 pt-0', className)}>{children}</div>;
 };
 
@@ -85,10 +85,10 @@ CardBody.displayName = 'CardBody';
 
 export interface CardFooterProps {
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
-export const CardFooter: React.FC<CardFooterProps> = ({ className, children }) => {
+export const CardFooter: FC<CardFooterProps> = ({ className, children }) => {
   return <div className={cn('px-6 py-4 border-t bg-muted/50', className)}>{children}</div>;
 };
 

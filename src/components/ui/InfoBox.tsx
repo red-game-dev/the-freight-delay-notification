@@ -4,7 +4,7 @@
  * Supports different variants with appropriate styling
  */
 
-import * as React from 'react';
+import { FC, ReactNode } from 'react';
 import { cn } from '@/core/base/utils/cn';
 import { Info, AlertTriangle, CheckCircle, AlertCircle, Lightbulb } from 'lucide-react';
 
@@ -13,8 +13,8 @@ export type InfoBoxVariant = 'info' | 'success' | 'warning' | 'error' | 'tip';
 export interface InfoBoxProps {
   variant?: InfoBoxVariant;
   title?: string;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
+  children: ReactNode;
+  icon?: ReactNode;
   className?: string;
 }
 
@@ -24,7 +24,7 @@ const variantConfig: Record<
     container: string;
     title: string;
     text: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
   }
 > = {
   info: {
@@ -59,7 +59,7 @@ const variantConfig: Record<
   },
 };
 
-export const InfoBox: React.FC<InfoBoxProps> = ({
+export const InfoBox: FC<InfoBoxProps> = ({
   variant = 'info',
   title,
   children,

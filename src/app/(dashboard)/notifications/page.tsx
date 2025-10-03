@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { StatCard, StatGrid } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
@@ -21,7 +21,7 @@ import { useNotifications } from '@/core/infrastructure/http/services/notificati
 import Link from 'next/link';
 
 export default function NotificationsPage() {
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const { data: response, isLoading: notificationsLoading } = useNotifications({
     page: currentPage.toString(),
     limit: '10',

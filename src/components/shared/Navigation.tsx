@@ -4,7 +4,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Package, Menu, Home, TruckIcon, Activity, Bell, Workflow, BookOpen } from 'lucide-react';
@@ -22,7 +22,7 @@ const navigation = [
 ];
 
 export function Navigation() {
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
 
   return (

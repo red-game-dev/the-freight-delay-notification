@@ -6,7 +6,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { GoogleMap, useLoadScript, DirectionsRenderer, Marker, InfoWindow, TrafficLayer, Polyline } from '@react-google-maps/api';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
@@ -56,12 +56,12 @@ const defaultCenter = {
 };
 
 export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: TrafficMapProps) {
-  const [map, setMap] = React.useState<google.maps.Map | null>(null);
-  const [directions, setDirections] = React.useState<google.maps.DirectionsResult[]>([]);
-  const [selectedMarker, setSelectedMarker] = React.useState<string | null>(null);
-  const [showTrafficLayer, setShowTrafficLayer] = React.useState(true);
-  const [selectedRoute, setSelectedRoute] = React.useState<string | null>(selectedRouteId || null);
-  const [trafficFilter, setTrafficFilter] = React.useState<TrafficConditionFilter>('all');
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [directions, setDirections] = useState<google.maps.DirectionsResult[]>([]);
+  const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
+  const [showTrafficLayer, setShowTrafficLayer] = useState(true);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(selectedRouteId || null);
+  const [trafficFilter, setTrafficFilter] = useState<TrafficConditionFilter>('all');
 
   // Get Google Maps API key from client env
   const apiKey = clientEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -72,7 +72,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   });
 
   // Calculate map center based on ALL routes
-  const mapCenter = React.useMemo(() => {
+  const mapCenter = useMemo(() => {
     if (routes.length === 0) return defaultCenter;
 
     // Calculate center point of all routes
@@ -102,7 +102,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   }, [routes]);
 
   // Fit map bounds to show all routes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!map || routes.length === 0) return;
 
     const bounds = new google.maps.LatLngBounds();
@@ -121,7 +121,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   }, [map, routes]);
 
   // Load detailed directions ONLY for selected route
-  React.useEffect(() => {
+  useEffect(() => {
     if (!map || !selectedRoute) {
       setDirections([]);
       return;
@@ -165,7 +165,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   }, [map, selectedRoute, routes]);
 
   // Get incident markers for the map
-  const incidentMarkers = React.useMemo(() => {
+  const incidentMarkers = useMemo(() => {
     return trafficSnapshots
       .filter(snapshot => {
         // Validate incident_location exists and has valid coordinates
@@ -194,7 +194,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   }, [trafficSnapshots]);
 
   // Create polylines for ALL routes (simple origin → destination lines)
-  const routePolylines = React.useMemo(() => {
+  const routePolylines = useMemo(() => {
     console.log('🗺️ [TrafficMap] Raw routes sample:', routes[0]);
     console.log('🗺️ [TrafficMap] Raw traffic snapshots sample:', trafficSnapshots[0]);
 
@@ -266,16 +266,16 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
     );
   }, [routes, trafficSnapshots, trafficFilter]);
 
-  const onLoad = React.useCallback((map: google.maps.Map) => {
+  const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
   }, []);
 
-  const onUnmount = React.useCallback(() => {
+  const onUnmount = useCallback(() => {
     setMap(null);
   }, []);
 
   // Debug: Count routes by traffic condition (MUST be before early returns!)
-  const trafficCounts = React.useMemo(() => {
+  const trafficCounts = useMemo(() => {
     const counts = { light: 0, moderate: 0, heavy: 0, severe: 0 };
     routePolylines.forEach(r => {
       const condition = r.trafficCondition as keyof typeof counts;
@@ -476,7 +476,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
 
         {/* Traffic incident markers */}
         {incidentMarkers.map(({ id, position, snapshot }) => (
-          <React.Fragment key={id}>
+          <Fragment key={id}>
             <Marker
               position={position}
               onClick={() => setSelectedMarker(id)}
@@ -517,7 +517,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
                 </div>
               </InfoWindow>
             )}
-          </React.Fragment>
+          </Fragment>
         ))}
       </GoogleMap>
     </div>

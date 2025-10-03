@@ -4,7 +4,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/core/base/utils/cn';
 
 export type BadgeVariant =
@@ -16,9 +16,9 @@ export type BadgeVariant =
   | 'warning'
   | 'info';
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BadgeProps extends HTMLAttributes<HTMLDivElement> {
   variant?: BadgeVariant;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const variantStyles: Record<BadgeVariant, string> = {

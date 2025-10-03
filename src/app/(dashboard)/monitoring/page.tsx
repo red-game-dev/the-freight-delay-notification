@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { useMemo, useState } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { StatCard, StatGrid } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
@@ -31,10 +31,10 @@ type TrafficCondition = 'all' | 'light' | 'moderate' | 'heavy' | 'severe';
 export default function MonitoringPage() {
   const { data: routes, isLoading: routesLoading } = useRoutes();
   const routeMap = useRouteMap(routes);
-  const [trafficPage, setTrafficPage] = React.useState(1);
+  const [trafficPage, setTrafficPage] = useState(1);
   const { data: trafficResponse, isLoading: trafficLoading } = useTrafficSnapshots({ page: trafficPage.toString(), limit: '10' });
-  const [selectedFilter, setSelectedFilter] = React.useState<TrafficCondition>('all');
-  const [expandedDeliveries, setExpandedDeliveries] = React.useState<Set<string>>(new Set());
+  const [selectedFilter, setSelectedFilter] = useState<TrafficCondition>('all');
+  const [expandedDeliveries, setExpandedDeliveries] = useState<Set<string>>(new Set());
 
   const trafficSnapshots: TrafficSnapshot[] = trafficResponse?.data || [];
   const trafficPagination = trafficResponse?.pagination;
@@ -50,14 +50,14 @@ export default function MonitoringPage() {
   };
 
   // Filter traffic snapshots by selected condition
-  const filteredSnapshots = React.useMemo(() => {
+  const filteredSnapshots = useMemo(() => {
     if (!trafficSnapshots) return [];
     if (selectedFilter === 'all') return trafficSnapshots;
     return trafficSnapshots.filter(s => s.traffic_condition === selectedFilter);
   }, [trafficSnapshots, selectedFilter]);
 
   // Count by traffic condition using utility
-  const conditionCounts = React.useMemo(() => {
+  const conditionCounts = useMemo(() => {
     return countByCondition(trafficSnapshots);
   }, [trafficSnapshots]);
 

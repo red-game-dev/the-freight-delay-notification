@@ -5,10 +5,10 @@
 
 'use client';
 
-import * as React from 'react';
+import { ReactNode } from 'react';
 
 export interface ListProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -21,7 +21,7 @@ export function List({ children, className = '' }: ListProps) {
 }
 
 export interface ListItemProps {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick?: () => void;
   className?: string;
   hoverable?: boolean;
@@ -51,10 +51,10 @@ export function ListItem({
 }
 
 export interface EmptyStateProps {
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   title: string;
   description?: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }
 
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {

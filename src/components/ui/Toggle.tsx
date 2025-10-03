@@ -5,7 +5,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { KeyboardEvent, ReactNode } from 'react';
 
 export interface ToggleProps {
   /** Whether the toggle is checked */
@@ -19,9 +19,9 @@ export interface ToggleProps {
   /** Label for the toggle */
   label?: string;
   /** Icon to show when checked */
-  checkedIcon?: React.ReactNode;
+  checkedIcon?: ReactNode;
   /** Icon to show when unchecked */
-  uncheckedIcon?: React.ReactNode;
+  uncheckedIcon?: ReactNode;
   /** Accessible label */
   ariaLabel?: string;
   /** Custom className */
@@ -68,7 +68,7 @@ export function Toggle({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
       handleClick();

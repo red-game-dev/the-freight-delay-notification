@@ -3,10 +3,10 @@
  * Accessible form label with consistent styling
  */
 
-import * as React from 'react';
+import { LabelHTMLAttributes, forwardRef } from 'react';
 import { cn } from '@/core/base/utils/cn';
 
-export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
   /** Show required asterisk */
   required?: boolean;
   /** Size variant */
@@ -21,7 +21,7 @@ const sizeClasses = {
   lg: 'text-base',
 };
 
-export const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
+export const Label = forwardRef<HTMLLabelElement, LabelProps>(
   ({ children, required, size = 'md', disabled, className, ...props }, ref) => {
     return (
       <label

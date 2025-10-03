@@ -3,7 +3,7 @@
  * Navigate through pages of data with accessible controls
  */
 
-import * as React from 'react';
+import { FC, useMemo } from 'react';
 import { cn } from '@/core/base/utils/cn';
 import { Button } from './Button';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
@@ -33,7 +33,7 @@ export interface PaginationProps {
   className?: string;
 }
 
-export const Pagination: React.FC<PaginationProps> = ({
+export const Pagination: FC<PaginationProps> = ({
   currentPage,
   totalPages,
   totalItems,
@@ -47,7 +47,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   className,
 }) => {
   // Calculate page numbers to display
-  const pageNumbers = React.useMemo(() => {
+  const pageNumbers = useMemo(() => {
     const pages: (number | 'ellipsis')[] = [];
 
     if (totalPages <= maxButtons) {
@@ -91,7 +91,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   }, [currentPage, totalPages, maxButtons]);
 
   // Calculate item range
-  const itemRange = React.useMemo(() => {
+  const itemRange = useMemo(() => {
     if (!totalItems) return null;
     const start = (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(currentPage * itemsPerPage, totalItems);

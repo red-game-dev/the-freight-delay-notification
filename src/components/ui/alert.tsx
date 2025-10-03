@@ -4,7 +4,7 @@
 
 'use client';
 
-import * as React from 'react';
+import { ReactNode, useState } from 'react';
 import { AlertCircle, CheckCircle, XCircle, AlertTriangle, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/core/base/utils/cn';
 import { Button } from './Button';
@@ -16,14 +16,14 @@ export interface AlertAction {
 }
 
 export interface AlertProps {
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: 'info' | 'success' | 'warning' | 'error' | 'default';
   title?: string;
   dismissible?: boolean;
   onDismiss?: () => void;
   className?: string;
   /** Additional details shown in collapsible section */
-  details?: React.ReactNode;
+  details?: ReactNode;
   /** Action buttons shown at the bottom */
   actions?: AlertAction[];
   /** Default expanded state for details */
@@ -77,7 +77,7 @@ export function Alert({
   actions,
   defaultExpanded = false,
 }: AlertProps) {
-  const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const Icon = icons[variant];
   const styles = variantStyles[variant];
 

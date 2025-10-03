@@ -3,7 +3,7 @@
  * Creates a Map for fast route lookups by ID
  */
 
-import * as React from 'react';
+import { useMemo } from 'react';
 
 interface Route {
   id: string;
@@ -15,7 +15,7 @@ interface Route {
  * Memoized to avoid recreating the Map on every render
  */
 export function useRouteMap<T extends Route>(routes: T[] | undefined) {
-  return React.useMemo(() => {
+  return useMemo(() => {
     if (!routes) return new Map<string, T>();
     return new Map(routes.map(route => [route.id, route]));
   }, [routes]);
