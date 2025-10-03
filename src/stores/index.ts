@@ -11,3 +11,5 @@ export type { Notification } from './notificationStore';
 
 export { useFormStore, useFormDefaults, useFormDraft, useFormActions } from './formStore';
 export type { FormType, FormTypeRegistry } from './formStore';
+
+export { useUIStore, useExpandedItems, useViewMode } from './uiStore';

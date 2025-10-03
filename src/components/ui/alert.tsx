@@ -4,10 +4,11 @@
 
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, XCircle, AlertTriangle, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/core/base/utils/cn';
 import { Button } from './Button';
+import { useExpandedItems } from '@/stores';
 
 export interface AlertAction {
   label: string;
@@ -28,6 +29,10 @@ export interface AlertProps {
   actions?: AlertAction[];
   /** Default expanded state for details */
   defaultExpanded?: boolean;
+  /** Unique ID for persisting expanded state (required if details provided and you want persistence) */
+  id?: string;
+  /** Page key for grouping expanded states (defaults to 'alerts') */
+  pageKey?: string;
 }
 
 const variantStyles = {
@@ -76,8 +81,34 @@ export function Alert({
   details,
   actions,
   defaultExpanded = false,
+  id,
+  pageKey = 'alerts',
 }: AlertProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  // Use persistent state if ID provided, otherwise use local state
+  const expandedStore = id ? useExpandedItems(pageKey) : null;
+  const [localExpanded, setLocalExpanded] = useState(defaultExpanded);
+
+  // Get expanded state from store if ID provided, otherwise use local state
+  const isExpanded = id && expandedStore
+    ? expandedStore.isExpanded(id)
+    : localExpanded;
+
+  // Initialize store state if ID provided and not yet set
+  useEffect(() => {
+    if (id && expandedStore && defaultExpanded && !expandedStore.isExpanded(id)) {
+      expandedStore.set(id, true);
+    }
+  }, [id, defaultExpanded, expandedStore]);
+
+  // Toggle function that uses store or local state
+  const toggleExpanded = () => {
+    if (id && expandedStore) {
+      expandedStore.toggle(id);
+    } else {
+      setLocalExpanded(!localExpanded);
+    }
+  };
+
   const Icon = icons[variant];
   const styles = variantStyles[variant];
 
@@ -112,7 +143,7 @@ export function Alert({
       {details && (
         <>
           <Button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={toggleExpanded}
             variant="ghost"
             size="sm"
             fullWidth

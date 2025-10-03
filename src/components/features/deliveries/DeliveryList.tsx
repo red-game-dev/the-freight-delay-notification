@@ -1,6 +1,7 @@
 /**
  * DeliveryList Component
  * Displays a list of deliveries with their status
+ * Supports multiple view modes: list (table), grid, and compact
  */
 
 'use client';
@@ -8,10 +9,13 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
-import { Pagination } from '@/components/ui/Pagination';
+import { ViewModeRenderer } from '@/components/ui/ViewModeRenderer';
+import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { Skeleton, SkeletonTable } from '@/components/ui/Skeleton';
-import { MapPin, Clock } from 'lucide-react';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { MapPin, Clock, User, Package } from 'lucide-react';
 import { useDeliveries } from '@/core/infrastructure/http/services/deliveries';
 import { useURLPagination } from '@/core/hooks/useURLSearchParams';
 import type { Delivery } from '@/core/infrastructure/http/services/deliveries/types';
@@ -31,18 +35,6 @@ export function DeliveryList() {
   const deliveries = response?.data || [];
   const pagination = response?.pagination;
 
-  if (isLoading) {
-    return (
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="p-4 sm:p-6 space-y-2">
-          <Skeleton width="33%" height={32} />
-          <Skeleton width="25%" height={16} />
-        </div>
-        <SkeletonTable rows={5} columns={5} />
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <Alert variant="error">
@@ -51,26 +43,43 @@ export function DeliveryList() {
     );
   }
 
-  if (!deliveries || deliveries.length === 0) {
-    return (
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="p-12 text-center">
-          <p className="text-muted-foreground">No deliveries found. Create your first delivery to get started.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-lg border bg-card shadow-sm">
-      <div className="p-4 sm:p-6">
-        <h2 className="text-xl sm:text-2xl font-bold">Recent Deliveries</h2>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Track and manage your freight deliveries
-        </p>
-      </div>
-
-      <Table>
+    <ViewModeRenderer
+      pageKey="deliveries"
+      items={deliveries}
+      isLoading={isLoading}
+      pagination={pagination ? {
+        page: pagination.page,
+        totalPages: pagination.totalPages,
+        total: pagination.total,
+        limit: 10,
+      } : undefined}
+      onPageChange={setPage}
+      loadingComponent={
+        <div className="rounded-lg border bg-card shadow-sm">
+          <div className="p-4 sm:p-6 space-y-2">
+            <Skeleton width="33%" height={32} />
+            <Skeleton width="25%" height={16} />
+          </div>
+          <SkeletonTable rows={5} columns={5} />
+        </div>
+      }
+      emptyComponent={
+        <EmptyState
+          icon={Package}
+          title="No Deliveries"
+          description="No deliveries found. Create your first delivery to get started."
+        />
+      }
+      listHeader={
+        <SectionHeader
+          title="Recent Deliveries"
+          description="Track and manage your freight deliveries"
+          size="lg"
+        />
+      }
+      renderList={(deliveries) => (
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Tracking #</TableHead>
@@ -129,21 +138,89 @@ export function DeliveryList() {
             );
           })}
         </TableBody>
-      </Table>
+        </Table>
+      )}
+      renderGrid={(deliveries) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {deliveries.map((delivery: Delivery) => {
+          const config = statusConfig[delivery.status as keyof typeof statusConfig];
+          return (
+            <Link key={delivery.id} href={`/deliveries/${delivery.id}`}>
+              <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer h-full">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-semibold">{delivery.tracking_number}</span>
+                  </div>
+                  <Badge variant={config.variant}>{config.label}</Badge>
+                </div>
 
-      {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="p-4 sm:p-6 border-t">
-          <Pagination
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            totalItems={pagination.total}
-            itemsPerPage={10}
-            onPageChange={setPage}
-            showItemsInfo
-          />
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{delivery.origin}</div>
+                      <div className="text-muted-foreground truncate">→ {delivery.destination}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{delivery.customer_name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{delivery.customer_email}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    <span>{new Date(delivery.scheduled_delivery).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          );
+        })}
         </div>
       )}
-    </div>
+      renderCompact={(deliveries) => (
+        <div className="divide-y">
+        {deliveries.map((delivery: Delivery) => {
+          const config = statusConfig[delivery.status as keyof typeof statusConfig];
+          return (
+            <Link
+              key={delivery.id}
+              href={`/deliveries/${delivery.id}`}
+              className="block p-3 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-medium text-sm">{delivery.tracking_number}</span>
+                      <Badge variant={config.variant} className="text-xs">{config.label}</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {delivery.origin} → {delivery.destination}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="hidden sm:block text-xs text-muted-foreground">
+                    {delivery.customer_name}
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {new Date(delivery.scheduled_delivery).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+        </div>
+      )}
+    />
   );
 }

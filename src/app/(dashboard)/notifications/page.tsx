@@ -6,8 +6,10 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import { StatCard, StatGrid } from '@/components/ui/StatCard';
-import { Pagination } from '@/components/ui/Pagination';
+import { ViewModeSwitcher } from '@/components/ui/ViewModeSwitcher';
+import { ViewModeRenderer } from '@/components/ui/ViewModeRenderer';
 import { getNotificationStatusVariant } from '@/core/utils/statusUtils';
 import { List, ListItem } from '@/components/ui/List';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
@@ -36,10 +38,15 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Notifications"
-        description="Track sent notifications and delivery confirmations"
-      />
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <PageHeader
+          title="Notifications"
+          description="Track sent notifications and delivery confirmations"
+        />
+        <div className="flex-shrink-0">
+          <ViewModeSwitcher pageKey="notifications" />
+        </div>
+      </div>
 
       {/* Stats */}
       {notificationsLoading ? (
@@ -67,20 +74,29 @@ export default function NotificationsPage() {
       )}
 
       {/* Notifications List */}
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="p-4 sm:p-6">
-          <SectionHeader title="Recent Notifications" size="lg" />
-        </div>
-
-        {notificationsLoading ? (
-          <SkeletonList items={5} />
-        ) : !notifications || notifications.length === 0 ? (
+      <ViewModeRenderer
+        pageKey="notifications"
+        items={notifications}
+        isLoading={notificationsLoading}
+        pagination={pagination ? {
+          page: pagination.page,
+          totalPages: pagination.totalPages,
+          total: pagination.total,
+          limit: 10,
+        } : undefined}
+        onPageChange={setPage}
+        loadingComponent={<SkeletonList items={5} />}
+        emptyComponent={
           <EmptyState
             icon={Bell}
             title="No Notifications"
             description="No notifications have been sent yet. Notifications are sent automatically when deliveries experience delays."
           />
-        ) : (
+        }
+        listHeader={
+          <SectionHeader title="Recent Notifications" size="lg" />
+        }
+        renderList={(notifications) => (
           <List>
             {notifications.map((notification) => {
               const hasError = notification.status === 'failed' && notification.error_message;
@@ -205,21 +221,93 @@ export default function NotificationsPage() {
             })}
           </List>
         )}
+        renderGrid={(notifications) => (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {notifications.map((notification) => {
+              const Icon = notification.channel === 'email' ? Mail : MessageSquare;
 
-        {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="p-4 sm:p-6 border-t">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.total}
-              itemsPerPage={10}
-              onPageChange={setPage}
-              showItemsInfo
-            />
+              return (
+                <Link key={notification.id} href={`/deliveries/${notification.delivery_id}`}>
+                  <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer h-full">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-semibold text-sm truncate">
+                          {notification.tracking_number || notification.delivery_id.substring(0, 8)}
+                        </span>
+                      </div>
+                      <Badge variant={getNotificationStatusVariant(notification.status)} className="text-xs">
+                        {notification.status}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">To: {notification.recipient}</p>
+                      <p className="text-sm line-clamp-2">{notification.message}</p>
+
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {notification.sent_at
+                            ? new Date(notification.sent_at).toLocaleString()
+                            : new Date(notification.created_at).toLocaleString()
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
-      </div>
+        renderCompact={(notifications) => (
+          <div className="divide-y">
+            {notifications.map((notification) => {
+              const Icon = notification.channel === 'email' ? Mail : MessageSquare;
+
+              return (
+                <Link
+                  key={notification.id}
+                  href={`/deliveries/${notification.delivery_id}`}
+                  className="block p-3 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-medium text-sm truncate">
+                            {notification.tracking_number || notification.delivery_id.substring(0, 12)}
+                          </span>
+                          <Badge variant={getNotificationStatusVariant(notification.status)} className="text-xs flex-shrink-0">
+                            {notification.status}
+                          </Badge>
+                          <span className="text-xs uppercase text-muted-foreground flex-shrink-0">
+                            {notification.channel}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          To: {notification.recipient}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {notification.sent_at
+                          ? new Date(notification.sent_at).toLocaleDateString()
+                          : new Date(notification.created_at).toLocaleDateString()
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      />
     </div>
   );
 }

@@ -31,3 +31,5 @@ export * from './Timeline';
 export * from './Toast';
 export * from './Toggle';
 export * from './Tooltip';
+export * from './ViewModeSwitcher';
+export * from './ViewModeRenderer';

@@ -7,16 +7,18 @@
 
 import { useMemo } from 'react';
 import { Alert } from '@/components/ui/Alert';
+import { Card } from '@/components/ui/Card';
 import { StatCard, StatGrid } from '@/components/ui/StatCard';
-import { Pagination } from '@/components/ui/Pagination';
 import { List, ListItem } from '@/components/ui/List';
 import { Badge } from '@/components/ui/Badge';
+import { ViewModeSwitcher } from '@/components/ui/ViewModeSwitcher';
+import { ViewModeRenderer } from '@/components/ui/ViewModeRenderer';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
-import { getDeliveryStatusVariant, getTrafficConditionVariant } from '@/core/utils/statusUtils';
+import { getDeliveryStatusVariant } from '@/core/utils/statusUtils';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { MapPin, Activity, AlertTriangle, Clock, Map as MapIcon, ExternalLink, Navigation, Filter, Package } from 'lucide-react';
+import { MapPin, Activity, AlertTriangle, Clock, Map as MapIcon, Navigation, Package } from 'lucide-react';
 import { useRoutes } from '@/core/infrastructure/http/services/routes';
 import type { Route } from '@/core/infrastructure/http/services/routes/queries/listRoutes';
 import { useTrafficSnapshots } from '@/core/infrastructure/http/services/traffic';
@@ -28,6 +30,7 @@ import { buildGoogleMapsDirectionsUrl } from '@/core/utils/mapsUtils';
 import { useRouteMap } from '@/core/hooks/useRouteMap';
 import { useURLPaginationWithFilter } from '@/core/hooks/useURLSearchParams';
 import { useExpandedItems } from '@/stores';
+import { cn } from '@/core/base/utils/cn';
 
 type TrafficCondition = 'all' | 'light' | 'moderate' | 'heavy' | 'severe';
 
@@ -69,10 +72,15 @@ export default function MonitoringPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Route Monitoring"
-        description="Real-time traffic monitoring and delay detection"
-      />
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <PageHeader
+          title="Route Monitoring"
+          description="Real-time traffic monitoring and delay detection"
+        />
+        <div className="flex-shrink-0">
+          <ViewModeSwitcher pageKey="monitoring" />
+        </div>
+      </div>
 
       {/* Stats */}
       {trafficLoading ? (
@@ -133,67 +141,82 @@ export default function MonitoringPage() {
         </div>
       </div>
 
+      {/* Filter Buttons - shown outside ViewModeRenderer for all view modes */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Button
+          variant={filter === 'all' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('all')}
+        >
+          All ({conditionCounts.all})
+        </Button>
+        <Button
+          variant={filter === 'severe' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('severe')}
+          className={filter === 'severe' ? '' : 'hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950'}
+        >
+          Severe ({conditionCounts.severe})
+        </Button>
+        <Button
+          variant={filter === 'heavy' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('heavy')}
+          className={filter === 'heavy' ? '' : 'hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-950'}
+        >
+          Heavy ({conditionCounts.heavy})
+        </Button>
+        <Button
+          variant={filter === 'moderate' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('moderate')}
+          className={filter === 'moderate' ? '' : 'hover:bg-yellow-50 hover:text-yellow-700 dark:hover:bg-yellow-950'}
+        >
+          Moderate ({conditionCounts.moderate})
+        </Button>
+        <Button
+          variant={filter === 'light' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('light')}
+          className={filter === 'light' ? '' : 'hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950'}
+        >
+          Light ({conditionCounts.light})
+        </Button>
+      </div>
+
       {/* Recent Traffic Snapshots */}
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="p-4 sm:p-6">
-          <div className="mb-4">
-            <SectionHeader
-              title="Recent Traffic Updates"
-              description="Live traffic conditions on monitored routes"
-              size="lg"
-            />
-          </div>
-
-          {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={filter === 'all' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('all')}
-            >
-              All ({conditionCounts.all})
-            </Button>
-            <Button
-              variant={filter === 'severe' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('severe')}
-              className={filter === 'severe' ? '' : 'hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950'}
-            >
-              Severe ({conditionCounts.severe})
-            </Button>
-            <Button
-              variant={filter === 'heavy' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('heavy')}
-              className={filter === 'heavy' ? '' : 'hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-950'}
-            >
-              Heavy ({conditionCounts.heavy})
-            </Button>
-            <Button
-              variant={filter === 'moderate' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('moderate')}
-              className={filter === 'moderate' ? '' : 'hover:bg-yellow-50 hover:text-yellow-700 dark:hover:bg-yellow-950'}
-            >
-              Moderate ({conditionCounts.moderate})
-            </Button>
-            <Button
-              variant={filter === 'light' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('light')}
-              className={filter === 'light' ? '' : 'hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950'}
-            >
-              Light ({conditionCounts.light})
-            </Button>
-          </div>
-        </div>
-
-        {trafficLoading ? (
-          <SkeletonList items={5} />
-        ) : filteredSnapshots && filteredSnapshots.length > 0 ? (
+      <ViewModeRenderer
+        pageKey="monitoring"
+        items={filteredSnapshots}
+        isLoading={trafficLoading}
+        pagination={trafficPagination ? {
+          page: trafficPagination.page,
+          totalPages: trafficPagination.totalPages,
+          total: trafficPagination.total,
+          limit: 10,
+        } : undefined}
+        onPageChange={setPage}
+        loadingComponent={<SkeletonList items={5} />}
+        emptyComponent={
+          <EmptyState
+            icon={MapIcon}
+            title="No Traffic Data"
+            description={filter === 'all'
+              ? "No traffic snapshots available yet. Traffic monitoring begins when deliveries are created and routes are tracked."
+              : `No ${filter} traffic conditions found. Try selecting a different filter.`}
+          />
+        }
+        listHeader={
+          <SectionHeader
+            title="Recent Traffic Updates"
+            description="Live traffic conditions on monitored routes"
+            size="lg"
+          />
+        }
+        renderList={(snapshots) => (
           <div className="max-h-[800px] overflow-y-auto">
             <List>
-              {filteredSnapshots.map((snapshot: TrafficSnapshot) => {
+              {snapshots.map((snapshot: TrafficSnapshot) => {
               const route: Route | undefined = routeMap.get(snapshot.route_id);
               const enriched = enrichSnapshot(snapshot);
               const googleMapsUrl = buildGoogleMapsDirectionsUrl(
@@ -315,30 +338,96 @@ export default function MonitoringPage() {
             })}
           </List>
           </div>
-        ) : (
-          <EmptyState
-            icon={MapIcon}
-            title="No Traffic Data"
-            description={filter === 'all'
-              ? "No traffic snapshots available yet. Traffic monitoring begins when deliveries are created and routes are tracked."
-              : `No ${filter} traffic conditions found. Try selecting a different filter.`}
-          />
         )}
+        renderGrid={(snapshots) => (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {snapshots.map((snapshot) => {
+              const route = routeMap.get(snapshot.route_id);
+              const enriched = enrichSnapshot(snapshot);
 
-        {/* Pagination */}
-        {trafficPagination && trafficPagination.totalPages > 1 && (
-          <div className="p-4 sm:p-6 border-t">
-            <Pagination
-              currentPage={trafficPagination.page}
-              totalPages={trafficPagination.totalPages}
-              totalItems={trafficPagination.total}
-              itemsPerPage={10}
-              onPageChange={setPage}
-              showItemsInfo
-            />
+              return (
+                <Card key={snapshot.id} className="p-4 hover:shadow-lg transition-shadow h-full">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <span className="font-semibold text-sm truncate">
+                        {route?.origin_address || 'Unknown'}
+                      </span>
+                    </div>
+                    <Badge variant={enriched.config.variant} className="flex-shrink-0 text-xs">
+                      {enriched.config.label}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground text-xs truncate">
+                      To: {route?.destination_address || 'Unknown'}
+                    </p>
+
+                    {enriched.description && (
+                      <p className="text-xs line-clamp-2">{enriched.description}</p>
+                    )}
+
+                    <div className="flex items-center gap-2 text-xs pt-2">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className={enriched.config.color}>+{enriched.delay_minutes} min delay</span>
+                    </div>
+
+                    {snapshot.affected_deliveries && snapshot.affected_deliveries.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Package className="h-3 w-3" />
+                        <span>{snapshot.affected_deliveries.length} affected deliveries</span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
-      </div>
+        renderCompact={(snapshots) => (
+          <div className="divide-y">
+            {snapshots.map((snapshot) => {
+              const route = routeMap.get(snapshot.route_id);
+              const enriched = enrichSnapshot(snapshot);
+
+              return (
+                <div key={snapshot.id} className="p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-medium text-sm truncate">
+                            {route?.origin_address || 'Unknown'}
+                          </span>
+                          <Badge variant={enriched.config.variant} className="text-xs flex-shrink-0">
+                            {enriched.config.label}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          → {route?.destination_address || 'Unknown'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {snapshot.affected_deliveries && snapshot.affected_deliveries.length > 0 && (
+                        <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
+                          <Package className="h-3 w-3" />
+                          <span>{snapshot.affected_deliveries.length}</span>
+                        </div>
+                      )}
+                      <span className={cn("text-xs font-medium", enriched.config.color)}>
+                        +{enriched.delay_minutes}m
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      />
     </div>
   );
 }
