@@ -5,8 +5,10 @@
 
 'use client';
 
+import * as React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { StatCard, StatGrid } from '@/components/ui/StatCard';
+import { Pagination } from '@/components/ui/Pagination';
 import { getNotificationStatusVariant } from '@/core/utils/statusUtils';
 import { List, ListItem } from '@/components/ui/List';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
@@ -15,12 +17,20 @@ import { Alert } from '@/components/ui/Alert';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Mail, MessageSquare, CheckCircle2, XCircle, Bell, Clock, RefreshCw, ExternalLink } from 'lucide-react';
-import { useNotifications, useNotificationStats } from '@/core/infrastructure/http/services/notifications';
+import { useNotifications } from '@/core/infrastructure/http/services/notifications';
 import Link from 'next/link';
 
 export default function NotificationsPage() {
-  const { data: notifications, isLoading: notificationsLoading } = useNotifications();
-  const { data: stats, isLoading: statsLoading } = useNotificationStats();
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const { data: response, isLoading: notificationsLoading } = useNotifications({
+    page: currentPage.toString(),
+    limit: '10',
+    includeStats: 'true'
+  });
+
+  const notifications = response?.data || [];
+  const pagination = response?.pagination;
+  const stats = response?.stats;
 
   return (
     <div className="space-y-6">
@@ -30,7 +40,7 @@ export default function NotificationsPage() {
       />
 
       {/* Stats */}
-      {statsLoading ? (
+      {notificationsLoading ? (
         <SkeletonStats count={3} />
       ) : (
         <StatGrid columns={3}>
@@ -192,6 +202,20 @@ export default function NotificationsPage() {
               );
             })}
           </List>
+        )}
+
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="p-4 sm:p-6 border-t">
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={10}
+              onPageChange={setCurrentPage}
+              showItemsInfo
+            />
+          </div>
         )}
       </div>
     </div>

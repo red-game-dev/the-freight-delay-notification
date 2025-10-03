@@ -37,7 +37,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
   totalItems,
-  itemsPerPage = 20,
+  itemsPerPage = 10,
   onPageChange,
   maxButtons = 5,
   showFirstLast = true,

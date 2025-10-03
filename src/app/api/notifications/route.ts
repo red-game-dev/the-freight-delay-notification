@@ -7,15 +7,27 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
+import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
 
 /**
  * GET /api/notifications
  * List notifications, optionally filtered by deliveryId or customerId - returns sanitized data
+ * Query params:
+ * - deliveryId: Filter by delivery ID
+ * - customerId: Filter by customer ID
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 20, max: 100)
+ * - includeStats: Include statistics in response (default: false)
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
   const deliveryId = getQueryParam(request, 'deliveryId');
   const customerId = getQueryParam(request, 'customerId');
+  const includeStats = getQueryParam(request, 'includeStats') === 'true';
+  const { page, limit } = parsePaginationParams(
+    getQueryParam(request, 'page'),
+    getQueryParam(request, 'limit')
+  );
 
   let notificationsResult;
 
@@ -27,12 +39,12 @@ export const GET = createApiHandler(async (request) => {
     notificationsResult = await db.listNotificationsByCustomer(customerId);
   } else {
     logger.info('📧 [Notifications API] Fetching all notifications via DatabaseService');
-    notificationsResult = await db.listNotifications(100);
+    notificationsResult = await db.listNotifications(1000);
   }
 
-  // Transform result to only expose safe fields
-  return Result.map(notificationsResult, (notifications) =>
-    notifications.map((n) => ({
+  // Transform result and apply pagination
+  return Result.map(notificationsResult, (notifications) => {
+    const sanitizedNotifications = notifications.map((n) => ({
       id: n.id,
       delivery_id: n.delivery_id,
       customer_id: n.customer_id,
@@ -42,6 +54,28 @@ export const GET = createApiHandler(async (request) => {
       delay_minutes: n.delay_minutes,
       sent_at: n.sent_at,
       created_at: n.created_at,
-    }))
-  );
+    }));
+
+    const paginatedResponse = createPaginatedResponse(sanitizedNotifications, page, limit);
+
+    // Calculate and include stats if requested
+    if (includeStats) {
+      const total = notifications.length;
+      const sent = notifications.filter(n => n.status === 'sent').length;
+      const failed = notifications.filter(n => n.status === 'failed').length;
+      const successRate = total > 0 ? (sent / total) * 100 : 0;
+
+      return {
+        ...paginatedResponse,
+        stats: {
+          total,
+          sent,
+          failed,
+          success_rate: successRate,
+        },
+      };
+    }
+
+    return paginatedResponse;
+  });
 });

@@ -9,6 +9,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
+import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { Skeleton, SkeletonTable } from '@/components/ui/Skeleton';
 import { MapPin, Clock } from 'lucide-react';
@@ -24,7 +25,11 @@ const statusConfig = {
 };
 
 export function DeliveryList() {
-  const { data: deliveries, isLoading, error } = useDeliveries();
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const { data: response, isLoading, error } = useDeliveries({ page: currentPage.toString(), limit: '10' });
+
+  const deliveries = response?.data || [];
+  const pagination = response?.pagination;
 
   if (isLoading) {
     return (
@@ -125,6 +130,20 @@ export function DeliveryList() {
           })}
         </TableBody>
       </Table>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="p-4 sm:p-6 border-t">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.total}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+            showItemsInfo
+          />
+        </div>
+      )}
     </div>
   );
 }

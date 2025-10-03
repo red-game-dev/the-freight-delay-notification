@@ -8,6 +8,7 @@ import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { generateRecurringWorkflowId, generateWorkflowId } from '@/core/utils/workflowUtils';
+import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
 
 interface WorkflowListItem {
   id: string;
@@ -34,17 +35,25 @@ interface WorkflowListItem {
 /**
  * GET /api/workflows
  * List workflow executions from both database and active deliveries
+ * Query params:
+ * - deliveryId: Filter by delivery ID
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 20, max: 100)
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
   const deliveryId = getQueryParam(request, 'deliveryId');
+  const { page, limit } = parsePaginationParams(
+    getQueryParam(request, 'page'),
+    getQueryParam(request, 'limit')
+  );
 
   if (deliveryId) {
-    // Transform filtered result to only expose safe fields
+    // Transform filtered result to only expose safe fields with pagination
     return Result.map(
       await db.listWorkflowExecutionsByDelivery(deliveryId),
-      (workflows) =>
-        workflows.map((w) => ({
+      (workflows) => {
+        const sanitizedWorkflows = workflows.map((w) => ({
           id: w.id,
           workflow_id: w.workflow_id,
           delivery_id: w.delivery_id,
@@ -52,15 +61,18 @@ export const GET = createApiHandler(async (request) => {
           started_at: w.started_at,
           completed_at: w.completed_at,
           error_message: w.error_message,
-        }))
+        }));
+
+        return createPaginatedResponse(sanitizedWorkflows, page, limit);
+      }
     );
   }
 
   // Get completed workflows from database via DatabaseService
-  const dbWorkflows = Result.unwrapOr(await db.listWorkflowExecutions(50), []);
+  const dbWorkflows = Result.unwrapOr(await db.listWorkflowExecutions(1000), []);
 
   // Get all recent deliveries with workflow settings via DatabaseService
-  const allDeliveries = Result.unwrapOr(await db.listDeliveries(100), []);
+  const allDeliveries = Result.unwrapOr(await db.listDeliveries(1000), []);
 
   // Combine and format results
   const workflows: WorkflowListItem[] = [];
@@ -136,5 +148,5 @@ export const GET = createApiHandler(async (request) => {
     return dateB - dateA;
   });
 
-  return Result.ok(workflows.slice(0, 100));
+  return Result.ok(createPaginatedResponse(workflows, page, limit));
 });

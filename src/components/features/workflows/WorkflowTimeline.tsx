@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { CompactTimeline } from '@/components/ui/Timeline';
 import { SkeletonWorkflow } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Pagination } from '@/components/ui/Pagination';
 import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow } from 'lucide-react';
 import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
 import { formatNextScheduledTime } from '@/core/utils/dateUtils';
@@ -24,7 +25,11 @@ const statusConfig = {
 };
 
 export function WorkflowTimeline() {
-  const { data: workflows, isLoading } = useWorkflows();
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const { data: response, isLoading } = useWorkflows({ page: currentPage.toString(), limit: '10' });
+
+  const workflows = response?.data || [];
+  const pagination = response?.pagination;
 
   const getStepStatus = (step?: { completed: boolean }) => {
     if (!step) return 'pending';
@@ -233,6 +238,20 @@ export function WorkflowTimeline() {
           );
         })}
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="p-4 sm:p-6 border-t">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.total}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+            showItemsInfo
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -39,6 +39,6 @@ export const queryKeys = {
   },
   traffic: {
     all: ['traffic'] as const,
-    list: () => ['traffic', 'list'] as const,
+    list: (filters?: Record<string, unknown>) => ['traffic', 'list', filters] as const,
   },
 } as const;

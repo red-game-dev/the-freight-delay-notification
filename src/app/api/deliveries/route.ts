@@ -14,25 +14,34 @@ import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
 import { generateRecurringWorkflowId, generateWorkflowId } from '@/core/utils/workflowUtils';
 import { ensureDateISO } from '@/core/utils/typeConversion';
+import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
 
 /**
  * GET /api/deliveries
  * List all deliveries with optional filtering - returns sanitized delivery data
+ * Query params:
+ * - status: Filter by delivery status
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 20, max: 100)
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
 
-  const limit = parseInt(getQueryParam(request, 'limit') || '100');
-  const offset = parseInt(getQueryParam(request, 'offset') || '0');
+  const { page, limit } = parsePaginationParams(
+    getQueryParam(request, 'page'),
+    getQueryParam(request, 'limit')
+  );
   const status = getQueryParam(request, 'status');
 
+  // Fetch more than needed to calculate total properly (for filtered results)
+  const fetchLimit = 1000;
   const deliveriesResult = status
-    ? await db.listDeliveriesByStatus(status, limit)
-    : await db.listDeliveries(limit, offset);
+    ? await db.listDeliveriesByStatus(status, fetchLimit)
+    : await db.listDeliveries(fetchLimit, 0);
 
-  // Transform result to only expose safe fields
-  return Result.map(deliveriesResult, (deliveries) =>
-    deliveries.map((d) => ({
+  // Transform result and apply pagination
+  return Result.map(deliveriesResult, (deliveries) => {
+    const sanitizedDeliveries = deliveries.map((d) => ({
       id: d.id,
       tracking_number: d.tracking_number,
       customer_id: d.customer_id,
@@ -51,8 +60,10 @@ export const GET = createApiHandler(async (request) => {
       origin: d.origin,
       destination: d.destination,
       notes: d.notes,
-    }))
-  );
+    }));
+
+    return createPaginatedResponse(sanitizedDeliveries, page, limit);
+  });
 });
 
 /**

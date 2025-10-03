@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../../../queryKeys';
 import { listDeliveries } from './listDeliveries';
 import type { Delivery } from '../types';
+import type { PaginatedResponse } from '@/core/utils/paginationUtils';
 
 export function useDeliveries(filters?: Record<string, string>) {
   return useQuery({
@@ -16,11 +17,11 @@ export function useDeliveries(filters?: Record<string, string>) {
     queryFn: () => listDeliveries(filters),
     // Auto-refresh every 30 seconds if there are active deliveries (not delivered/cancelled)
     refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data || data.length === 0) return false;
+      const response = query.state.data as PaginatedResponse<Delivery> | undefined;
+      if (!response || !response.data || response.data.length === 0) return false;
 
       // Check if any delivery is active (not in terminal state)
-      const hasActiveDeliveries = data.some(
+      const hasActiveDeliveries = response.data.some(
         (delivery: Delivery) => !['delivered', 'cancelled'].includes(delivery.status)
       );
 
