@@ -238,10 +238,72 @@ export function SkeletonDetail({ className = '' }: { className?: string }) {
         </div>
       </div>
 
-      {/* Two-column grid */}
+      {/* Two-column grid - Delivery & Customer Info */}
       <div className="grid gap-6 md:grid-cols-2">
         <SkeletonCard />
         <SkeletonCard />
+      </div>
+
+      {/* Map Section */}
+      <div className="border rounded-lg p-6">
+        <div className="space-y-4">
+          <Skeleton width="30%" height={24} />
+          <Skeleton width="100%" height={400} variant="rectangular" />
+        </div>
+      </div>
+
+      {/* Workflow Status Polling */}
+      <SkeletonCard />
+
+      {/* Workflows and Notifications Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Workflows List */}
+        <div className="border rounded-lg p-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Skeleton width="40%" height={24} />
+              <Skeleton width="30%" height={16} />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={`workflow-${i}`} className="border rounded-lg p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Skeleton width="60%" height={16} />
+                      <Skeleton width={80} height={24} />
+                    </div>
+                    <Skeleton width="80%" height={14} />
+                    <Skeleton width="50%" height={12} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications List */}
+        <div className="border rounded-lg p-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Skeleton width="40%" height={24} />
+              <Skeleton width="30%" height={16} />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={`notification-${i}`} className="border rounded-lg p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Skeleton width="50%" height={16} />
+                      <Skeleton width={80} height={24} />
+                    </div>
+                    <Skeleton width="100%" height={60} variant="rectangular" />
+                    <Skeleton width="70%" height={12} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
