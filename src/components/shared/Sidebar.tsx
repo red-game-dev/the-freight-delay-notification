@@ -47,6 +47,11 @@ const navigation = [
     href: '/settings',
     icon: Settings,
   },
+  {
+    name: 'How to use',
+    href: '/how-to-use',
+    icon: Workflow,
+  },
 ];
 
 export function Sidebar() {
