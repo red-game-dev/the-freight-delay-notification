@@ -35,6 +35,10 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useDelivery, useDeleteDelivery } from '@/core/infrastructure/http/services/deliveries';
 import { useStartWorkflow, useCancelWorkflow } from '@/core/infrastructure/http/services/workflows';
 import { WorkflowStatusPolling } from '@/components/features/workflows/WorkflowStatusPolling';
+import { DeliveryMap } from '@/components/features/deliveries/DeliveryMap';
+import { DeliveryWorkflowsList } from '@/components/features/deliveries/DeliveryWorkflowsList';
+import { DeliveryNotificationsList } from '@/components/features/deliveries/DeliveryNotificationsList';
+import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'default' as const },
@@ -59,13 +63,13 @@ export default function DeliveryDetailPage() {
   const [showCancelWorkflowModal, setShowCancelWorkflowModal] = React.useState(false);
   const [forceCancel, setForceCancel] = React.useState(false);
 
-  // Construct the correct workflow ID based on delivery settings
-  // - If recurring checks are enabled: recurring-check-{id}
-  // - Otherwise: delay-notification-{id}
+  // Construct the correct workflow ID based on delivery settings using workflow utils
   const workflowId = delivery
-    ? delivery.enable_recurring_checks
-      ? `recurring-check-${delivery.id}`
-      : `delay-notification-${delivery.id}`
+    ? createWorkflowId(
+        delivery.enable_recurring_checks ? WorkflowType.RECURRING_CHECK : WorkflowType.DELAY_NOTIFICATION,
+        delivery.id,
+        false // Don't include timestamp for stable IDs
+      )
     : null;
 
   const handleStartWorkflow = async () => {
@@ -282,6 +286,14 @@ export default function DeliveryDetailPage() {
         </Card>
       </div>
 
+      {/* Interactive Map */}
+      <Card>
+        <div className="p-6">
+          <SectionHeader title="Route Map" subtitle="Delivery route visualization" className="mb-4" />
+          <DeliveryMap origin={delivery.origin} destination={delivery.destination} />
+        </div>
+      </Card>
+
       {/* Workflow Status - Real-time polling */}
       {/* Always show WorkflowStatusPolling - it will detect if workflow exists or not */}
       {workflowId && (
@@ -301,6 +313,12 @@ export default function DeliveryDetailPage() {
           }}
         />
       )}
+
+      {/* Workflows and Notifications History */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <DeliveryWorkflowsList deliveryId={delivery.id} />
+        <DeliveryNotificationsList deliveryId={delivery.id} />
+      </div>
 
       {/* Delete Confirmation Modal */}
       <Modal
