@@ -287,7 +287,7 @@ export default function DeliveryDetailPage() {
       {/* Interactive Map */}
       <Card>
         <div className="p-6">
-          <SectionHeader title="Route Map" subtitle="Delivery route visualization" className="mb-4" />
+          <SectionHeader title="Route Map" description="Delivery route visualization" className="mb-4" />
           <DeliveryMap origin={delivery.origin} destination={delivery.destination} />
         </div>
       </Card>

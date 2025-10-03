@@ -55,7 +55,7 @@ export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsL
       <div className="p-6">
         <SectionHeader
           title="Notifications"
-          subtitle={`${notifications.length} notification${notifications.length !== 1 ? 's' : ''} sent`}
+          description={`${notifications.length} notification${notifications.length !== 1 ? 's' : ''} sent`}
           className="mb-4"
         />
 

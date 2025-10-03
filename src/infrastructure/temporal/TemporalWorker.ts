@@ -19,7 +19,7 @@ export async function createTemporalWorker(): Promise<Worker> {
       connection,
       namespace: env.TEMPORAL_NAMESPACE,
       taskQueue: env.TEMPORAL_TASK_QUEUE,
-      workflowsPath: path.resolve(__dirname, '../../workflows/workflows'),
+      workflowsPath: path.resolve(__dirname, '../../workflows/workflows.ts'),
       activities,
       // Worker configuration
       maxConcurrentActivityTaskExecutions: 10,

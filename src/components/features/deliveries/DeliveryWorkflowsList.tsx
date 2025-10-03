@@ -55,7 +55,7 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
       <div className="p-6">
         <SectionHeader
           title="Workflows"
-          subtitle={`${workflows.length} workflow${workflows.length !== 1 ? 's' : ''} found`}
+          description={`${workflows.length} workflow${workflows.length !== 1 ? 's' : ''} found`}
           className="mb-4"
         />
 

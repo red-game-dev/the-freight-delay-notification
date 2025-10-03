@@ -29,7 +29,13 @@ export const createDeliverySchema = z.object({
     .transform(sanitizeString),
   destination: z.string().min(1).max(500).trim()
     .transform(sanitizeString),
-  scheduled_delivery: isoDateSchema,
+  scheduled_delivery: z.string()
+    .transform(val => {
+      // If already ISO format, return as is
+      if (val.includes('Z') || val.includes('+')) return val;
+      // Convert datetime-local format (YYYY-MM-DDTHH:mm) to ISO
+      return new Date(val).toISOString();
+    }),
   customer_name: z.string().min(1).max(200).trim()
     .transform(sanitizeString),
   customer_email: emailSchema,
@@ -39,7 +45,16 @@ export const createDeliverySchema = z.object({
   auto_check_traffic: z.boolean().default(false),
   enable_recurring_checks: z.boolean().default(false),
   check_interval_minutes: z.number().int().min(5).max(1440).default(30),
-  max_checks: z.number().int().min(-1).max(1000).default(10),
+  max_checks: z.union([
+      z.number().int().min(-1).max(1000),
+      z.null(),
+      z.literal(''),
+    ])
+    .transform(val => {
+      if (val === null || val === '') return -1;
+      return val;
+    })
+    .default(-1),
   delay_threshold_minutes: z.number().int().min(1).max(1440).default(30),
   min_delay_change_threshold: z.number().min(0).max(1440).default(15),
   min_hours_between_notifications: z.number().min(0).max(72).default(1),

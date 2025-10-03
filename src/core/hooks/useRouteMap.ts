@@ -5,16 +5,11 @@
 
 import { useMemo } from 'react';
 
-interface Route {
-  id: string;
-  [key: string]: unknown;
-}
-
 /**
  * Convert routes array to a Map for O(1) lookup performance
  * Memoized to avoid recreating the Map on every render
  */
-export function useRouteMap<T extends Route>(routes: T[] | undefined) {
+export function useRouteMap<T extends { id: string }>(routes: T[] | undefined) {
   return useMemo(() => {
     if (!routes) return new Map<string, T>();
     return new Map(routes.map(route => [route.id, route]));
@@ -24,7 +19,7 @@ export function useRouteMap<T extends Route>(routes: T[] | undefined) {
 /**
  * Find a route by ID from the route map
  */
-export function findRoute<T extends Route>(
+export function findRoute<T extends { id: string }>(
   routeMap: Map<string, T>,
   routeId: string
 ): T | undefined {

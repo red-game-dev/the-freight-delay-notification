@@ -137,8 +137,8 @@ export const GET = createApiHandler(async (request) => {
       started_at: w.started_at,
       completed_at: w.completed_at,
       error_message: w.error_message,
-      tracking_number: w.tracking_number,
-      settings: w.settings,
+      ...(w.tracking_number && { tracking_number: w.tracking_number }),
+      ...(w.settings && { settings: w.settings }),
     }));
 
     return Result.ok(createPaginatedResponse(sanitizedWorkflows, page, limit));

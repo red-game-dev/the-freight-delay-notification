@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { MapPin, Activity, AlertTriangle, Clock, Map as MapIcon, ExternalLink, Navigation, Filter, Package } from 'lucide-react';
 import { useRoutes } from '@/core/infrastructure/http/services/routes';
+import type { Route } from '@/core/infrastructure/http/services/routes/queries/listRoutes';
 import { useTrafficSnapshots } from '@/core/infrastructure/http/services/traffic';
 import type { TrafficSnapshot, AffectedDelivery } from '@/core/infrastructure/http/services/traffic/queries/listTrafficSnapshots';
 import { Button } from '@/components/ui/Button';
@@ -193,11 +194,11 @@ export default function MonitoringPage() {
           <div className="max-h-[800px] overflow-y-auto">
             <List>
               {filteredSnapshots.map((snapshot: TrafficSnapshot) => {
-              const route = routeMap.get(snapshot.route_id);
+              const route: Route | undefined = routeMap.get(snapshot.route_id);
               const enriched = enrichSnapshot(snapshot);
               const googleMapsUrl = buildGoogleMapsDirectionsUrl(
-                route?.origin_address || '',
-                route?.destination_address || ''
+                route?.origin_address ?? '',
+                route?.destination_address ?? ''
               );
 
               return (
@@ -210,7 +211,7 @@ export default function MonitoringPage() {
                       {/* Header with route and traffic condition */}
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="font-medium truncate">
-                          {route?.origin_address || 'Unknown Route'}
+                          {route?.origin_address ?? 'Unknown Route'}
                         </span>
                         <Badge variant={enriched.config.variant}>
                           {enriched.config.label}
@@ -224,7 +225,7 @@ export default function MonitoringPage() {
 
                       {/* Destination */}
                       <p className="text-sm text-muted-foreground mb-2">
-                        To: {route?.destination_address || 'Unknown Destination'}
+                        To: {route?.destination_address ?? 'Unknown Destination'}
                       </p>
 
                       {/* Incident description */}

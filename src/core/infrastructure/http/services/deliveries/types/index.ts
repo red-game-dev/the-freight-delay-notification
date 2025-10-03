@@ -43,6 +43,7 @@ export interface CreateDeliveryInput {
   enable_recurring_checks?: boolean;
   check_interval_minutes?: number;
   max_checks?: number;
+  delay_threshold_minutes?: number;
   min_delay_change_threshold?: number;
   min_hours_between_notifications?: number;
 }

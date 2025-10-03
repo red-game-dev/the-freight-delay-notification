@@ -193,12 +193,13 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
     if (threshold) {
       setFormData(thresholdToFormValues(threshold));
     } else {
-      setFormData(defaults || {
+      const fallbackDefaults: CreateThresholdInput = {
         name: '',
         delay_minutes: 30,
         notification_channels: ['email'],
         is_default: false,
-      });
+      };
+      setFormData(defaults ? { ...fallbackDefaults, ...defaults } : fallbackDefaults);
     }
   }, [threshold, thresholdToFormValues, defaults]);
 

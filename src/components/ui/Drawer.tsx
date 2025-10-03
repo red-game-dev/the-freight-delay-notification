@@ -5,7 +5,7 @@
 
 'use client';
 
-import { KeyboardEvent, MouseEvent, ReactNode, useCallback, useEffect, useRef } from 'react';
+import { MouseEvent, ReactNode, useCallback, useEffect, useRef, KeyboardEvent } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 
@@ -37,7 +37,7 @@ export function Drawer({
 
   // Handle ESC key press
   const handleEscKey = useCallback(
-    (event: KeyboardEvent) => {
+    (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape' && closeOnEsc) {
         onClose();
       }
@@ -102,7 +102,7 @@ export function Drawer({
   }, [isOpen, closeOnEsc, handleEscKey]);
 
   // Trap focus within drawer
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Tab' || !drawerRef.current) return;
 
     const focusableElements = drawerRef.current.querySelectorAll(
