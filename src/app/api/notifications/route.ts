@@ -4,10 +4,12 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
+import { createApiHandler } from '@/core/infrastructure/http';
 import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
-import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { validateQuery } from '@/core/utils/validation';
+import { listNotificationsQuerySchema } from '@/core/schemas/notification';
 
 /**
  * GET /api/notifications
@@ -21,13 +23,14 @@ import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/pag
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
-  const deliveryId = getQueryParam(request, 'deliveryId');
-  const customerId = getQueryParam(request, 'customerId');
-  const includeStats = getQueryParam(request, 'includeStats') === 'true';
-  const { page, limit } = parsePaginationParams(
-    getQueryParam(request, 'page'),
-    getQueryParam(request, 'limit')
-  );
+
+  // Validate query parameters
+  const queryResult = validateQuery(listNotificationsQuerySchema, request);
+  if (!queryResult.success) {
+    return queryResult;
+  }
+
+  const { page, limit, delivery_id: deliveryId, customer_id: customerId, includeStats } = queryResult.value;
 
   let notificationsResult;
 

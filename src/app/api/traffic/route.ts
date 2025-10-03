@@ -4,10 +4,12 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
+import { createApiHandler } from '@/core/infrastructure/http';
 import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
-import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { validateQuery } from '@/core/utils/validation';
+import { listTrafficSnapshotsQuerySchema } from '@/core/schemas/traffic';
 
 /**
  * GET /api/traffic
@@ -19,14 +21,15 @@ import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/pag
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
-  const { page, limit } = parsePaginationParams(
-    getQueryParam(request, 'page'),
-    getQueryParam(request, 'limit')
-  );
 
-  // Get delivery status filter from query params
-  const deliveryStatusParam = getQueryParam(request, 'deliveryStatus') || 'in_transit,delayed';
-  const deliveryStatuses = deliveryStatusParam.split(',').map(s => s.trim()).filter(Boolean);
+  // Validate query parameters
+  const queryResult = validateQuery(listTrafficSnapshotsQuerySchema, request);
+  if (!queryResult.success) {
+    return queryResult;
+  }
+
+  const { page, limit, deliveryStatus } = queryResult.value;
+  const deliveryStatuses = (deliveryStatus || 'in_transit,delayed').split(',').map(s => s.trim()).filter(Boolean);
 
   logger.info('🚦 [Traffic API] Fetching traffic snapshots via DatabaseService');
 

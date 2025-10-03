@@ -6,9 +6,11 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createParamApiHandler, parseJsonBody } from '@/core/infrastructure/http';
+import { createParamApiHandler } from '@/core/infrastructure/http';
 import { HttpError } from '@/core/base/errors/HttpError';
 import { Result } from '@/core/base/utils/Result';
+import { validateBody } from '@/core/utils/validation';
+import { updateThresholdSchema } from '@/core/schemas/threshold';
 
 /**
  * GET /api/thresholds/[id]
@@ -36,13 +38,12 @@ export const GET = createParamApiHandler(async (request, { params }) => {
  * Update threshold
  */
 export const PATCH = createParamApiHandler(async (request, { params }) => {
-  const body = await parseJsonBody<{
-    name?: string;
-    delay_minutes?: number;
-    notification_channels?: Array<'email' | 'sms'>;
-    is_default?: boolean;
-  }>(request);
+  const bodyResult = await validateBody(updateThresholdSchema, request);
+  if (!bodyResult.success) {
+    return bodyResult;
+  }
 
+  const body = bodyResult.value;
   const db = getDatabaseService();
 
   // If setting this threshold as default, unset all other defaults first

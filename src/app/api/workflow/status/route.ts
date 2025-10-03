@@ -3,20 +3,24 @@
  * GET /api/workflow/status?workflowId=xxx
  */
 
-import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
+import { createApiHandler } from '@/core/infrastructure/http';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { logger, getErrorMessage, hasMessage, hasName, hasCause } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
-import { ValidationError, NotFoundError, InfrastructureError } from '@/core/base/errors/BaseError';
+import { NotFoundError, InfrastructureError } from '@/core/base/errors/BaseError';
 import type { WorkflowStatus } from '@/core/types';
+import { validateQuery } from '@/core/utils/validation';
+import { workflowStatusQuerySchema } from '@/core/schemas/workflow';
 
 export const GET = createApiHandler(async (request) => {
-  const workflowId = getQueryParam(request, 'workflowId');
-
-  if (!workflowId) {
-    return Result.fail(new ValidationError('Missing required parameter: workflowId'));
+  // Validate query parameters
+  const queryResult = validateQuery(workflowStatusQuerySchema, request);
+  if (!queryResult.success) {
+    return queryResult;
   }
+
+  const { workflowId } = queryResult.value;
 
     // Get Temporal client
     const client = await getTemporalClient();

@@ -10,31 +10,34 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { logger, getErrorMessage, hasMessage } from '@/core/base/utils/Logger';
-import { ValidationError, NotFoundError, InfrastructureError } from '@/core/base/errors/BaseError';
+import { NotFoundError, InfrastructureError } from '@/core/base/errors/BaseError';
 import type { DelayNotificationWorkflowInput } from '@/workflows/types';
+import { validateBody } from '@/core/utils/validation';
+import { startWorkflowSchema } from '@/core/schemas/workflow';
 
 export const POST = createApiHandler(async (request: NextRequest) => {
-  const body = await request.json();
-
-  // Validate deliveryId
-  if (!body.deliveryId) {
-    return Result.fail(new ValidationError('Missing required field: deliveryId'));
+  // Validate request body
+  const bodyResult = await validateBody(startWorkflowSchema, request);
+  if (!bodyResult.success) {
+    return bodyResult;
   }
+
+  const { delivery_id: deliveryId } = bodyResult.value;
 
   const db = getDatabaseService();
 
   // Fetch delivery data from database via DatabaseService
-  logger.info(`🚀 [Workflow Start] Fetching delivery: ${body.deliveryId}`);
+  logger.info(`🚀 [Workflow Start] Fetching delivery: ${deliveryId}`);
 
-  const deliveryResult = await db.getDeliveryById(body.deliveryId);
+  const deliveryResult = await db.getDeliveryById(deliveryId);
 
   if (!deliveryResult.success) {
     return deliveryResult;
   }
 
   if (!deliveryResult.value) {
-    logger.error(`❌ Delivery not found: ${body.deliveryId}`);
-    return Result.fail(new NotFoundError(`No delivery found with ID: ${body.deliveryId}`));
+    logger.error(`❌ Delivery not found: ${deliveryId}`);
+    return Result.fail(new NotFoundError(`No delivery found with ID: ${deliveryId}`));
   }
 
   const delivery = deliveryResult.value;

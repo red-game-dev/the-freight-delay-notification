@@ -6,9 +6,11 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createParamApiHandler, parseJsonBody } from '@/core/infrastructure/http';
+import { createParamApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import type { UpdateDeliveryInput, DeliveryStatus } from '@/infrastructure/database/types/database.types';
+import { validateBody } from '@/core/utils/validation';
+import { updateDeliverySchema } from '@/core/schemas/delivery';
 
 /**
  * GET /api/deliveries/[id]
@@ -55,43 +57,21 @@ export const GET = createParamApiHandler(async (request, context) => {
  */
 export const PATCH = createParamApiHandler(async (request, context) => {
   const params = await context.params;
-  const body = await parseJsonBody<{
-    tracking_number?: string;
-    origin?: string;
-    destination?: string;
-    scheduled_delivery?: string;
-    status?: string;
-    customer_name?: string;
-    customer_email?: string;
-    customer_phone?: string;
-    notes?: string;
-    auto_check_traffic?: boolean;
-    enable_recurring_checks?: boolean;
-    check_interval_minutes?: number;
-    max_checks?: number;
-    min_delay_change_threshold?: number;
-    min_hours_between_notifications?: number;
-  }>(request);
 
+  // Validate request body
+  const bodyResult = await validateBody(updateDeliverySchema, request);
+  if (!bodyResult.success) {
+    return bodyResult;
+  }
+
+  const body = bodyResult.value;
   const db = getDatabaseService();
 
-  // Build update object
-  const updateData: Partial<UpdateDeliveryInput> = {};
-  if (body.tracking_number) updateData.tracking_number = body.tracking_number;
-  if (body.origin) updateData.origin = body.origin;
-  if (body.destination) updateData.destination = body.destination;
-  if (body.scheduled_delivery) updateData.scheduled_delivery = new Date(body.scheduled_delivery);
-  if (body.status) updateData.status = body.status as DeliveryStatus;
-  if (body.customer_name) updateData.customer_name = body.customer_name;
-  if (body.customer_email) updateData.customer_email = body.customer_email;
-  if (body.customer_phone !== undefined) updateData.customer_phone = body.customer_phone;
-  if (body.notes !== undefined) updateData.notes = body.notes;
-  if (body.auto_check_traffic !== undefined) updateData.auto_check_traffic = body.auto_check_traffic;
-  if (body.enable_recurring_checks !== undefined) updateData.enable_recurring_checks = body.enable_recurring_checks;
-  if (body.check_interval_minutes !== undefined) updateData.check_interval_minutes = body.check_interval_minutes;
-  if (body.max_checks !== undefined) updateData.max_checks = body.max_checks;
-  if (body.min_delay_change_threshold !== undefined) updateData.min_delay_change_threshold = body.min_delay_change_threshold;
-  if (body.min_hours_between_notifications !== undefined) updateData.min_hours_between_notifications = body.min_hours_between_notifications;
+  // Convert scheduled_delivery to Date if present
+  const updateData: Partial<UpdateDeliveryInput> = {
+    ...body,
+    scheduled_delivery: body.scheduled_delivery ? new Date(body.scheduled_delivery) : undefined,
+  };
 
   // Transform result to only expose safe fields
   return Result.map(

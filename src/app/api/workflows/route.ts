@@ -4,11 +4,13 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
+import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { createWorkflowId, parseWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
-import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { validateQuery } from '@/core/utils/validation';
+import { listWorkflowsQuerySchema } from '@/core/schemas/workflow';
 
 interface WorkflowListItem {
   id: string;
@@ -42,11 +44,14 @@ interface WorkflowListItem {
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
-  const deliveryId = getQueryParam(request, 'deliveryId');
-  const { page, limit } = parsePaginationParams(
-    getQueryParam(request, 'page'),
-    getQueryParam(request, 'limit')
-  );
+
+  // Validate query parameters
+  const queryResult = validateQuery(listWorkflowsQuerySchema, request);
+  if (!queryResult.success) {
+    return queryResult;
+  }
+
+  const { page, limit, delivery_id: deliveryId } = queryResult.value;
 
   if (deliveryId) {
     // Transform filtered result to only expose safe fields with pagination

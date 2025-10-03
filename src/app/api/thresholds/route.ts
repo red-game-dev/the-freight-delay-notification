@@ -5,8 +5,10 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler, parseJsonBody, validateRequiredFields } from '@/core/infrastructure/http';
+import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
+import { validateBody } from '@/core/utils/validation';
+import { createThresholdSchema } from '@/core/schemas/threshold';
 
 /**
  * GET /api/thresholds
@@ -35,16 +37,12 @@ export const GET = createApiHandler(async (request) => {
  * Create a new threshold in database
  */
 export const POST = createApiHandler(async (request) => {
-  const body = await parseJsonBody<{
-    name: string;
-    delay_minutes: number;
-    notification_channels: Array<'email' | 'sms'>;
-    is_default?: boolean;
-  }>(request);
+  const bodyResult = await validateBody(createThresholdSchema, request);
+  if (!bodyResult.success) {
+    return bodyResult;
+  }
 
-  // Validate required fields
-  validateRequiredFields(body, ['name', 'delay_minutes', 'notification_channels']);
-
+  const body = bodyResult.value;
   const db = getDatabaseService();
 
   // Transform result to only expose safe fields
@@ -53,7 +51,7 @@ export const POST = createApiHandler(async (request) => {
       name: body.name,
       delay_minutes: body.delay_minutes,
       notification_channels: body.notification_channels,
-      is_default: body.is_default || false,
+      is_default: body.is_default,
     }),
     (threshold) => ({
       id: threshold.id,

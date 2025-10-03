@@ -5,7 +5,7 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler, parseJsonBody, validateRequiredFields, getQueryParam } from '@/core/infrastructure/http';
+import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
 import type { DeliveryStatus } from '@/infrastructure/database/types/database.types';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { WorkflowIdReusePolicy } from '@temporalio/client';
@@ -14,7 +14,9 @@ import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
 import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
 import { ensureDateISO } from '@/core/utils/typeConversion';
-import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { createPaginatedResponse } from '@/core/utils/paginationUtils';
+import { validateQuery, validateBody } from '@/core/utils/validation';
+import { listDeliveriesQuerySchema, createDeliverySchema } from '@/core/schemas/delivery';
 
 /**
  * GET /api/deliveries
@@ -27,11 +29,13 @@ import { parsePaginationParams, createPaginatedResponse } from '@/core/utils/pag
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
 
-  const { page, limit } = parsePaginationParams(
-    getQueryParam(request, 'page'),
-    getQueryParam(request, 'limit')
-  );
-  const status = getQueryParam(request, 'status');
+  // Validate query parameters
+  const queryResult = validateQuery(listDeliveriesQuerySchema, request);
+  if (!queryResult.success) {
+    return queryResult;
+  }
+
+  const { page, limit, status } = queryResult.value;
 
   // Fetch more than needed to calculate total properly (for filtered results)
   const fetchLimit = 1000;
@@ -72,44 +76,43 @@ export const GET = createApiHandler(async (request) => {
  * NOTE: This handles the full creation flow (customer -> route -> delivery)
  */
 export const POST = createApiHandler(async (request) => {
-  const body = await parseJsonBody<{
-    tracking_number: string;
-    origin: string;
-    destination: string;
-    scheduled_delivery: string;
-    status?: string;
-    customer_name: string;
-    customer_email: string;
-    customer_phone?: string;
-    notes?: string;
-    auto_check_traffic?: boolean;
-    enable_recurring_checks?: boolean;
-    check_interval_minutes?: number;
-    max_checks?: number;
-    min_delay_change_threshold?: number;
-    min_hours_between_notifications?: number;
-  }>(request);
+  // Validate request body
+  const bodyResult = await validateBody(createDeliverySchema, request);
+  if (!bodyResult.success) {
+    return bodyResult;
+  }
 
-  // Validate required fields
-  validateRequiredFields(body, [
-    'tracking_number',
-    'origin',
-    'destination',
-    'scheduled_delivery',
-    'customer_name',
-    'customer_email',
-  ]);
+  const body = bodyResult.value;
+
+  // Extract fields (already validated by Zod)
+  const {
+    tracking_number,
+    origin,
+    destination,
+    scheduled_delivery,
+    customer_name,
+    customer_email,
+    customer_phone,
+    notes,
+    auto_check_traffic,
+    enable_recurring_checks,
+    check_interval_minutes,
+    max_checks,
+    min_delay_change_threshold,
+    min_hours_between_notifications,
+    delay_threshold_minutes,
+  } = body;
 
   const db = getDatabaseService();
   const geocodingService = getGeocodingService();
 
   // Step 1: Create or find customer
-  let customer = await db.getCustomerByEmail(body.customer_email);
+  let customer = await db.getCustomerByEmail(customer_email);
   if (!customer.success || !customer.value) {
     const createCustomerResult = await db.createCustomer({
-      name: body.customer_name,
-      email: body.customer_email,
-      phone: body.customer_phone,
+      name: customer_name,
+      email: customer_email,
+      phone: customer_phone,
     });
     if (!createCustomerResult.success) {
       return createCustomerResult;
@@ -118,28 +121,28 @@ export const POST = createApiHandler(async (request) => {
   }
 
   // Step 2: Geocode addresses to get coordinates
-  logger.info(`🌍 Geocoding addresses: ${body.origin} → ${body.destination}`);
+  logger.info(`🌍 Geocoding addresses: ${origin} → ${destination}`);
 
-  const originGeocodingResult = await geocodingService.geocodeAddress(body.origin);
+  const originGeocodingResult = await geocodingService.geocodeAddress(origin);
   if (!originGeocodingResult.success) {
-    logger.error(`❌ Failed to geocode origin: ${body.origin}`, originGeocodingResult.error);
+    logger.error(`❌ Failed to geocode origin: ${origin}`, originGeocodingResult.error);
     return originGeocodingResult;
   }
 
-  const destinationGeocodingResult = await geocodingService.geocodeAddress(body.destination);
+  const destinationGeocodingResult = await geocodingService.geocodeAddress(destination);
   if (!destinationGeocodingResult.success) {
-    logger.error(`❌ Failed to geocode destination: ${body.destination}`, destinationGeocodingResult.error);
+    logger.error(`❌ Failed to geocode destination: ${destination}`, destinationGeocodingResult.error);
     return destinationGeocodingResult;
   }
 
-  logger.info(`✅ Geocoded origin: ${body.origin} → (${originGeocodingResult.value.lat}, ${originGeocodingResult.value.lng})`);
-  logger.info(`✅ Geocoded destination: ${body.destination} → (${destinationGeocodingResult.value.lat}, ${destinationGeocodingResult.value.lng})`);
+  logger.info(`✅ Geocoded origin: ${origin} → (${originGeocodingResult.value.lat}, ${originGeocodingResult.value.lng})`);
+  logger.info(`✅ Geocoded destination: ${destination} → (${destinationGeocodingResult.value.lat}, ${destinationGeocodingResult.value.lng})`);
 
   // Step 3: Create route with geocoded coordinates
   const routeResult = await db.createRoute({
-    origin_address: body.origin,
+    origin_address: origin,
     origin_coords: originGeocodingResult.value,
-    destination_address: body.destination,
+    destination_address: destination,
     destination_coords: destinationGeocodingResult.value,
     distance_meters: 0, // Will be calculated by first traffic check
     normal_duration_seconds: 0, // Will be calculated by first traffic check
@@ -151,24 +154,24 @@ export const POST = createApiHandler(async (request) => {
 
   // Step 4: Create delivery
   const deliveryResult = await db.createDelivery({
-    tracking_number: body.tracking_number,
+    tracking_number,
     customer_id: customer.value!.id,
     route_id: routeResult.value.id,
-    scheduled_delivery: new Date(body.scheduled_delivery),
-    status: (body.status as DeliveryStatus) || 'pending',
-    delay_threshold_minutes: 30, // Default threshold
-    auto_check_traffic: body.auto_check_traffic || false,
-    enable_recurring_checks: body.enable_recurring_checks || false,
-    check_interval_minutes: body.check_interval_minutes || 30,
-    max_checks: body.max_checks ?? -1, // -1 means unlimited
+    scheduled_delivery: new Date(scheduled_delivery),
+    status: 'pending',
+    delay_threshold_minutes: delay_threshold_minutes || 30,
+    auto_check_traffic: auto_check_traffic || false,
+    enable_recurring_checks: enable_recurring_checks || false,
+    check_interval_minutes: check_interval_minutes || 30,
+    max_checks: max_checks ?? -1,
     checks_performed: 0,
-    min_delay_change_threshold: body.min_delay_change_threshold || 15,
-    min_hours_between_notifications: body.min_hours_between_notifications || 1.0,
+    min_delay_change_threshold: min_delay_change_threshold || 15,
+    min_hours_between_notifications: min_hours_between_notifications || 1.0,
     metadata: {
-      notes: body.notes,
-      customer_name: body.customer_name,
-      customer_email: body.customer_email,
-      customer_phone: body.customer_phone,
+      notes,
+      customer_name,
+      customer_email,
+      customer_phone,
     },
   });
 
@@ -177,9 +180,9 @@ export const POST = createApiHandler(async (request) => {
   }
 
   // Step 4: If auto_check_traffic or enable_recurring_checks is enabled, trigger workflow
-  logger.info(`🔍 Checking workflow triggers - auto_check: ${body.auto_check_traffic}, recurring: ${body.enable_recurring_checks}`);
+  logger.info(`🔍 Checking workflow triggers - auto_check: ${auto_check_traffic}, recurring: ${enable_recurring_checks}`);
 
-  if (body.auto_check_traffic || body.enable_recurring_checks) {
+  if (auto_check_traffic || enable_recurring_checks) {
     logger.info(`🚀 Auto-triggering workflow for delivery ${deliveryResult.value.id}`);
     try {
       // Construct base workflow input from the data we just created

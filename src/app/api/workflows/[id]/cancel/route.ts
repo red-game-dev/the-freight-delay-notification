@@ -4,24 +4,21 @@
  * Body: { force?: boolean } - If true, terminates instead of graceful cancel
  */
 
-import { createParamApiHandler, parseJsonBody } from '@/core/infrastructure/http';
+import { createParamApiHandler } from '@/core/infrastructure/http';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { success, Result } from '@/core/base/utils/Result';
 import { logger, getErrorMessage, hasMessage } from '@/core/base/utils/Logger';
 import { InfrastructureError } from '@/core/base/errors/BaseError';
+import { validateBody } from '@/core/utils/validation';
+import { cancelWorkflowSchema } from '@/core/schemas/workflow';
 
 export const POST = createParamApiHandler(async (request, context) => {
   const params = await context.params;
   const workflowId = params.id;
 
-  // Parse optional body for force parameter
-  let force = false;
-  try {
-    const body = await parseJsonBody<{ force?: boolean }>(request);
-    force = body.force ?? false;
-  } catch {
-    // Body is optional, default to graceful cancel
-  }
+  // Validate request body (force and reason are optional)
+  const bodyResult = await validateBody(cancelWorkflowSchema.partial(), request);
+  const force = bodyResult.success ? (bodyResult.value.force ?? false) : false;
 
   try {
     const client = await getTemporalClient();
