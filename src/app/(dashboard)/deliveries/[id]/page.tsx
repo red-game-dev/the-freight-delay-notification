@@ -33,7 +33,7 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useDelivery, useDeleteDelivery } from '@/core/infrastructure/http/services/deliveries';
-import { useStartWorkflow, useCancelWorkflow } from '@/core/infrastructure/http/services/workflows';
+import { useStartWorkflow, useCancelWorkflow, useWorkflowStatus } from '@/core/infrastructure/http/services/workflows';
 import { WorkflowStatusPolling } from '@/components/features/workflows/WorkflowStatusPolling';
 import { DeliveryMap } from '@/components/features/deliveries/DeliveryMap';
 import { DeliveryWorkflowsList } from '@/components/features/deliveries/DeliveryWorkflowsList';
@@ -70,6 +70,15 @@ export default function DeliveryDetailPage() {
         false
       )
     : null;
+
+  // Query workflow status for button state management
+  const { data: workflowStatus } = useWorkflowStatus(workflowId || '', {
+    refetchInterval: workflowId ? 3000 : undefined, // Poll every 3 seconds when workflow exists
+  });
+
+  // Compute button states
+  const isWorkflowRunning = workflowStatus?.status === 'running';
+  const isRecurringAndRunning = delivery?.enable_recurring_checks && isWorkflowRunning;
 
   const handleStartWorkflow = async () => {
     if (!delivery) return;
@@ -167,7 +176,8 @@ export default function DeliveryDetailPage() {
           >
             Delete
           </Button>
-          {delivery.enable_recurring_checks && (
+          {/* Show "Stop Recurring Checks" only when recurring workflow is running */}
+          {isRecurringAndRunning && (
             <Button
               variant="outline"
               size="sm"
@@ -177,10 +187,12 @@ export default function DeliveryDetailPage() {
               Stop Recurring Checks
             </Button>
           )}
+          {/* Disable "Check Traffic & Notify" when any workflow is running */}
           <Button
             size="sm"
             onClick={handleStartWorkflow}
             loading={startWorkflow.isPending}
+            disabled={isWorkflowRunning}
             leftIcon={<PlayCircle className="h-4 w-4" />}
           >
             Check Traffic & Notify

@@ -17,6 +17,7 @@ import { ensureDateISO } from '@/core/utils/typeConversion';
 import { createPaginatedResponse } from '@/core/utils/paginationUtils';
 import { validateQuery, validateBody } from '@/core/utils/validation';
 import { listDeliveriesQuerySchema, createDeliverySchema } from '@/core/schemas/delivery';
+import { env } from '@/infrastructure/config/EnvValidator';
 
 /**
  * GET /api/deliveries
@@ -220,6 +221,7 @@ export const POST = createApiHandler(async (request) => {
           ...baseWorkflowInput,
           checkIntervalMinutes: body.check_interval_minutes || 30,
           maxChecks,
+          cutoffHours: env.WORKFLOW_CUTOFF_HOURS,
         };
 
         const workflowId = createWorkflowId(WorkflowType.RECURRING_CHECK, deliveryResult.value.id, false);
@@ -228,7 +230,7 @@ export const POST = createApiHandler(async (request) => {
           taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',
           workflowId,
           args: [workflowInput],
-          workflowIdReusePolicy: WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
+          workflowIdReusePolicy: WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY,
         });
 
         logger.info(`✅ Auto-triggered recurring workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);

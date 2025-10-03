@@ -32,8 +32,17 @@ export const thresholdIdParamSchema = z.object({
 });
 
 /**
+ * Check threshold input schema (for testing threshold check logic)
+ */
+export const checkThresholdSchema = z.object({
+  delayMinutes: z.number().min(0),
+  thresholdMinutes: z.number().int().min(0).max(1440).default(30),
+});
+
+/**
  * Type exports
  */
 export type CreateThresholdInput = z.infer<typeof createThresholdSchema>;
 export type UpdateThresholdInput = z.infer<typeof updateThresholdSchema>;
 export type ThresholdIdParam = z.infer<typeof thresholdIdParamSchema>;
+export type CheckThresholdInput = z.infer<typeof checkThresholdSchema>;

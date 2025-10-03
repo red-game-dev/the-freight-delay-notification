@@ -4,17 +4,25 @@
  */
 
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
+import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { logger } from '@/core/base/utils/Logger';
+import { validateQuery } from '@/core/utils/validation';
+import { workflowStatsQuerySchema } from '@/core/schemas/workflow';
 
 /**
  * GET /api/workflows/stats
  * Get workflow execution statistics from database
  */
 export const GET = createApiHandler(async (request) => {
+  // Validate query parameters
+  const queryResult = validateQuery(workflowStatsQuerySchema, request);
+  if (!queryResult.success) {
+    return queryResult;
+  }
+
+  const { deliveryId } = queryResult.value;
   const db = getDatabaseService();
-  const deliveryId = getQueryParam(request, 'deliveryId');
 
   logger.info('📊 [Workflows Stats API] Fetching workflow statistics via DatabaseService');
 

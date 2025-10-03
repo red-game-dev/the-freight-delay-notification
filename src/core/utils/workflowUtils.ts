@@ -38,19 +38,28 @@ export interface ParsedWorkflowId {
  * @param type - The workflow type
  * @param deliveryId - The delivery ID
  * @param includeTimestamp - Whether to include timestamp for uniqueness (default: true)
+ * @param checkNumber - Optional check number for recurring workflows (adds specificity)
  */
 export function createWorkflowId(
   type: WorkflowType,
   deliveryId: string,
-  includeTimestamp: boolean = true
+  includeTimestamp: boolean = true,
+  checkNumber?: number
 ): string {
   const prefix = WORKFLOW_PREFIXES[type];
+  let id = `${prefix}-${deliveryId}`;
 
-  if (includeTimestamp) {
-    return `${prefix}-${deliveryId}-${Date.now()}`;
+  // Add check number if provided (useful for recurring workflows)
+  if (checkNumber !== undefined) {
+    id += `-check${checkNumber}`;
   }
 
-  return `${prefix}-${deliveryId}`;
+  // Add timestamp for uniqueness
+  if (includeTimestamp) {
+    id += `-${Date.now()}`;
+  }
+
+  return id;
 }
 
 /**

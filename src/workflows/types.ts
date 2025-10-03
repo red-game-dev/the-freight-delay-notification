@@ -29,7 +29,8 @@ export interface DelayNotificationWorkflowInput {
 
 export interface RecurringCheckWorkflowInput extends DelayNotificationWorkflowInput {
   checkIntervalMinutes: number; // How often to check (15, 30, 60, 120, 180)
-  maxChecks: number; // Maximum number of checks (1-100)
+  maxChecks: number; // Maximum number of checks (1-100, or -1 for infinite)
+  cutoffHours?: number; // Hours after scheduled delivery to stop checking (for infinite checks, default 72)
 }
 
 // ===== Activity Input/Output Types =====

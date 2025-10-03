@@ -66,6 +66,13 @@ export const listNotificationsQuerySchema = z.object({
 });
 
 /**
+ * Notification ID param schema
+ */
+export const notificationIdParamSchema = z.object({
+  id: uuidSchema,
+});
+
+/**
  * Type exports
  */
 export type NotificationChannel = z.infer<typeof notificationChannelSchema>;
@@ -73,3 +80,4 @@ export type NotificationStatus = z.infer<typeof notificationStatusSchema>;
 export type CreateNotificationInput = z.infer<typeof createNotificationSchema>;
 export type UpdateNotificationInput = z.infer<typeof updateNotificationSchema>;
 export type ListNotificationsQuery = z.infer<typeof listNotificationsQuerySchema>;
+export type NotificationIdParam = z.infer<typeof notificationIdParamSchema>;

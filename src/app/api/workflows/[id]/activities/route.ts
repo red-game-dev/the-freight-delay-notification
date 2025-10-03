@@ -8,13 +8,21 @@ import { Result } from '@/core/base/utils/Result';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
 import { logger, hasMessage, hasName } from '@/core/base/utils/Logger';
 import { NotFoundError } from '@/core/base/errors/BaseError';
+import { validateParams } from '@/core/utils/validation';
+import { workflowIdParamSchema } from '@/core/schemas/workflow';
 
 /**
  * GET /api/workflows/[id]/activities
  * Get activities/events for a workflow from Temporal
  */
 export const GET = createParamApiHandler(async (request, { params }) => {
-  const workflowId = params.id;
+  // Validate params
+  const paramsResult = validateParams(workflowIdParamSchema, params);
+  if (!paramsResult.success) {
+    return paramsResult;
+  }
+
+  const { id: workflowId } = paramsResult.value;
 
   try {
     const client = await getTemporalClient();

@@ -68,6 +68,21 @@ export const listWorkflowsQuerySchema = z.object({
 });
 
 /**
+ * Workflow stats query schema
+ */
+export const workflowStatsQuerySchema = z.object({
+  deliveryId: uuidSchema.optional(),
+});
+
+/**
+ * Workflow ID param schema
+ */
+export const workflowIdParamSchema = z.object({
+  id: z.string().min(1)
+    .transform(sanitizeString),
+});
+
+/**
  * Type exports
  */
 export type WorkflowStatus = z.infer<typeof workflowStatusSchema>;
@@ -76,3 +91,5 @@ export type StartWorkflowInput = z.infer<typeof startWorkflowSchema>;
 export type CancelWorkflowInput = z.infer<typeof cancelWorkflowSchema>;
 export type WorkflowStatusQuery = z.infer<typeof workflowStatusQuerySchema>;
 export type ListWorkflowsQuery = z.infer<typeof listWorkflowsQuerySchema>;
+export type WorkflowStatsQuery = z.infer<typeof workflowStatsQuerySchema>;
+export type WorkflowIdParam = z.infer<typeof workflowIdParamSchema>;

@@ -11,9 +11,11 @@ import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { logger, getErrorMessage, hasMessage } from '@/core/base/utils/Logger';
 import { NotFoundError, InfrastructureError } from '@/core/base/errors/BaseError';
-import type { DelayNotificationWorkflowInput } from '@/workflows/types';
+import type { DelayNotificationWorkflowInput, RecurringCheckWorkflowInput } from '@/workflows/types';
 import { validateBody } from '@/core/utils/validation';
 import { startWorkflowSchema } from '@/core/schemas/workflow';
+import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
+import { env } from '@/infrastructure/config/EnvValidator';
 
 export const POST = createApiHandler(async (request: NextRequest) => {
   // Validate request body
@@ -74,8 +76,8 @@ export const POST = createApiHandler(async (request: NextRequest) => {
 
   const customer = customerResult.value;
 
-  // Construct workflow input from Result data
-  const workflowInput: DelayNotificationWorkflowInput = {
+  // Construct base workflow input from Result data
+  const baseWorkflowInput: DelayNotificationWorkflowInput = {
     deliveryId: delivery.id,
     routeId: delivery.route_id,
     customerId: delivery.customer_id,
@@ -104,23 +106,41 @@ export const POST = createApiHandler(async (request: NextRequest) => {
   // Get Temporal client
   const client = await getTemporalClient();
 
-  // Start workflow with consistent ID based on deliveryId (no timestamp)
-  // This allows the UI to find the workflow by constructing the same ID
-  const workflowId = `delay-notification-${workflowInput.deliveryId}`;
+  // Determine which workflow to start based on delivery settings
+  const isRecurring = delivery.enable_recurring_checks;
+  const workflowType = isRecurring ? WorkflowType.RECURRING_CHECK : WorkflowType.DELAY_NOTIFICATION;
+  const workflowId = createWorkflowId(workflowType, delivery.id, false);
+  const workflowName = isRecurring ? 'RecurringTrafficCheckWorkflow' : 'DelayNotificationWorkflow';
 
-  logger.info(`🚀 Starting workflow: ${workflowId}`);
-  logger.info(`   Delivery: ${workflowInput.deliveryId}`);
-  logger.info(`   Route: ${workflowInput.origin.address} → ${workflowInput.destination.address}`);
-  logger.info(`   Customer: ${workflowInput.customerEmail}`);
+  logger.info(`🚀 Starting ${isRecurring ? 'recurring' : 'one-time'} workflow: ${workflowId}`);
+  logger.info(`   Delivery: ${delivery.id}`);
+  logger.info(`   Route: ${baseWorkflowInput.origin.address} → ${baseWorkflowInput.destination.address}`);
+  logger.info(`   Customer: ${baseWorkflowInput.customerEmail}`);
+
+  // Construct workflow input based on type
+  let workflowInput: DelayNotificationWorkflowInput | RecurringCheckWorkflowInput;
+  if (isRecurring) {
+    workflowInput = {
+      ...baseWorkflowInput,
+      checkIntervalMinutes: delivery.check_interval_minutes || 30,
+      maxChecks: delivery.max_checks ?? -1,
+      cutoffHours: env.WORKFLOW_CUTOFF_HOURS,
+    } as RecurringCheckWorkflowInput;
+    logger.info(`   Check interval: ${delivery.check_interval_minutes || 30} minutes`);
+    logger.info(`   Max checks: ${delivery.max_checks === -1 ? 'unlimited' : delivery.max_checks}`);
+    logger.info(`   Cutoff hours: ${env.WORKFLOW_CUTOFF_HOURS}`);
+  } else {
+    workflowInput = baseWorkflowInput;
+  }
 
   // Try to start the workflow - if it already exists, return the existing one
   let handle;
   try {
-    handle = await client.workflow.start('DelayNotificationWorkflow', {
+    handle = await client.workflow.start(workflowName, {
       taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',
       workflowId,
       args: [workflowInput],
-      workflowIdReusePolicy: WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
+      workflowIdReusePolicy: WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY ,
     });
   } catch (error: unknown) {
     // If workflow already exists, get its handle

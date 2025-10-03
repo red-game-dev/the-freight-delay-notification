@@ -336,13 +336,16 @@ export async function RecurringTrafficCheckWorkflow(
         break;
       }
 
-      // Check stop condition 4: Scheduled delivery time + 2 hours has passed
+      // Check stop condition 4: Scheduled delivery time + cutoff has passed
+      // For infinite recurring checks (-1), use configurable cutoff (default 72 hours / 3 days)
+      // For finite checks, use 2 hours cutoff
       const scheduledTime = new Date(deliveryDetails.scheduledDelivery);
-      const cutoffTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000); // +2 hours
+      const cutoffHours = input.maxChecks === -1 ? (input.cutoffHours || 72) : 2;
+      const cutoffTime = new Date(scheduledTime.getTime() + cutoffHours * 60 * 60 * 1000);
       const now = new Date();
 
       if (now > cutoffTime) {
-        console.log(`✅ Cutoff time reached (scheduled delivery + 2 hours)`);
+        console.log(`✅ Cutoff time reached (scheduled delivery + ${cutoffHours} hours)`);
         result.success = true;
         break;
       }
@@ -501,6 +504,29 @@ export async function RecurringTrafficCheckWorkflow(
             delayMinutes: result.steps.trafficCheck.delayMinutes,
           });
         }
+
+        // Save workflow execution for this check iteration
+        // This creates a completed workflow record for each notification sent
+        // Gives users visibility into each check cycle
+        try {
+          await saveWorkflowExecution({
+            workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, true, checksPerformed + 1),
+            runId: `run-check-${checksPerformed + 1}-${Date.now()}`,
+            deliveryId: input.deliveryId,
+            status: 'completed',
+            steps: {
+              checkNumber: checksPerformed + 1,
+              trafficCheck: result.steps.trafficCheck,
+              delayEvaluation: result.steps.delayEvaluation,
+              messageGeneration: result.steps.messageGeneration,
+              notificationDelivery: result.steps.notificationDelivery,
+            },
+          });
+          console.log(`✅ Saved workflow execution for check #${checksPerformed + 1}`);
+        } catch (saveError) {
+          console.error(`❌ Failed to save workflow execution for check #${checksPerformed + 1}:`, saveError);
+          // Don't fail the workflow if save fails - just log and continue
+        }
       } else {
         console.log(`✅ No notification needed - delay within threshold (${result.steps.trafficCheck.delayMinutes} ≤ ${thresholdMinutes})`);
       }
@@ -531,13 +557,40 @@ export async function RecurringTrafficCheckWorkflow(
     // Mark workflow as completed
     currentStep = 'completed';
 
-    // Save workflow execution
+    // Update delivery status when workflow completes
+    // Only update if delivery is still in a non-terminal status
+    const finalDeliveryResult = await getDeliveryDetails({ deliveryId: input.deliveryId });
+    if (finalDeliveryResult.success && finalDeliveryResult.delivery) {
+      const currentStatus = finalDeliveryResult.delivery.status;
+      const terminalStatuses = ['delivered', 'cancelled', 'failed'];
+
+      if (!terminalStatuses.includes(currentStatus)) {
+        // If workflow completed due to cutoff time being reached, mark as in_transit
+        // Unless it's already marked as delayed
+        if (currentStatus !== 'delayed') {
+          await updateDeliveryStatusInDb({
+            deliveryId: input.deliveryId,
+            status: 'in_transit',
+          });
+          console.log(`✅ Updated delivery status to 'in_transit' as workflow completed`);
+        }
+      }
+    }
+
+    // Save final summary workflow execution
+    // This represents the entire recurring workflow completion (all checks)
+    // Individual check executions are saved after each notification
     await saveWorkflowExecution({
       workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, false),
-      runId: `run-${Date.now()}`,
+      runId: `run-summary-${Date.now()}`,
       deliveryId: input.deliveryId,
       status: 'completed',
-      steps: { checksPerformed, ...result.steps },
+      steps: {
+        checksPerformed,
+        totalChecks: checksPerformed,
+        reason: 'Workflow completed naturally',
+        ...result.steps
+      },
     });
 
   } catch (error) {

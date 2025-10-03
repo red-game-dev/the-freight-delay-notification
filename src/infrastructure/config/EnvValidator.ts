@@ -54,6 +54,9 @@ const envSchema = z.object({
   // Thresholds
   DEFAULT_DELAY_THRESHOLD_MINUTES: z.string().transform(Number).default('30'),
 
+  // Workflow Configuration
+  WORKFLOW_CUTOFF_HOURS: z.string().transform(Number).default('72'), // 3 days default
+
   // Cron Configuration
   CRON_SECRET: z.string().optional(),
   CRON_INTERVAL_SECONDS: z.string().transform(Number).default('600'), // 10 minutes default, 10 seconds for testing

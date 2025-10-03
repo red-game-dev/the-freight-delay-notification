@@ -3,29 +3,22 @@
  * Test endpoint for PDF Step 2: Threshold checking logic
  */
 
-import { createApiHandler, parseJsonBody } from '@/core/infrastructure/http';
+import { createApiHandler } from '@/core/infrastructure/http';
 import { CheckDelayThresholdUseCase } from '@/core/engine/delivery/CheckDelayThreshold';
 import type { TrafficData } from '@/types/shared/traffic.types';
 import { Result } from '@/core/base/utils/Result';
-import { ValidationError } from '@/core/base/errors/BaseError';
 import { getCurrentISOTimestamp } from '@/core/utils/dateUtils';
+import { validateBody } from '@/core/utils/validation';
+import { checkThresholdSchema } from '@/core/schemas/threshold';
 
 export const POST = createApiHandler(async (request) => {
-  const body = await parseJsonBody<{
-    delayMinutes: number;
-    thresholdMinutes?: number;
-  }>(request);
-
-  const { delayMinutes, thresholdMinutes = 30 } = body;
-
-  // Validate input
-  if (typeof delayMinutes !== 'number') {
-    return Result.fail(new ValidationError('delayMinutes must be a number'));
+  // Validate request body
+  const bodyResult = await validateBody(checkThresholdSchema, request);
+  if (!bodyResult.success) {
+    return bodyResult;
   }
 
-  if (delayMinutes < 0) {
-    return Result.fail(new ValidationError('delayMinutes cannot be negative'));
-  }
+  const { delayMinutes, thresholdMinutes } = bodyResult.value;
 
   // Create mock traffic data with the provided delay
   const trafficData: TrafficData = {
