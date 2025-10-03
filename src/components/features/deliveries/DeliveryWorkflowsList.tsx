@@ -20,7 +20,7 @@ interface DeliveryWorkflowsListProps {
 }
 
 export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps) {
-  const { data, isLoading, error } = useWorkflows({ delivery_id: deliveryId });
+  const { data, isLoading, error } = useWorkflows({ delivery_id: deliveryId, limit: '10' });
 
   if (isLoading) {
     return (

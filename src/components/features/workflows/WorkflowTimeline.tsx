@@ -5,7 +5,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { CompactTimeline } from '@/components/ui/Timeline';
 import { SkeletonWorkflow } from '@/components/ui/Skeleton';
@@ -15,6 +14,7 @@ import { CheckCircle2, XCircle, Clock, AlertCircle, Workflow } from 'lucide-reac
 import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
 import { formatNextScheduledTime } from '@/core/utils/dateUtils';
 import { isWorkflowType, WorkflowType } from '@/core/utils/workflowUtils';
+import { useURLPagination } from '@/core/hooks/useURLSearchParams';
 import Link from 'next/link';
 
 const statusConfig = {
@@ -26,8 +26,8 @@ const statusConfig = {
 };
 
 export function WorkflowTimeline() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const { data: response, isLoading } = useWorkflows({ page: currentPage.toString(), limit: '10' });
+  const { page, setPage } = useURLPagination();
+  const { data: response, isLoading } = useWorkflows({ page: page.toString(), limit: '10' });
 
   const workflows = response?.data || [];
   const pagination = response?.pagination;
@@ -247,7 +247,7 @@ export function WorkflowTimeline() {
             totalPages={pagination.totalPages}
             totalItems={pagination.total}
             itemsPerPage={10}
-            onPageChange={setCurrentPage}
+            onPageChange={setPage}
             showItemsInfo
           />
         </div>

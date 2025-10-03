@@ -5,7 +5,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
@@ -14,6 +13,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Skeleton, SkeletonTable } from '@/components/ui/Skeleton';
 import { MapPin, Clock } from 'lucide-react';
 import { useDeliveries } from '@/core/infrastructure/http/services/deliveries';
+import { useURLPagination } from '@/core/hooks/useURLSearchParams';
 import type { Delivery } from '@/core/infrastructure/http/services/deliveries/types';
 
 const statusConfig = {
@@ -25,8 +25,8 @@ const statusConfig = {
 };
 
 export function DeliveryList() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const { data: response, isLoading, error } = useDeliveries({ page: currentPage.toString(), limit: '10' });
+  const { page, setPage } = useURLPagination();
+  const { data: response, isLoading, error } = useDeliveries({ page: page.toString(), limit: '10' });
 
   const deliveries = response?.data || [];
   const pagination = response?.pagination;
@@ -139,7 +139,7 @@ export function DeliveryList() {
             totalPages={pagination.totalPages}
             totalItems={pagination.total}
             itemsPerPage={10}
-            onPageChange={setCurrentPage}
+            onPageChange={setPage}
             showItemsInfo
           />
         </div>

@@ -20,7 +20,7 @@ interface DeliveryNotificationsListProps {
 }
 
 export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsListProps) {
-  const { data, isLoading, error } = useNotifications({ delivery_id: deliveryId });
+  const { data, isLoading, error } = useNotifications({ delivery_id: deliveryId, limit: '10' });
 
   if (isLoading) {
     return (

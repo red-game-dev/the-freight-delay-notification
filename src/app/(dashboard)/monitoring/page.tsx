@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { StatCard, StatGrid } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
@@ -25,16 +25,21 @@ import { TrafficMap } from '@/components/features/monitoring/TrafficMap';
 import { enrichSnapshot, countByCondition, TRAFFIC_CONFIG } from '@/core/utils/trafficUtils';
 import { buildGoogleMapsDirectionsUrl } from '@/core/utils/mapsUtils';
 import { useRouteMap } from '@/core/hooks/useRouteMap';
+import { useURLPaginationWithFilter } from '@/core/hooks/useURLSearchParams';
+import { useExpandedItems } from '@/stores';
 
 type TrafficCondition = 'all' | 'light' | 'moderate' | 'heavy' | 'severe';
 
 export default function MonitoringPage() {
+  // URL-based state for pagination and filtering
+  const { page, setPage, filter, setFilter } = useURLPaginationWithFilter<TrafficCondition>('filter', 'all');
+
+  // UI store for expanded items
+  const expandedDeliveries = useExpandedItems('monitoring');
+
   const { data: routes, isLoading: routesLoading } = useRoutes();
   const routeMap = useRouteMap(routes);
-  const [trafficPage, setTrafficPage] = useState(1);
-  const { data: trafficResponse, isLoading: trafficLoading } = useTrafficSnapshots({ page: trafficPage.toString(), limit: '10' });
-  const [selectedFilter, setSelectedFilter] = useState<TrafficCondition>('all');
-  const [expandedDeliveries, setExpandedDeliveries] = useState<Set<string>>(new Set());
+  const { data: trafficResponse, isLoading: trafficLoading } = useTrafficSnapshots({ page: page.toString(), limit: '10' });
 
   const trafficSnapshots: TrafficSnapshot[] = trafficResponse?.data || [];
   const trafficPagination = trafficResponse?.pagination;
@@ -52,27 +57,14 @@ export default function MonitoringPage() {
   // Filter traffic snapshots by selected condition
   const filteredSnapshots = useMemo(() => {
     if (!trafficSnapshots) return [];
-    if (selectedFilter === 'all') return trafficSnapshots;
-    return trafficSnapshots.filter(s => s.traffic_condition === selectedFilter);
-  }, [trafficSnapshots, selectedFilter]);
+    if (filter === 'all') return trafficSnapshots;
+    return trafficSnapshots.filter(s => s.traffic_condition === filter);
+  }, [trafficSnapshots, filter]);
 
   // Count by traffic condition using utility
   const conditionCounts = useMemo(() => {
     return countByCondition(trafficSnapshots);
   }, [trafficSnapshots]);
-
-  // Toggle expanded state for deliveries
-  const toggleDeliveries = (snapshotId: string) => {
-    setExpandedDeliveries(prev => {
-      const next = new Set(prev);
-      if (next.has(snapshotId)) {
-        next.delete(snapshotId);
-      } else {
-        next.add(snapshotId);
-      }
-      return next;
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -154,41 +146,41 @@ export default function MonitoringPage() {
           {/* Filter Buttons */}
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={selectedFilter === 'all' ? 'primary' : 'outline'}
+              variant={filter === 'all' ? 'primary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('all')}
+              onClick={() => setFilter('all')}
             >
               All ({conditionCounts.all})
             </Button>
             <Button
-              variant={selectedFilter === 'severe' ? 'primary' : 'outline'}
+              variant={filter === 'severe' ? 'primary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('severe')}
-              className={selectedFilter === 'severe' ? '' : 'hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950'}
+              onClick={() => setFilter('severe')}
+              className={filter === 'severe' ? '' : 'hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950'}
             >
               Severe ({conditionCounts.severe})
             </Button>
             <Button
-              variant={selectedFilter === 'heavy' ? 'primary' : 'outline'}
+              variant={filter === 'heavy' ? 'primary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('heavy')}
-              className={selectedFilter === 'heavy' ? '' : 'hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-950'}
+              onClick={() => setFilter('heavy')}
+              className={filter === 'heavy' ? '' : 'hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-950'}
             >
               Heavy ({conditionCounts.heavy})
             </Button>
             <Button
-              variant={selectedFilter === 'moderate' ? 'primary' : 'outline'}
+              variant={filter === 'moderate' ? 'primary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('moderate')}
-              className={selectedFilter === 'moderate' ? '' : 'hover:bg-yellow-50 hover:text-yellow-700 dark:hover:bg-yellow-950'}
+              onClick={() => setFilter('moderate')}
+              className={filter === 'moderate' ? '' : 'hover:bg-yellow-50 hover:text-yellow-700 dark:hover:bg-yellow-950'}
             >
               Moderate ({conditionCounts.moderate})
             </Button>
             <Button
-              variant={selectedFilter === 'light' ? 'primary' : 'outline'}
+              variant={filter === 'light' ? 'primary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('light')}
-              className={selectedFilter === 'light' ? '' : 'hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950'}
+              onClick={() => setFilter('light')}
+              className={filter === 'light' ? '' : 'hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950'}
             >
               Light ({conditionCounts.light})
             </Button>
@@ -275,7 +267,7 @@ export default function MonitoringPage() {
                           </div>
                           <div className="space-y-1">
                             {snapshot.affected_deliveries
-                              .slice(0, expandedDeliveries.has(snapshot.id) ? undefined : 3)
+                              .slice(0, expandedDeliveries.isExpanded(snapshot.id) ? undefined : 3)
                               .map((delivery: AffectedDelivery) => (
                                 <div key={delivery.id} className="flex items-center justify-between text-xs">
                                   <span className="text-blue-800 dark:text-blue-200 font-mono">
@@ -290,10 +282,10 @@ export default function MonitoringPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => toggleDeliveries(snapshot.id)}
+                                onClick={() => expandedDeliveries.toggle(snapshot.id)}
                                 className="text-xs text-blue-700 dark:text-blue-300 hover:underline mt-1 h-auto py-0 px-1"
                               >
-                                {expandedDeliveries.has(snapshot.id)
+                                {expandedDeliveries.isExpanded(snapshot.id)
                                   ? 'Show less'
                                   : `+${snapshot.affected_deliveries.length - 3} more deliveries`}
                               </Button>
@@ -326,9 +318,9 @@ export default function MonitoringPage() {
           <EmptyState
             icon={MapIcon}
             title="No Traffic Data"
-            description={selectedFilter === 'all'
+            description={filter === 'all'
               ? "No traffic snapshots available yet. Traffic monitoring begins when deliveries are created and routes are tracked."
-              : `No ${selectedFilter} traffic conditions found. Try selecting a different filter.`}
+              : `No ${filter} traffic conditions found. Try selecting a different filter.`}
           />
         )}
 
@@ -340,7 +332,7 @@ export default function MonitoringPage() {
               totalPages={trafficPagination.totalPages}
               totalItems={trafficPagination.total}
               itemsPerPage={10}
-              onPageChange={setTrafficPage}
+              onPageChange={setPage}
               showItemsInfo
             />
           </div>
