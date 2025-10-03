@@ -8,3 +8,6 @@ export type { AppError } from './errorStore';
 
 export { useNotificationStore } from './notificationStore';
 export type { Notification } from './notificationStore';
+
+export { useFormStore, useFormDefaults, useFormDraft, useFormActions } from './formStore';
+export type { FormType, FormTypeRegistry } from './formStore';

@@ -25,6 +25,7 @@ import { SkeletonPage } from '@/components/ui/Skeleton';
 import { useDelivery, useUpdateDelivery } from '@/core/infrastructure/http/services/deliveries';
 import type { UpdateDeliveryInput, Delivery } from '@/core/infrastructure/http/services/deliveries';
 import type { DeliveryStatus } from '@/core/types';
+import { useFormStore } from '@/stores';
 
 const statusOptions = [
   { label: 'Pending', value: 'pending' },
@@ -42,12 +43,17 @@ export default function EditDeliveryPage() {
   const { data: delivery, isLoading, error } = useDelivery(deliveryId);
   const updateDelivery = useUpdateDelivery();
 
+  // Use Zustand form store for transformations
+  const deliveryToFormValues = useFormStore((state) => state.deliveryToFormValues);
+  const formValuesToUpdatePayload = useFormStore((state) => state.formValuesToUpdatePayload);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
     watch,
+    reset,
   } = useForm<UpdateDeliveryInput>();
 
   const [status, setStatus] = useState<Delivery['status']>('pending');
@@ -55,39 +61,20 @@ export default function EditDeliveryPage() {
   // Pre-populate form when delivery loads
   useEffect(() => {
     if (delivery) {
-      setValue('tracking_number', delivery.tracking_number);
-      setValue('origin', delivery.origin);
-      setValue('destination', delivery.destination);
-
-      // Format scheduled_delivery for datetime-local input (YYYY-MM-DDTHH:mm)
-      if (delivery.scheduled_delivery) {
-        const date = new Date(delivery.scheduled_delivery);
-        const formatted = date.toISOString().slice(0, 16); // "2024-01-15T14:30"
-        setValue('scheduled_delivery', formatted);
-      }
-
-      setValue('customer_name', delivery.customer_name);
-      setValue('customer_email', delivery.customer_email);
-      setValue('customer_phone', delivery.customer_phone || '');
-      setValue('notes', delivery.notes || '');
-      setValue('auto_check_traffic', delivery.auto_check_traffic || false);
-      setValue('enable_recurring_checks', delivery.enable_recurring_checks || false);
-      setValue('check_interval_minutes', delivery.check_interval_minutes || 30);
-      // Don't set max_checks if it's -1 (unlimited), leave field empty
-      if (delivery.max_checks && delivery.max_checks !== -1) {
-        setValue('max_checks', delivery.max_checks);
-      }
-      setValue('min_delay_change_threshold', delivery.min_delay_change_threshold || 15);
-      setValue('min_hours_between_notifications', delivery.min_hours_between_notifications || 1.0);
+      // Use reset() to set all values at once - much cleaner!
+      reset(deliveryToFormValues(delivery));
       setStatus(delivery.status);
     }
-  }, [delivery, setValue]);
+  }, [delivery, reset, deliveryToFormValues]);
 
   const onSubmit = async (data: UpdateDeliveryInput) => {
     try {
+      // Transform form data to API payload
+      const payload = formValuesToUpdatePayload(data, status);
+
       await updateDelivery.mutateAsync({
         id: deliveryId,
-        data: { ...data, status },
+        data: payload,
       });
       router.push(`/deliveries/${deliveryId}`);
     } catch (error) {

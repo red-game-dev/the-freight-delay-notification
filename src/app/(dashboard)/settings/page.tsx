@@ -25,6 +25,7 @@ import {
   useDeleteThreshold,
 } from '@/core/infrastructure/http/services/thresholds';
 import type { Threshold, CreateThresholdInput } from '@/core/infrastructure/http/services/thresholds';
+import { useFormStore, useFormDefaults } from '@/stores';
 
 export default function SettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -175,43 +176,41 @@ interface ThresholdModalProps {
 }
 
 function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: ThresholdModalProps) {
-  const [name, setName] = useState('');
-  const [delayMinutes, setDelayMinutes] = useState('30');
-  const [channels, setChannels] = useState<Array<'email' | 'sms'>>(['email']);
-  const [isDefault, setIsDefault] = useState(false);
+  const [formData, setFormData] = useState<CreateThresholdInput>({
+    name: '',
+    delay_minutes: 30,
+    notification_channels: ['email'],
+    is_default: false,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Pre-populate form when editing
+  // Use form store for transformations and defaults with type inference
+  const thresholdToFormValues = useFormStore((state) => state.thresholdToFormValues);
+  const defaults = useFormDefaults('threshold-create');
+
+  // Pre-populate form when editing or reset to defaults when creating
   useEffect(() => {
     if (threshold) {
-      setName(threshold.name);
-      setDelayMinutes(threshold.delay_minutes.toString());
-      setChannels(threshold.notification_channels);
-      setIsDefault(threshold.is_default);
+      setFormData(thresholdToFormValues(threshold));
     } else {
-      setName('');
-      setDelayMinutes('30');
-      setChannels(['email']);
-      setIsDefault(false);
+      setFormData(defaults || {
+        name: '',
+        delay_minutes: 30,
+        notification_channels: ['email'],
+        is_default: false,
+      });
     }
-  }, [threshold]);
+  }, [threshold, thresholdToFormValues, defaults]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const data: CreateThresholdInput = {
-        name,
-        delay_minutes: parseInt(delayMinutes),
-        notification_channels: channels,
-        is_default: isDefault,
-      };
-
       if (threshold) {
-        await onUpdate({ id: threshold.id, data });
+        await onUpdate({ id: threshold.id, data: formData });
       } else {
-        await onCreate(data);
+        await onCreate(formData);
       }
 
       onClose();
@@ -223,11 +222,14 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
   };
 
   const toggleChannel = (channel: 'email' | 'sms') => {
-    if (channels.includes(channel)) {
-      setChannels(channels.filter((c) => c !== channel));
-    } else {
-      setChannels([...channels, channel]);
-    }
+    setFormData((prev) => {
+      const channels = prev.notification_channels;
+      if (channels.includes(channel)) {
+        return { ...prev, notification_channels: channels.filter((c) => c !== channel) };
+      } else {
+        return { ...prev, notification_channels: [...channels, channel] };
+      }
+    });
   };
 
   return (
@@ -241,8 +243,8 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
           <Input
             label="Threshold Name"
             placeholder="Standard Delay Threshold"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={formData.name}
+            onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
             required
             fullWidth
           />
@@ -253,8 +255,8 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
             type="number"
             label="Delay Threshold (minutes)"
             placeholder="30"
-            value={delayMinutes}
-            onChange={(e) => setDelayMinutes(e.target.value)}
+            value={formData.delay_minutes.toString()}
+            onChange={(e) => setFormData((prev) => ({ ...prev, delay_minutes: parseInt(e.target.value) || 0 }))}
             helperText="Notify customers if delay exceeds this amount"
             required
             fullWidth
@@ -267,12 +269,12 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
           <div className="flex gap-3">
             <Checkbox
               label="Email"
-              checked={channels.includes('email')}
+              checked={formData.notification_channels.includes('email')}
               onChange={() => toggleChannel('email')}
             />
             <Checkbox
               label="SMS"
-              checked={channels.includes('sms')}
+              checked={formData.notification_channels.includes('sms')}
               onChange={() => toggleChannel('sms')}
             />
           </div>
@@ -281,8 +283,8 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
         <FormField>
           <Checkbox
             label="Set as default threshold"
-            checked={isDefault}
-            onChange={(e) => setIsDefault(e.target.checked)}
+            checked={formData.is_default}
+            onChange={(e) => setFormData((prev) => ({ ...prev, is_default: e.target.checked }))}
           />
         </FormField>
 

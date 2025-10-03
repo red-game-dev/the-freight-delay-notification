@@ -4,8 +4,6 @@
  */
 
 'use client';
-
-import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -21,10 +19,14 @@ import { InfoBox } from '@/components/ui/InfoBox';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useCreateDelivery } from '@/core/infrastructure/http/services/deliveries';
 import type { CreateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
+import { useFormDefaults } from '@/stores';
 
 export default function NewDeliveryPage() {
   const router = useRouter();
   const createDelivery = useCreateDelivery();
+
+  // Get default values from form store with type inference
+  const defaultValues = useFormDefaults('delivery-new');
 
   const {
     register,
@@ -32,7 +34,9 @@ export default function NewDeliveryPage() {
     formState: { errors, isSubmitting },
     watch,
     setValue,
-  } = useForm<CreateDeliveryInput>();
+  } = useForm<CreateDeliveryInput>({
+    defaultValues: defaultValues || undefined,
+  });
 
   const onSubmit = async (data: CreateDeliveryInput) => {
     try {
