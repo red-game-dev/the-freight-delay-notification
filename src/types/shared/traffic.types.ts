@@ -3,9 +3,11 @@
  * Defines the structure for traffic data fetching and processing
  */
 
+import type { TrafficCondition, Coordinates } from '@/core/types';
+
 export interface TrafficData {
   delayMinutes: number;
-  trafficCondition: 'light' | 'moderate' | 'heavy' | 'severe';
+  trafficCondition: TrafficCondition;
   estimatedDuration: number; // in seconds
   normalDuration: number; // in seconds
   fetchedAt: Date;
@@ -19,8 +21,8 @@ export interface TrafficData {
 export interface RouteInput {
   origin: string;
   destination: string;
-  originCoords?: { lat: number; lng: number };
-  destinationCoords?: { lat: number; lng: number };
+  originCoords?: Pick<Coordinates, 'lat' | 'lng'>;
+  destinationCoords?: Pick<Coordinates, 'lat' | 'lng'>;
   departureTime?: Date;
 }
 

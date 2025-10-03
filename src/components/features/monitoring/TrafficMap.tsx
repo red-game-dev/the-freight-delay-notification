@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Select } from '@/components/ui/Select';
 import { Loader2 } from 'lucide-react';
 import { clientEnv } from '@/infrastructure/config/ClientEnv';
+import type { TrafficConditionFilter, TrafficCondition } from '@/core/types/traffic';
 
 interface Route {
   id: string;
@@ -22,7 +23,7 @@ interface Route {
   origin_coords: { x: number; y: number };
   destination_coords: { x: number; y: number };
   current_duration_seconds: number | null;
-  traffic_condition: 'light' | 'moderate' | 'heavy' | 'severe' | null;
+  traffic_condition: TrafficCondition | null;
 }
 
 interface TrafficSnapshot {
@@ -59,7 +60,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   const [selectedMarker, setSelectedMarker] = React.useState<string | null>(null);
   const [showTrafficLayer, setShowTrafficLayer] = React.useState(true);
   const [selectedRoute, setSelectedRoute] = React.useState<string | null>(selectedRouteId || null);
-  const [trafficFilter, setTrafficFilter] = React.useState<'all' | 'severe' | 'heavy' | 'moderate' | 'light'>('all');
+  const [trafficFilter, setTrafficFilter] = React.useState<TrafficConditionFilter>('all');
 
   // Get Google Maps API key from client env
   const apiKey = clientEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -356,7 +357,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
             <Select
               label="Filter by Traffic:"
               value={trafficFilter}
-              onChange={(e) => setTrafficFilter(e.target.value as any)}
+              onChange={(e) => setTrafficFilter(e.target.value as TrafficConditionFilter)}
               size="sm"
               fullWidth
               options={[

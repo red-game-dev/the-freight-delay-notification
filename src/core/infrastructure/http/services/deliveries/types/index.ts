@@ -3,6 +3,8 @@
  * Type definitions for delivery-related operations
  */
 
+import type { DeliveryStatus } from '@/core/types';
+
 export interface Delivery {
   id: string;
   tracking_number: string;
@@ -11,7 +13,7 @@ export interface Delivery {
   origin: string;
   destination: string;
   scheduled_delivery: string;
-  status: 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled';
+  status: DeliveryStatus;
   customer_name: string;
   customer_email: string;
   customer_phone?: string;

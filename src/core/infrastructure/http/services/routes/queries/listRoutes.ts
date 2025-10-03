@@ -5,6 +5,7 @@
 
 import { fetchJson } from '../../../client/fetchJson';
 import { env } from '@/infrastructure/config/EnvValidator';
+import type { TrafficCondition } from '@/core/types';
 
 export interface Route {
   id: string;
@@ -15,7 +16,7 @@ export interface Route {
   distance_meters: number;
   normal_duration_seconds: number;
   current_duration_seconds: number | null;
-  traffic_condition: 'light' | 'moderate' | 'heavy' | 'severe' | null;
+  traffic_condition: TrafficCondition | null;
   created_at: string;
   updated_at: string;
 }

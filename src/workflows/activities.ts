@@ -20,7 +20,7 @@ import { CheckDelayThresholdUseCase } from '@/core/engine/delivery/CheckDelayThr
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { logger, getErrorMessage } from '@/core/base/utils/Logger';
 import { ValidationError, InfrastructureError } from '@/core/base/errors/BaseError';
-import type { TrafficCondition, DeliveryStatus as DeliveryStatusType } from '@/infrastructure/database/types/database.types';
+import type { TrafficCondition, DeliveryStatus, NotificationChannel, NotificationStatus, WorkflowStatus, Coordinates } from '@/core/types';
 import { getCurrentISOTimestamp } from '@/core/utils/dateUtils';
 import { capitalizeFirstLetter, extractFirstPart } from '@/core/utils/stringUtils';
 
@@ -250,11 +250,11 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
  */
 export async function saveTrafficSnapshot(input: {
   routeId: string;
-  trafficCondition: 'light' | 'moderate' | 'heavy' | 'severe';
+  trafficCondition: TrafficCondition;
   delayMinutes: number;
   durationSeconds: number;
-  origin?: { address: string; coordinates?: { lat: number; lng: number } };
-  destination?: { address: string; coordinates?: { lat: number; lng: number } };
+  origin?: { address: string; coordinates?: Pick<Coordinates, 'lat' | 'lng'> };
+  destination?: { address: string; coordinates?: Pick<Coordinates, 'lat' | 'lng'> };
 }): Promise<{ success: boolean; id: string }> {
   logger.info(`[Database] Saving traffic snapshot for route ${input.routeId}`);
 
@@ -278,7 +278,12 @@ export async function saveTrafficSnapshot(input: {
 
     // Calculate incident location (midpoint of route if coordinates available)
     let incidentLocation: { x: number; y: number } | undefined;
-    if (input.origin?.coordinates && input.destination?.coordinates) {
+    if (
+      input.origin?.coordinates?.lat !== undefined &&
+      input.origin?.coordinates?.lng !== undefined &&
+      input.destination?.coordinates?.lat !== undefined &&
+      input.destination?.coordinates?.lng !== undefined
+    ) {
       incidentLocation = {
         x: (input.origin.coordinates.lat + input.destination.coordinates.lat) / 2,
         y: (input.origin.coordinates.lng + input.destination.coordinates.lng) / 2,
@@ -316,10 +321,10 @@ export async function saveTrafficSnapshot(input: {
 export async function saveNotification(input: {
   deliveryId: string;
   customerId: string;
-  channel: 'email' | 'sms';
+  channel: NotificationChannel;
   recipient: string;
   message: string;
-  status: 'sent' | 'failed';
+  status: Exclude<NotificationStatus, 'pending' | 'skipped'>;
   messageId?: string;
   error?: string;
   delayMinutes?: number;
@@ -354,7 +359,7 @@ export async function saveNotification(input: {
  */
 export async function updateDeliveryStatusInDb(input: {
   deliveryId: string;
-  status: 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled' | 'failed';
+  status: DeliveryStatus;
 }): Promise<{ success: boolean }> {
   logger.info(`[Database] Updating delivery ${input.deliveryId} status to ${input.status}`);
 
@@ -384,7 +389,7 @@ export async function saveWorkflowExecution(input: {
   workflowId: string;
   runId: string;
   deliveryId: string;
-  status: 'running' | 'completed' | 'failed';
+  status: Exclude<WorkflowStatus, 'cancelled' | 'timed_out'>;
   steps?: unknown;
   error?: string;
 }): Promise<{ success: boolean; id: string }> {
@@ -479,7 +484,7 @@ export async function saveDeliveryEntity(input: {
   trackingNumber: string;
   customerId: string;
   routeId: string;
-  status: string;
+  status: DeliveryStatus;
   scheduledDelivery: string;
   delayThresholdMinutes: number;
 }): Promise<{ success: boolean; deliveryId: string }> {
@@ -495,7 +500,7 @@ export async function saveDeliveryEntity(input: {
     logger.info(`Delivery ${input.deliveryId} already exists, updating...`);
     const updateResult = await db.updateDelivery(input.deliveryId, {
       tracking_number: input.trackingNumber,
-      status: input.status as DeliveryStatusType,
+      status: input.status,
       scheduled_delivery: new Date(input.scheduledDelivery),
       delay_threshold_minutes: input.delayThresholdMinutes,
     });
@@ -514,7 +519,7 @@ export async function saveDeliveryEntity(input: {
     tracking_number: input.trackingNumber,
     customer_id: input.customerId,
     route_id: input.routeId,
-    status: input.status as DeliveryStatusType,
+    status: input.status,
     scheduled_delivery: new Date(input.scheduledDelivery),
     delay_threshold_minutes: input.delayThresholdMinutes,
   });
@@ -530,7 +535,7 @@ export async function saveDeliveryEntity(input: {
 
 export async function updateDeliveryStatus(input: {
   deliveryId: string;
-  status: 'delayed' | 'delivered' | 'in_transit';
+  status: Extract<DeliveryStatus, 'delayed' | 'delivered' | 'in_transit'>;
 }): Promise<{ success: boolean }> {
   logger.info(`[Database] Updating delivery ${input.deliveryId} status to: ${input.status}`);
 
@@ -549,7 +554,7 @@ export async function getDeliveryDetails(input: {
 }): Promise<{
   success: boolean;
   delivery?: {
-    status: 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled' | 'failed';
+    status: DeliveryStatus;
     scheduledDelivery: string;
     checksPerformed: number;
     maxChecks: number;

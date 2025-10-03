@@ -3,20 +3,18 @@
  * TypeScript types matching the PostgreSQL database schema
  */
 
-// Enums
-export type DeliveryStatus = 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled' | 'failed';
-export type TrafficCondition = 'light' | 'moderate' | 'heavy' | 'severe';
-export type NotificationChannel = 'email' | 'sms';
-export type NotificationStatus = 'pending' | 'sent' | 'failed' | 'skipped';
+import type { Coordinates, DeliveryStatus, NotificationChannel, NotificationStatus, TrafficCondition } from '@/core/types';
 
-// Coordinate type (PostgreSQL POINT)
-// PostGIS returns {x: lat, y: lng} format
-export interface Coordinates {
-  x: number; // latitude
-  y: number; // longitude
-  lat?: number; // alias for x
-  lng?: number; // alias for y
-}
+// Re-export shared types from core/types
+export type {
+  DeliveryStatus,
+  NotificationChannel,
+  NotificationStatus,
+  TrafficCondition,
+  TrafficSeverity,
+  TrafficIncidentType,
+  Coordinates,
+} from '@/core/types';
 
 // Notification Preferences
 export interface NotificationPreferences {

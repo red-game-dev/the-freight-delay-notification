@@ -42,6 +42,7 @@ const statusConfig = {
   delayed: { label: 'Delayed', variant: 'warning' as const },
   delivered: { label: 'Delivered', variant: 'success' as const },
   cancelled: { label: 'Cancelled', variant: 'error' as const },
+  failed: { label: 'Failed', variant: 'error' as const },
 };
 
 export default function DeliveryDetailPage() {

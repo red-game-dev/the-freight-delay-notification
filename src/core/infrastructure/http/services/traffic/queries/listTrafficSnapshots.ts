@@ -6,6 +6,7 @@
 import { fetchJson } from '../../../client/fetchJson';
 import { env } from '@/infrastructure/config/EnvValidator';
 import type { PaginatedResponse } from '@/core/utils/paginationUtils';
+import type { TrafficCondition, TrafficSeverity, TrafficIncidentType } from '@/core/types/traffic';
 
 export interface AffectedDelivery {
   id: string;
@@ -17,12 +18,16 @@ export interface AffectedDelivery {
 export interface TrafficSnapshot {
   id: string;
   route_id: string;
-  traffic_condition: 'light' | 'moderate' | 'heavy' | 'severe';
+  traffic_condition: TrafficCondition;
   delay_minutes: number;
   duration_seconds: number;
   snapshot_at: string;
   created_at?: string;
   affected_deliveries: AffectedDelivery[];
+  description?: string;
+  severity?: TrafficSeverity;
+  affected_area?: string;
+  incident_type?: TrafficIncidentType;
 }
 
 export async function listTrafficSnapshots(params?: Record<string, string>): Promise<PaginatedResponse<TrafficSnapshot>> {

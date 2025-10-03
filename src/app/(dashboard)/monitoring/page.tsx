@@ -215,10 +215,10 @@ export default function MonitoringPage() {
               const config = trafficConfig[snapshot.traffic_condition as keyof typeof trafficConfig];
 
               // Get additional incident details
-              const description = (snapshot as any).description;
-              const severity = (snapshot as any).severity || 'minor';
-              const affectedArea = (snapshot as any).affected_area;
-              const incidentType = (snapshot as any).incident_type;
+              const description = snapshot.description;
+              const severity = snapshot.severity || 'minor';
+              const affectedArea = snapshot.affected_area;
+              const incidentType = snapshot.incident_type;
 
               // Create Google Maps URL
               const originAddr = route?.origin_address || '';

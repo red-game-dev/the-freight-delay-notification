@@ -3,6 +3,8 @@
  * Following Temporal TypeScript SDK best practices
  */
 
+import type { TrafficCondition, NotificationChannel, WorkflowStep, Coordinates } from '@/core/types';
+
 // ===== Workflow Input Types =====
 // Using single object parameter as per Temporal best practices
 
@@ -15,17 +17,11 @@ export interface DelayNotificationWorkflowInput {
   customerPhone?: string;
   origin: {
     address: string;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
+    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
   };
   destination: {
     address: string;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
+    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
   };
   scheduledTime: string; // ISO 8601 string
   thresholdMinutes?: number; // Default 30 minutes as per PDF
@@ -42,11 +38,11 @@ export interface RecurringCheckWorkflowInput extends DelayNotificationWorkflowIn
 export interface CheckTrafficInput {
   origin: {
     address: string;
-    coordinates?: { lat: number; lng: number };
+    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
   };
   destination: {
     address: string;
-    coordinates?: { lat: number; lng: number };
+    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
   };
   departureTime?: string; // ISO 8601 string
 }
@@ -54,7 +50,7 @@ export interface CheckTrafficInput {
 export interface TrafficCheckResult {
   provider: 'google' | 'mapbox'; // Track which API was used
   delayMinutes: number;
-  trafficCondition: 'light' | 'moderate' | 'heavy' | 'severe';
+  trafficCondition: TrafficCondition;
   estimatedDurationMinutes: number;
   normalDurationMinutes: number;
   distance: {
@@ -114,7 +110,7 @@ export interface SendNotificationInput {
 
 export interface NotificationResult {
   sent: boolean;
-  channel: 'email' | 'sms' | 'both' | 'none';
+  channel: NotificationChannel | 'both' | 'none';
   emailResult?: {
     success: boolean;
     messageId?: string;
@@ -157,7 +153,7 @@ export interface UpdateThresholdSignal {
 
 // ===== Query Types (for workflow state inspection) =====
 export interface WorkflowStatusQuery {
-  currentStep: 'traffic_check' | 'delay_evaluation' | 'message_generation' | 'notification_delivery' | 'completed' | 'failed';
+  currentStep: WorkflowStep;
   startedAt: string;
   lastUpdateAt: string;
   delayDetected?: boolean;

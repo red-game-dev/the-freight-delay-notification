@@ -6,8 +6,7 @@
 
 import { Entity } from '../../shared/Entity';
 import { Coordinates } from '../value-objects/Coordinates';
-
-export type TrafficCondition = 'light' | 'moderate' | 'heavy' | 'severe';
+import type { TrafficCondition } from '@/core/types';
 
 interface RouteProps {
   originAddress: string;

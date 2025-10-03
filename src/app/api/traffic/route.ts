@@ -59,8 +59,8 @@ export const GET = createApiHandler(async (request) => {
     });
   }
 
-  // Combine all deliveries
-  const activeDeliveries = deliveryResults.flatMap(r => r.value);
+  // Combine all deliveries (filter out failures)
+  const activeDeliveries = deliveryResults.flatMap(r => r.success ? r.value : []);
   logger.info(`🚦 [Traffic API] Retrieved ${snapshotsResult.value.length} snapshots and ${activeDeliveries.length} deliveries with statuses: ${deliveryStatuses.join(', ')}`);
 
   // Build map of deliveries by route_id

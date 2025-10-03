@@ -5,7 +5,8 @@
  */
 
 import type { Result } from '../../../base/utils/Result';
-import type { Route, TrafficCondition } from '../entities/Route';
+import type { Route } from '../entities/Route';
+import type { TrafficCondition } from '@/core/types';
 
 export interface RouteRepository {
   /**

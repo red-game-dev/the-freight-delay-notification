@@ -9,6 +9,7 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { logger, getErrorMessage, hasMessage, hasName, hasCause } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
 import { ValidationError, NotFoundError, InfrastructureError } from '@/core/base/errors/BaseError';
+import type { WorkflowStatus } from '@/core/types';
 
 export const GET = createApiHandler(async (request) => {
   const workflowId = getQueryParam(request, 'workflowId');
@@ -96,7 +97,7 @@ export const GET = createApiHandler(async (request) => {
     }
 
     // Determine workflow status based on execution state
-    let status: 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out' = 'running';
+    let status: WorkflowStatus = 'running';
     let result = null;
 
     if (description.status.name === 'COMPLETED') {

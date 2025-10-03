@@ -10,8 +10,8 @@ import {
   NotificationAdapter,
   NotificationInput,
   NotificationResult,
-  NotificationChannel,
 } from './NotificationAdapter.interface';
+import type { NotificationChannel } from '@/core/types';
 import { SendGridAdapter } from './SendGridAdapter';
 import { TwilioAdapter } from './TwilioAdapter';
 import { MockEmailAdapter } from './MockEmailAdapter';

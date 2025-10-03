@@ -73,12 +73,11 @@ export function WorkflowTimeline() {
           const config = statusConfig[execution.status];
           const Icon = config.icon;
 
-          // Handle both API type (completed_at, started_at) and fallback type (completedAt, startedAt)
-          const completedAt = 'completed_at' in execution ? execution.completed_at : (execution as any).completedAt;
-          const startedAt = 'started_at' in execution ? execution.started_at : (execution as any).startedAt;
-          const deliveryId = 'delivery_id' in execution ? execution.delivery_id : (execution as any).deliveryId;
-          const workflowId = 'workflow_id' in execution ? execution.workflow_id : (execution as any).workflowId;
-          const steps = (execution as any).steps;
+          const completedAt = execution.completed_at;
+          const startedAt = execution.started_at;
+          const deliveryId = execution.delivery_id;
+          const workflowId = execution.workflow_id;
+          const steps = execution.steps;
 
           const duration = completedAt
             ? Math.round(
@@ -89,8 +88,8 @@ export function WorkflowTimeline() {
             : null;
 
           const isRecurring = workflowId ? isWorkflowType(workflowId, WorkflowType.RECURRING_CHECK) : false;
-          const trackingNumber = (execution as any).tracking_number;
-          const settings = (execution as any).settings;
+          const trackingNumber = execution.tracking_number;
+          const settings = execution.settings;
 
           // Calculate next run time for recurring workflows
           const nextRun = isRecurring && execution.status === 'running' && settings?.check_interval_minutes

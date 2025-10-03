@@ -5,7 +5,7 @@
 
 // Entities
 export { Delivery } from './entities/Delivery';
-export { Route, type TrafficCondition } from './entities/Route';
+export { Route } from './entities/Route';
 
 // Value Objects
 export { Coordinates } from './value-objects/Coordinates';

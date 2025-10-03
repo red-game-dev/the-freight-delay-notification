@@ -23,7 +23,8 @@ import { InfoBox } from '@/components/ui/InfoBox';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SkeletonPage } from '@/components/ui/Skeleton';
 import { useDelivery, useUpdateDelivery } from '@/core/infrastructure/http/services/deliveries';
-import type { UpdateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
+import type { UpdateDeliveryInput, Delivery } from '@/core/infrastructure/http/services/deliveries';
+import type { DeliveryStatus } from '@/core/types';
 
 const statusOptions = [
   { label: 'Pending', value: 'pending' },
@@ -49,7 +50,7 @@ export default function EditDeliveryPage() {
     watch,
   } = useForm<UpdateDeliveryInput>();
 
-  const [status, setStatus] = React.useState<string>('');
+  const [status, setStatus] = React.useState<Delivery['status']>('pending');
 
   // Pre-populate form when delivery loads
   React.useEffect(() => {
@@ -86,7 +87,7 @@ export default function EditDeliveryPage() {
     try {
       await updateDelivery.mutateAsync({
         id: deliveryId,
-        data: { ...data, status: status as any },
+        data: { ...data, status },
       });
       router.push(`/deliveries/${deliveryId}`);
     } catch (error) {
@@ -155,7 +156,7 @@ export default function EditDeliveryPage() {
                   label="Status"
                   options={statusOptions}
                   value={status}
-                  onChange={setStatus}
+                  onChange={(value) => setStatus(value as DeliveryStatus)}
                   required
                   fullWidth
                 />

@@ -82,9 +82,9 @@ export default function NotificationsPage() {
           <List>
             {notifications.map((notification) => {
               const hasError = notification.status === 'failed' && notification.error_message;
-              const retryCount = (notification as any).retry_count || 0;
-              const attemptedAt = (notification as any).attempted_at;
-              const trackingNumber = (notification as any).tracking_number;
+              const retryCount = notification.retry_count || 0;
+              const attemptedAt = notification.attempted_at;
+              const trackingNumber = notification.tracking_number;
 
               return (
                 <ListItem key={notification.id}>

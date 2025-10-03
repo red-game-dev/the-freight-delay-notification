@@ -18,6 +18,7 @@ import { capitalizeFirstLetter } from '@/core/utils/stringUtils';
 import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
 import { Result } from '@/core/base/utils/Result';
 import { UnauthorizedError, InfrastructureError } from '@/core/base/errors/BaseError';
+import type { TrafficCondition } from '@/core/types';
 import { createApiHandler } from '@/core/infrastructure/http';
 
 // Prevent response caching
@@ -169,7 +170,7 @@ export const GET = createApiHandler(async (request: NextRequest) => {
         // ALWAYS update distance and normal duration from Google Maps (source of truth)
         const updateData: {
           current_duration_seconds: number;
-          traffic_condition: 'light' | 'moderate' | 'heavy' | 'severe';
+          traffic_condition: TrafficCondition;
           distance_meters: number;
           normal_duration_seconds: number;
         } = {

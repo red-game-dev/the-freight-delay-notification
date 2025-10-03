@@ -4,8 +4,7 @@
  */
 
 import type { Result } from '../../../core/base/utils/Result';
-
-export type NotificationChannel = 'email' | 'sms';
+import type { NotificationChannel } from '@/core/types';
 
 export interface NotificationInput {
   to: string;

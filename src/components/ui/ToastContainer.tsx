@@ -18,6 +18,30 @@ import { useShallow } from 'zustand/react/shallow';
 import type { AppError, Notification } from '@/stores';
 import { Button } from './Button';
 
+/**
+ * Helper to extract string message from unknown message value
+ * Handles edge cases where objects might be passed at runtime
+ */
+function extractMessage(rawMessage: unknown): string {
+  if (typeof rawMessage === 'string') {
+    return rawMessage;
+  }
+
+  if (typeof rawMessage === 'object' && rawMessage !== null) {
+    // Check for common error object shapes
+    if ('message' in rawMessage && typeof rawMessage.message === 'string') {
+      return rawMessage.message;
+    }
+    if ('error' in rawMessage && typeof rawMessage.error === 'string') {
+      return rawMessage.error;
+    }
+    // Fallback to JSON stringification
+    return JSON.stringify(rawMessage);
+  }
+
+  return String(rawMessage);
+}
+
 type ToastItem =
   | { type: 'error'; data: AppError }
   | { type: 'notification'; data: Notification };
@@ -103,12 +127,7 @@ function ToastItem({ toast }: ToastItemProps) {
     : (toast.data as Notification).type;
 
   // Ensure message is always a string, handle edge cases where objects might be passed
-  const rawMessage = toast.data.message;
-  const message = typeof rawMessage === 'string'
-    ? rawMessage
-    : typeof rawMessage === 'object' && rawMessage !== null
-    ? (rawMessage as any).message || (rawMessage as any).error || JSON.stringify(rawMessage)
-    : String(rawMessage);
+  const message = extractMessage(toast.data.message);
 
   const config = variantConfig[variant];
   const Icon = config.icon;

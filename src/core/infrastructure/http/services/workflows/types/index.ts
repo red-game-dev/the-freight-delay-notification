@@ -3,12 +3,14 @@
  * Type definitions for workflow-related operations
  */
 
+import type { WorkflowStatus } from '@/core/types';
+
 export interface Workflow {
   id: string;
   workflow_id: string;
   delivery_id: string;
   run_id?: string;
-  status: 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out';
+  status: WorkflowStatus;
   started_at: string;
   completed_at?: string;
   error?: string;
@@ -19,6 +21,17 @@ export interface Workflow {
     notificationDelivery?: { completed: boolean };
   };
   created_at?: string;
+  tracking_number?: string;
+  settings?: {
+    type: 'recurring' | 'one-time';
+    check_interval_minutes?: number;
+    max_checks?: number;
+    checks_performed?: number;
+    delay_threshold_minutes?: number;
+    min_delay_change_threshold?: number;
+    min_hours_between_notifications?: number;
+    scheduled_delivery?: string;
+  };
 }
 
 export interface StartWorkflowResponse {
