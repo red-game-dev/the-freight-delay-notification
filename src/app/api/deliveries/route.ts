@@ -18,6 +18,7 @@ import { createPaginatedResponse } from '@/core/utils/paginationUtils';
 import { validateQuery, validateBody } from '@/core/utils/validation';
 import { listDeliveriesQuerySchema, createDeliverySchema } from '@/core/schemas/delivery';
 import { env } from '@/infrastructure/config/EnvValidator';
+import { WORKFLOW } from '@/core/config/constants/app.constants';
 
 /**
  * GET /api/deliveries
@@ -107,9 +108,27 @@ export const POST = createApiHandler(async (request) => {
   const db = getDatabaseService();
   const geocodingService = getGeocodingService();
 
-  // Step 1: Create or find customer
+  // Step 0: Get default threshold from settings if not provided
+  let finalThreshold = delay_threshold_minutes;
+  let defaultNotificationChannels: ('email' | 'sms')[] = ['email', 'sms'];
+
+  if (!finalThreshold) {
+    const defaultThresholdResult = await db.getDefaultThreshold();
+    if (defaultThresholdResult.success && defaultThresholdResult.value) {
+      finalThreshold = defaultThresholdResult.value.delay_minutes;
+      defaultNotificationChannels = defaultThresholdResult.value.notification_channels;
+      logger.info(`📊 Using default threshold from settings: ${finalThreshold} minutes`);
+      logger.info(`📨 Default notification channels: ${defaultNotificationChannels.join(', ')}`);
+    } else {
+      finalThreshold = WORKFLOW.DEFAULT_THRESHOLD_MINUTES;
+      logger.info(`📊 Using fallback threshold: ${finalThreshold} minutes`);
+    }
+  }
+
+  // Step 1: Create or update customer
   let customer = await db.getCustomerByEmail(customer_email);
   if (!customer.success || !customer.value) {
+    // Customer doesn't exist - create new
     const createCustomerResult = await db.createCustomer({
       name: customer_name,
       email: customer_email,
@@ -119,6 +138,29 @@ export const POST = createApiHandler(async (request) => {
       return createCustomerResult;
     }
     customer = createCustomerResult;
+    logger.info(`✅ Created new customer: ${customer.value!.email}`);
+  } else {
+    // Customer exists - update if details changed
+    const existingCustomer = customer.value;
+    const needsUpdate =
+      existingCustomer.name !== customer_name ||
+      existingCustomer.phone !== customer_phone;
+
+    if (needsUpdate) {
+      const updateCustomerResult = await db.updateCustomer(existingCustomer.id, {
+        name: customer_name,
+        phone: customer_phone,
+      });
+      if (!updateCustomerResult.success) {
+        logger.warn(`⚠️ Failed to update customer: ${updateCustomerResult.error.message}`);
+        // Don't fail the delivery creation, just log the warning
+      } else {
+        customer = updateCustomerResult;
+        logger.info(`✅ Updated existing customer: ${customer.value!.email}`);
+      }
+    } else {
+      logger.info(`ℹ️ Using existing customer: ${customer.value.email}`);
+    }
   }
 
   // Step 2: Geocode addresses to get coordinates
@@ -160,19 +202,20 @@ export const POST = createApiHandler(async (request) => {
     route_id: routeResult.value.id,
     scheduled_delivery: new Date(scheduled_delivery),
     status: 'pending',
-    delay_threshold_minutes: delay_threshold_minutes || 30,
-    auto_check_traffic: auto_check_traffic || false,
-    enable_recurring_checks: enable_recurring_checks || false,
-    check_interval_minutes: check_interval_minutes || 30,
+    delay_threshold_minutes: finalThreshold,
+    auto_check_traffic: auto_check_traffic ?? false,
+    enable_recurring_checks: enable_recurring_checks ?? false,
+    check_interval_minutes: check_interval_minutes ?? 30,
     max_checks: max_checks ?? -1,
     checks_performed: 0,
-    min_delay_change_threshold: min_delay_change_threshold || 15,
-    min_hours_between_notifications: min_hours_between_notifications || 1.0,
+    min_delay_change_threshold: min_delay_change_threshold ?? 15,
+    min_hours_between_notifications: min_hours_between_notifications ?? 1.0,
     metadata: {
       notes,
       customer_name,
       customer_email,
       customer_phone,
+      notification_channels: defaultNotificationChannels,
     },
   });
 
@@ -208,7 +251,7 @@ export const POST = createApiHandler(async (request) => {
           },
         },
         scheduledTime: ensureDateISO(deliveryResult.value.scheduled_delivery)!,
-        thresholdMinutes: deliveryResult.value.delay_threshold_minutes || 30,
+        thresholdMinutes: deliveryResult.value.delay_threshold_minutes ?? 30,
       };
 
       const client = await getTemporalClient();
@@ -219,7 +262,7 @@ export const POST = createApiHandler(async (request) => {
         const maxChecks = body.max_checks ?? -1; // -1 means unlimited
         const workflowInput = {
           ...baseWorkflowInput,
-          checkIntervalMinutes: body.check_interval_minutes || 30,
+          checkIntervalMinutes: body.check_interval_minutes ?? 30,
           maxChecks,
           cutoffHours: env.WORKFLOW_CUTOFF_HOURS,
         };
@@ -234,7 +277,7 @@ export const POST = createApiHandler(async (request) => {
         });
 
         logger.info(`✅ Auto-triggered recurring workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);
-        logger.info(`   Check interval: ${body.check_interval_minutes || 30} minutes, Max checks: ${maxChecks === -1 ? 'unlimited' : maxChecks}`);
+        logger.info(`   Check interval: ${body.check_interval_minutes ?? 30} minutes, Max checks: ${maxChecks === -1 ? 'unlimited' : maxChecks}`);
       } else {
         // Trigger one-time DelayNotificationWorkflow
         const workflowId = createWorkflowId(WorkflowType.DELAY_NOTIFICATION, deliveryResult.value.id, false);
