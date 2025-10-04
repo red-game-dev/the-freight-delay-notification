@@ -13,6 +13,7 @@ export interface Workflow {
   status: WorkflowStatus;
   started_at: string;
   completed_at?: string;
+  updated_at?: string; // Last check time - used for accurate next run calculation
   error?: string;
   steps?: {
     trafficCheck?: { completed: boolean };
@@ -31,6 +32,7 @@ export interface Workflow {
     min_delay_change_threshold?: number;
     min_hours_between_notifications?: number;
     scheduled_delivery?: string;
+    last_check_time?: string; // From delivery.updated_at - for accurate next run calculation
   };
 }
 
@@ -44,4 +46,12 @@ export interface WorkflowStats {
   completed?: number;
   failed?: number;
   success_rate?: number;
+}
+
+export interface WorkflowFilters extends Record<string, unknown> {
+  page?: number;
+  limit?: number;
+  delivery_id?: string;
+  status?: WorkflowStatus;
+  statusNot?: WorkflowStatus;
 }
