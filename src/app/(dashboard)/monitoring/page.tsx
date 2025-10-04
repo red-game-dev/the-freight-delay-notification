@@ -31,31 +31,33 @@ import { useRouteMap } from '@/core/hooks/useRouteMap';
 import { useURLPaginationWithFilter } from '@/core/hooks/useURLSearchParams';
 import { useExpandedItems } from '@/stores';
 import { cn } from '@/core/base/utils/cn';
-
-type TrafficCondition = 'all' | 'light' | 'moderate' | 'heavy' | 'severe';
+import type { TrafficConditionFilter } from '@/core/types';
 
 export default function MonitoringPage() {
   // URL-based state for pagination and filtering
-  const { page, setPage, filter, setFilter } = useURLPaginationWithFilter<TrafficCondition>('filter', 'all');
+  const { page, setPage, filter, setFilter } = useURLPaginationWithFilter<TrafficConditionFilter>('filter', 'all');
 
   // UI store for expanded items
   const expandedDeliveries = useExpandedItems('monitoring');
 
   const { data: routes, isLoading: routesLoading } = useRoutes();
   const routeMap = useRouteMap(routes);
-  const { data: trafficResponse, isLoading: trafficLoading } = useTrafficSnapshots({ page: page.toString(), limit: '10' });
+  const { data: trafficResponse, isLoading: trafficLoading } = useTrafficSnapshots({
+    page: page.toString(),
+    limit: '10',
+    includeStats: 'true'
+  });
 
   const trafficSnapshots: TrafficSnapshot[] = trafficResponse?.data || [];
   const trafficPagination = trafficResponse?.pagination;
+  const trafficStats = trafficResponse?.stats;
 
-  // Calculate stats
+  // Calculate stats from API response
   const stats = {
     totalRoutes: routes?.length || 0,
-    activeMonitoring: trafficSnapshots?.length || 0,
-    delayedRoutes: trafficSnapshots?.filter(t => t.delay_minutes > 15).length || 0,
-    avgDelay: trafficSnapshots?.length
-      ? Math.round(trafficSnapshots.reduce((acc, t) => acc + t.delay_minutes, 0) / trafficSnapshots.length)
-      : 0,
+    activeMonitoring: trafficStats?.total || 0,
+    delayedRoutes: trafficStats?.delayed || 0,
+    avgDelay: trafficStats?.avg_delay || 0,
   };
 
   // Filter traffic snapshots by selected condition

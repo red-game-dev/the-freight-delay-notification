@@ -30,8 +30,18 @@ export interface TrafficSnapshot {
   incident_type?: TrafficIncidentType;
 }
 
-export async function listTrafficSnapshots(params?: Record<string, string>): Promise<PaginatedResponse<TrafficSnapshot>> {
+export interface TrafficStats {
+  total: number;
+  delayed: number;
+  avg_delay: number;
+}
+
+export interface TrafficSnapshotResponse extends PaginatedResponse<TrafficSnapshot> {
+  stats?: TrafficStats;
+}
+
+export async function listTrafficSnapshots(params?: Record<string, string>): Promise<TrafficSnapshotResponse> {
   const query = params ? `?${new URLSearchParams(params)}` : '';
   const url = `${env.NEXT_PUBLIC_API_URL}/api/traffic${query}`;
-  return fetchJson<PaginatedResponse<TrafficSnapshot>>(url);
+  return fetchJson<TrafficSnapshotResponse>(url);
 }

@@ -18,6 +18,7 @@ import { listTrafficSnapshotsQuerySchema } from '@/core/schemas/traffic';
  * - page: Page number (default: 1)
  * - limit: Items per page (default: 20, max: 100)
  * - deliveryStatus: Comma-separated delivery statuses to include (default: in_transit,delayed)
+ * - includeStats: If 'true', includes aggregate statistics in response
  */
 export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
@@ -29,6 +30,7 @@ export const GET = createApiHandler(async (request) => {
   }
 
   const { page, limit, deliveryStatus } = queryResult.value;
+  const includeStats = request.nextUrl.searchParams.get('includeStats') === 'true';
   const deliveryStatuses = (deliveryStatus || 'in_transit,delayed').split(',').map(s => s.trim()).filter(Boolean);
 
   logger.info('🚦 [Traffic API] Fetching traffic snapshots via DatabaseService');
@@ -90,5 +92,18 @@ export const GET = createApiHandler(async (request) => {
     })),
   }));
 
-  return Result.ok(createPaginatedResponse(sanitizedSnapshots, page, limit));
+  // Calculate stats if requested
+  const stats = includeStats ? {
+    total: sanitizedSnapshots.length,
+    delayed: sanitizedSnapshots.filter(s => s.delay_minutes > 15).length,
+    avg_delay: sanitizedSnapshots.length > 0
+      ? Math.round(sanitizedSnapshots.reduce((acc, s) => acc + s.delay_minutes, 0) / sanitizedSnapshots.length)
+      : 0,
+  } : undefined;
+
+  const response = createPaginatedResponse(sanitizedSnapshots, page, limit);
+
+  return Result.ok(
+    stats ? { ...response, stats } : response
+  );
 });
