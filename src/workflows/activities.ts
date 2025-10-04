@@ -340,6 +340,9 @@ export async function saveNotification(input: {
       recipient: input.recipient,
       message: input.message,
       delay_minutes: input.delayMinutes,
+      status: input.status, // ✅ Pass the status ('sent' or 'failed')
+      message_id: input.messageId, // ✅ Pass the message ID from provider
+      error_message: input.error, // ✅ Pass error if failed
     });
 
     if (result.success) {
@@ -394,23 +397,48 @@ export async function saveWorkflowExecution(input: {
   steps?: unknown;
   error?: string;
 }): Promise<{ success: boolean; id: string }> {
-  logger.info(`[Database] Saving workflow execution ${input.workflowId}`);
+  logger.info(`[Database] Saving workflow execution ${input.workflowId} (run: ${input.runId}) with status: ${input.status}`);
 
   try {
     const db = getDatabaseService();
-    const result = await db.createWorkflowExecution({
-      workflow_id: input.workflowId,
-      run_id: input.runId,
-      delivery_id: input.deliveryId,
-      status: input.status,
-    });
 
-    if (result.success) {
-      logger.info(`✅ Workflow execution saved: ${result.value.id}`);
-      return { success: true, id: result.value.id };
+    // Check if workflow execution already exists by BOTH workflow_id AND run_id
+    // This ensures we update the correct execution when using ALLOW_DUPLICATE policy
+    const existingResult = await db.getWorkflowExecutionByWorkflowIdAndRunId(input.workflowId, input.runId);
+
+    if (existingResult.success && existingResult.value) {
+      // Update existing record
+      logger.info(`[Database] Updating existing workflow execution: ${existingResult.value.id} (workflow_id: ${input.workflowId}, run_id: ${input.runId})`);
+      const updateResult = await db.updateWorkflowExecution(existingResult.value.id, {
+        status: input.status,
+        completed_at: input.status === 'completed' || input.status === 'failed' ? new Date() : undefined,
+        error_message: input.error || undefined,
+      });
+
+      if (updateResult.success) {
+        logger.info(`✅ Workflow execution updated: ${updateResult.value.id} -> status: ${input.status}`);
+        return { success: true, id: updateResult.value.id };
+      } else {
+        logger.error(`❌ Failed to update workflow execution: ${updateResult.error.message}`);
+        return { success: false, id: '' };
+      }
     } else {
-      logger.error(`❌ Failed to save workflow execution: ${result.error.message}`);
-      return { success: false, id: '' };
+      // Create new record (should only happen if workflow wasn't saved at start time)
+      logger.info(`[Database] Creating new workflow execution (workflow_id: ${input.workflowId}, run_id: ${input.runId})`);
+      const createResult = await db.createWorkflowExecution({
+        workflow_id: input.workflowId,
+        run_id: input.runId,
+        delivery_id: input.deliveryId,
+        status: input.status,
+      });
+
+      if (createResult.success) {
+        logger.info(`✅ Workflow execution created: ${createResult.value.id}`);
+        return { success: true, id: createResult.value.id };
+      } else {
+        logger.error(`❌ Failed to create workflow execution: ${createResult.error.message}`);
+        return { success: false, id: '' };
+      }
     }
   } catch (error: unknown) {
     logger.error(`❌ Error saving workflow execution: ${getErrorMessage(error)}`);
@@ -562,6 +590,7 @@ export async function getDeliveryDetails(input: {
     enableRecurringChecks: boolean;
     minDelayChangeThreshold: number;
     minHoursBetweenNotifications: number;
+    metadata?: Record<string, unknown>;
   };
 }> {
   logger.info(`[Database] Fetching delivery details for ${input.deliveryId}`);
@@ -579,11 +608,12 @@ export async function getDeliveryDetails(input: {
           scheduledDelivery: typeof delivery.scheduled_delivery === 'string'
             ? delivery.scheduled_delivery
             : delivery.scheduled_delivery.toISOString(),
-          checksPerformed: delivery.checks_performed || 0,
-          maxChecks: delivery.max_checks || 10,
-          enableRecurringChecks: delivery.enable_recurring_checks || false,
-          minDelayChangeThreshold: delivery.min_delay_change_threshold || 15,
-          minHoursBetweenNotifications: delivery.min_hours_between_notifications || 1.0,
+          checksPerformed: delivery.checks_performed ?? 0,
+          maxChecks: delivery.max_checks ?? 10,
+          enableRecurringChecks: delivery.enable_recurring_checks ?? false,
+          minDelayChangeThreshold: delivery.min_delay_change_threshold ?? 15,
+          minHoursBetweenNotifications: delivery.min_hours_between_notifications ?? 1.0,
+          metadata: delivery.metadata,
         },
       };
     } else {

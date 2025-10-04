@@ -6,6 +6,7 @@
 
 import { createParamApiHandler } from '@/core/infrastructure/http';
 import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
+import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { success, Result } from '@/core/base/utils/Result';
 import { logger, getErrorMessage, hasMessage } from '@/core/base/utils/Logger';
 import { InfrastructureError } from '@/core/base/errors/BaseError';
@@ -22,6 +23,7 @@ export const POST = createParamApiHandler(async (request, context) => {
 
   try {
     const client = await getTemporalClient();
+    const db = getDatabaseService();
 
     // Get workflow handle
     const handle = client.workflow.getHandle(workflowId);
@@ -34,6 +36,16 @@ export const POST = createParamApiHandler(async (request, context) => {
       // Graceful cancel via signal
       await handle.cancel();
       logger.info(`✅ Workflow ${workflowId} canceled by user request`);
+    }
+
+    // Update workflow execution status in database
+    const workflowResult = await db.getWorkflowExecutionByWorkflowId(workflowId);
+    if (workflowResult.success && workflowResult.value) {
+      await db.updateWorkflowExecution(workflowResult.value.id, {
+        status: 'cancelled',
+        completed_at: new Date(),
+      });
+      logger.info(`📝 Updated workflow execution status to 'cancelled' in database`);
     }
 
     return success({

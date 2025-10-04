@@ -8,7 +8,7 @@
  * Activities (activities.ts) can use logger since they're not replayed.
  */
 
-import { proxyActivities, defineSignal, defineQuery, setHandler, sleep } from '@temporalio/workflow';
+import { proxyActivities, defineSignal, defineQuery, setHandler, sleep, workflowInfo } from '@temporalio/workflow';
 import type * as activities from './activities';
 import type {
   DelayNotificationWorkflowInput,
@@ -20,13 +20,18 @@ import type {
 } from './types';
 import { getCurrentISOTimestamp } from '../core/utils/dateUtils';
 import { createWorkflowId, WorkflowType } from '../core/utils/workflowUtils';
+import { FAST_ACTIVITY_CONFIG, DATABASE_ACTIVITY_CONFIG } from '../infrastructure/temporal/ActivityConfig';
 
-// Import all activities with retry policies and timeouts
+// Fast activities (traffic, AI, notifications)
 const {
   checkTrafficConditions,
   evaluateDelay,
   generateAIMessage,
   sendNotification,
+} = proxyActivities<typeof activities>(FAST_ACTIVITY_CONFIG);
+
+// Database activities (Supabase operations with longer timeout)
+const {
   saveTrafficSnapshot,
   saveNotification,
   saveWorkflowExecution,
@@ -34,15 +39,7 @@ const {
   getDeliveryDetails,
   incrementChecksPerformed,
   getLastNotification,
-} = proxyActivities<typeof activities>({
-  startToCloseTimeout: '1 minute',
-  retry: {
-    initialInterval: '5s',
-    backoffCoefficient: 2,
-    maximumAttempts: 3,
-    maximumInterval: '30s',
-  },
-});
+} = proxyActivities<typeof activities>(DATABASE_ACTIVITY_CONFIG);
 
 // Define signals for workflow control
 export const cancelNotificationSignal = defineSignal<[CancelNotificationSignal]>('cancelNotification');
@@ -56,6 +53,9 @@ export async function DelayNotificationWorkflow(
   input: DelayNotificationWorkflowInput
 ): Promise<DelayNotificationWorkflowResult> {
   console.log(`🚀 Starting Delay Notification Workflow for delivery ${input.deliveryId}`);
+
+  // Get Temporal workflow info (includes runId)
+  const wfInfo = workflowInfo();
 
   // Initialize workflow state
   let currentStep: WorkflowStatusQuery['currentStep'] = 'traffic_check';
@@ -93,6 +93,20 @@ export async function DelayNotificationWorkflow(
   }));
 
   try {
+    // Step 0: Get delivery details for notification preferences
+    const deliveryDetailsResult = await getDeliveryDetails({
+      deliveryId: input.deliveryId,
+    });
+
+    if (!deliveryDetailsResult.success || !deliveryDetailsResult.delivery) {
+      console.error(`❌ Failed to fetch delivery details`);
+      result.error = 'Failed to fetch delivery details';
+      result.success = false;
+      return result;
+    }
+
+    const deliveryDetails = deliveryDetailsResult.delivery;
+
     // Step 1: Check Traffic Conditions
     if (!canceled) {
       currentStep = 'traffic_check';
@@ -167,9 +181,17 @@ export async function DelayNotificationWorkflow(
       currentStep = 'notification_delivery';
       console.log('[Workflow] Step 4: Sending notification to customer...');
 
+      // Get notification channel preferences from delivery metadata
+      // Default to both email and SMS if not specified
+      const notificationChannels = (deliveryDetails.metadata?.notification_channels as ('email' | 'sms')[]) || ['email', 'sms'];
+      const shouldSendEmail = notificationChannels.includes('email');
+      const shouldSendSMS = notificationChannels.includes('sms');
+
+      console.log(`[Workflow] Notification channels from settings: ${notificationChannels.join(', ')}`);
+
       result.steps.notificationDelivery = await sendNotification({
-        recipientEmail: input.customerEmail,
-        recipientPhone: input.customerPhone,
+        recipientEmail: shouldSendEmail ? input.customerEmail : undefined,
+        recipientPhone: shouldSendSMS ? input.customerPhone : undefined,
         message: result.steps.messageGeneration.message,
         subject: result.steps.messageGeneration.subject,
         deliveryId: input.deliveryId,
@@ -223,8 +245,8 @@ export async function DelayNotificationWorkflow(
 
     // Save workflow execution to database
     await saveWorkflowExecution({
-      workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId),
-      runId: `run-${Date.now()}`,
+      workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId, false),
+      runId: wfInfo.runId,
       deliveryId: input.deliveryId,
       status: 'completed',
       steps: result.steps,
@@ -239,8 +261,8 @@ export async function DelayNotificationWorkflow(
     // Save failed workflow execution to database
     try {
       await saveWorkflowExecution({
-        workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId),
-        runId: `run-${Date.now()}`,
+        workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId, false),
+        runId: wfInfo.runId,
         deliveryId: input.deliveryId,
         status: 'failed',
         steps: result.steps,
@@ -265,6 +287,9 @@ export async function RecurringTrafficCheckWorkflow(
 ): Promise<DelayNotificationWorkflowResult> {
   console.log(`🔄 Starting Recurring Traffic Check Workflow for delivery ${input.deliveryId}`);
   console.log(`📊 Configuration: Check every ${input.checkIntervalMinutes} minutes, max ${input.maxChecks === -1 ? 'unlimited' : input.maxChecks} checks`);
+
+  // Get Temporal workflow info (includes runId)
+  const wfInfo = workflowInfo();
 
   let canceled = false;
   let cancelReason = '';
@@ -297,6 +322,20 @@ export async function RecurringTrafficCheckWorkflow(
   }));
 
   try {
+    // Fetch delivery details ONCE at start and cache (reduces DB calls)
+    const initialDetailsResult = await getDeliveryDetails({
+      deliveryId: input.deliveryId,
+    });
+
+    if (!initialDetailsResult.success || !initialDetailsResult.delivery) {
+      console.error(`❌ Failed to fetch initial delivery details`);
+      result.error = 'Failed to fetch delivery details at start';
+      throw new Error('Failed to fetch delivery details');
+    }
+
+    let cachedDeliveryDetails = initialDetailsResult.delivery;
+    console.log(`✅ Cached delivery details for ${input.deliveryId}`);
+
     // Main recurring check loop
     while (true) {
       console.log(`\n🔄 Recurring check ${checksPerformed + 1}${input.maxChecks === -1 ? '' : `/${input.maxChecks}`} for delivery ${input.deliveryId}`);
@@ -315,18 +354,19 @@ export async function RecurringTrafficCheckWorkflow(
         break;
       }
 
-      // Get current delivery details
+      // Refresh delivery status (only status, not full details)
       const deliveryDetailsResult = await getDeliveryDetails({
         deliveryId: input.deliveryId,
       });
 
-      if (!deliveryDetailsResult.success || !deliveryDetailsResult.delivery) {
-        console.error(`❌ Failed to fetch delivery details`);
-        result.error = 'Failed to fetch delivery details';
-        break;
+      // Use cached data if refresh fails (Supabase timeout protection)
+      let deliveryDetails = cachedDeliveryDetails;
+      if (deliveryDetailsResult.success && deliveryDetailsResult.delivery) {
+        deliveryDetails = deliveryDetailsResult.delivery;
+        cachedDeliveryDetails = deliveryDetails; // Update cache
+      } else {
+        console.warn(`⚠️ Failed to refresh delivery details, using cached data`);
       }
-
-      const deliveryDetails = deliveryDetailsResult.delivery;
 
       // Check stop condition 3: Delivery status changed to terminal state
       const terminalStatuses = ['delivered', 'cancelled', 'failed'];
@@ -420,112 +460,111 @@ export async function RecurringTrafficCheckWorkflow(
           }
         }
 
-        if (!shouldNotify) {
-          console.log(`⏭️ Skipping notification for this check`);
-          // Still increment check counter even though we didn't notify
-          const incrementResult = await incrementChecksPerformed({
+        if (shouldNotify) {
+          console.log(`📨 Proceeding with notification...`);
+
+          // Update delivery status to "delayed"
+          await updateDeliveryStatusInDb({
             deliveryId: input.deliveryId,
+            status: 'delayed',
           });
-          if (incrementResult.success) {
-            checksPerformed = incrementResult.checksPerformed;
-            console.log(`✅ Checks performed: ${checksPerformed}${input.maxChecks === -1 ? '' : `/${input.maxChecks}`}`);
+
+          // Generate AI message (Step 3)
+          currentStep = 'message_generation';
+          console.log('[Recurring] Step 3: Generating AI notification message...');
+          const estimatedArrival = new Date(new Date(input.scheduledTime).getTime() +
+            (result.steps.trafficCheck.delayMinutes * 60000)).toISOString();
+
+          result.steps.messageGeneration = await generateAIMessage({
+            deliveryId: input.deliveryId,
+            trackingNumber: input.trackingNumber,
+            customerId: input.customerId,
+            origin: input.origin.address,
+            destination: input.destination.address,
+            delayMinutes: result.steps.trafficCheck.delayMinutes,
+            trafficCondition: result.steps.trafficCheck.trafficCondition,
+            estimatedArrival,
+            originalArrival: input.scheduledTime,
+          });
+
+          console.log('[Recurring] AI message generated successfully');
+
+          // Send notification (Step 4)
+          currentStep = 'notification_delivery';
+          console.log('[Recurring] Step 4: Sending notification to customer...');
+
+          // Get notification channel preferences from delivery metadata
+          // Default to both email and SMS if not specified
+          const notificationChannels = (deliveryDetails.metadata?.notification_channels as ('email' | 'sms')[]) || ['email', 'sms'];
+          const shouldSendEmail = notificationChannels.includes('email');
+          const shouldSendSMS = notificationChannels.includes('sms');
+
+          console.log(`[Recurring] Notification channels from settings: ${notificationChannels.join(', ')}`);
+
+          result.steps.notificationDelivery = await sendNotification({
+            recipientEmail: shouldSendEmail ? input.customerEmail : undefined,
+            recipientPhone: shouldSendSMS ? input.customerPhone : undefined,
+            message: result.steps.messageGeneration.message,
+            subject: result.steps.messageGeneration.subject,
+            deliveryId: input.deliveryId,
+            priority: result.steps.delayEvaluation.severity === 'severe' ? 'high' : 'normal',
+          });
+
+          console.log(`[Recurring] Notification sent via ${result.steps.notificationDelivery.channel}`);
+
+          // Save notifications to database
+          if (result.steps.notificationDelivery.emailResult && input.customerEmail) {
+            await saveNotification({
+              deliveryId: input.deliveryId,
+              customerId: input.customerId,
+              channel: 'email',
+              recipient: input.customerEmail,
+              message: result.steps.messageGeneration.message,
+              status: result.steps.notificationDelivery.emailResult.success ? 'sent' : 'failed',
+              messageId: result.steps.notificationDelivery.emailResult.messageId,
+              error: result.steps.notificationDelivery.emailResult.error,
+              delayMinutes: result.steps.trafficCheck.delayMinutes,
+            });
           }
-          // Continue to next check without notifying
-          continue;
-        }
 
-        console.log(`📨 Proceeding with notification...`);
+          if (result.steps.notificationDelivery.smsResult && input.customerPhone) {
+            await saveNotification({
+              deliveryId: input.deliveryId,
+              customerId: input.customerId,
+              channel: 'sms',
+              recipient: input.customerPhone,
+              message: result.steps.messageGeneration.message,
+              status: result.steps.notificationDelivery.smsResult.success ? 'sent' : 'failed',
+              messageId: result.steps.notificationDelivery.smsResult.messageId,
+              error: result.steps.notificationDelivery.smsResult.error,
+              delayMinutes: result.steps.trafficCheck.delayMinutes,
+            });
+          }
 
-        // Update delivery status to "delayed"
-        await updateDeliveryStatusInDb({
-          deliveryId: input.deliveryId,
-          status: 'delayed',
-        });
-
-        // Generate AI message (Step 3)
-        currentStep = 'message_generation';
-        console.log('[Recurring] Step 3: Generating AI notification message...');
-        const estimatedArrival = new Date(new Date(input.scheduledTime).getTime() +
-          (result.steps.trafficCheck.delayMinutes * 60000)).toISOString();
-
-        result.steps.messageGeneration = await generateAIMessage({
-          deliveryId: input.deliveryId,
-          trackingNumber: input.trackingNumber,
-          customerId: input.customerId,
-          origin: input.origin.address,
-          destination: input.destination.address,
-          delayMinutes: result.steps.trafficCheck.delayMinutes,
-          trafficCondition: result.steps.trafficCheck.trafficCondition,
-          estimatedArrival,
-          originalArrival: input.scheduledTime,
-        });
-
-        console.log('[Recurring] AI message generated successfully');
-
-        // Send notification (Step 4)
-        currentStep = 'notification_delivery';
-        console.log('[Recurring] Step 4: Sending notification to customer...');
-        result.steps.notificationDelivery = await sendNotification({
-          recipientEmail: input.customerEmail,
-          recipientPhone: input.customerPhone,
-          message: result.steps.messageGeneration.message,
-          subject: result.steps.messageGeneration.subject,
-          deliveryId: input.deliveryId,
-          priority: result.steps.delayEvaluation.severity === 'severe' ? 'high' : 'normal',
-        });
-
-        console.log(`[Recurring] Notification sent via ${result.steps.notificationDelivery.channel}`);
-
-        // Save notifications to database
-        if (result.steps.notificationDelivery.emailResult && input.customerEmail) {
-          await saveNotification({
-            deliveryId: input.deliveryId,
-            customerId: input.customerId,
-            channel: 'email',
-            recipient: input.customerEmail,
-            message: result.steps.messageGeneration.message,
-            status: result.steps.notificationDelivery.emailResult.success ? 'sent' : 'failed',
-            messageId: result.steps.notificationDelivery.emailResult.messageId,
-            error: result.steps.notificationDelivery.emailResult.error,
-            delayMinutes: result.steps.trafficCheck.delayMinutes,
-          });
-        }
-
-        if (result.steps.notificationDelivery.smsResult && input.customerPhone) {
-          await saveNotification({
-            deliveryId: input.deliveryId,
-            customerId: input.customerId,
-            channel: 'sms',
-            recipient: input.customerPhone,
-            message: result.steps.messageGeneration.message,
-            status: result.steps.notificationDelivery.smsResult.success ? 'sent' : 'failed',
-            messageId: result.steps.notificationDelivery.smsResult.messageId,
-            error: result.steps.notificationDelivery.smsResult.error,
-            delayMinutes: result.steps.trafficCheck.delayMinutes,
-          });
-        }
-
-        // Save workflow execution for this check iteration
-        // This creates a completed workflow record for each notification sent
-        // Gives users visibility into each check cycle
-        try {
-          await saveWorkflowExecution({
-            workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, true, checksPerformed + 1),
-            runId: `run-check-${checksPerformed + 1}-${Date.now()}`,
-            deliveryId: input.deliveryId,
-            status: 'completed',
-            steps: {
-              checkNumber: checksPerformed + 1,
-              trafficCheck: result.steps.trafficCheck,
-              delayEvaluation: result.steps.delayEvaluation,
-              messageGeneration: result.steps.messageGeneration,
-              notificationDelivery: result.steps.notificationDelivery,
-            },
-          });
-          console.log(`✅ Saved workflow execution for check #${checksPerformed + 1}`);
-        } catch (saveError) {
-          console.error(`❌ Failed to save workflow execution for check #${checksPerformed + 1}:`, saveError);
-          // Don't fail the workflow if save fails - just log and continue
+          // Save workflow execution for this check iteration
+          // This creates a completed workflow record for each notification sent
+          // Gives users visibility into each check cycle
+          try {
+            await saveWorkflowExecution({
+              workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, true, checksPerformed + 1),
+              runId: `run-check-${checksPerformed + 1}-${Date.now()}`,
+              deliveryId: input.deliveryId,
+              status: 'completed',
+              steps: {
+                checkNumber: checksPerformed + 1,
+                trafficCheck: result.steps.trafficCheck,
+                delayEvaluation: result.steps.delayEvaluation,
+                messageGeneration: result.steps.messageGeneration,
+                notificationDelivery: result.steps.notificationDelivery,
+              },
+            });
+            console.log(`✅ Saved workflow execution for check #${checksPerformed + 1}`);
+          } catch (saveError) {
+            console.error(`❌ Failed to save workflow execution for check #${checksPerformed + 1}:`, saveError);
+            // Don't fail the workflow if save fails - just log and continue
+          }
+        } else {
+          console.log(`⏭️ Skipping notification for this check (deduplication rules)`);
         }
       } else {
         console.log(`✅ No notification needed - delay within threshold (${result.steps.trafficCheck.delayMinutes} ≤ ${thresholdMinutes})`);
@@ -582,7 +621,7 @@ export async function RecurringTrafficCheckWorkflow(
     // Individual check executions are saved after each notification
     await saveWorkflowExecution({
       workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, false),
-      runId: `run-summary-${Date.now()}`,
+      runId: wfInfo.runId,
       deliveryId: input.deliveryId,
       status: 'completed',
       steps: {
@@ -599,18 +638,22 @@ export async function RecurringTrafficCheckWorkflow(
     result.error = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error(`❌ Recurring workflow failed: ${result.error}`);
 
-    // Save failed workflow execution
+    // Save failed workflow execution (best effort - don't let this fail the workflow)
+    // Note: If Supabase is down (522 errors), this will fail but workflow continues
+    // Failed workflows will still be visible in Temporal UI even if not saved to DB
     try {
       await saveWorkflowExecution({
         workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, false),
-        runId: `run-${Date.now()}`,
+        runId: wfInfo.runId,
         deliveryId: input.deliveryId,
         status: 'failed',
         steps: { checksPerformed, ...result.steps },
         error: result.error,
       });
+      console.log(`✅ Failed workflow status saved to database`);
     } catch (saveError) {
-      console.error(`❌ Failed to save workflow execution: ${saveError}`);
+      console.error(`⚠️ Could not save failed workflow to database (DB may be down): ${saveError}`);
+      console.error(`   Workflow failure is still recorded in Temporal and will be visible there`);
     }
 
     throw error;

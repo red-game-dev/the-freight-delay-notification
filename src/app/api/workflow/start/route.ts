@@ -16,6 +16,7 @@ import { validateBody } from '@/core/utils/validation';
 import { startWorkflowSchema } from '@/core/schemas/workflow';
 import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
 import { env } from '@/infrastructure/config/EnvValidator';
+import { WORKFLOW } from '@/core/config/constants/app.constants';
 
 export const POST = createApiHandler(async (request: NextRequest) => {
   // Validate request body
@@ -76,6 +77,19 @@ export const POST = createApiHandler(async (request: NextRequest) => {
 
   const customer = customerResult.value;
 
+  // Get default threshold from settings if not set on delivery
+  let finalThreshold = delivery.delay_threshold_minutes;
+  if (!finalThreshold) {
+    const defaultThresholdResult = await db.getDefaultThreshold();
+    if (defaultThresholdResult.success && defaultThresholdResult.value) {
+      finalThreshold = defaultThresholdResult.value.delay_minutes;
+      logger.info(`📊 Using default threshold from settings: ${finalThreshold} minutes`);
+    } else {
+      finalThreshold = WORKFLOW.DEFAULT_THRESHOLD_MINUTES;
+      logger.info(`📊 Using fallback threshold: ${finalThreshold} minutes`);
+    }
+  }
+
   // Construct base workflow input from Result data
   const baseWorkflowInput: DelayNotificationWorkflowInput = {
     deliveryId: delivery.id,
@@ -100,7 +114,7 @@ export const POST = createApiHandler(async (request: NextRequest) => {
     scheduledTime: typeof delivery.scheduled_delivery === 'string'
       ? delivery.scheduled_delivery
       : delivery.scheduled_delivery.toISOString(),
-    thresholdMinutes: delivery.delay_threshold_minutes || 30,
+    thresholdMinutes: finalThreshold,
   };
 
   // Get Temporal client
@@ -122,30 +136,33 @@ export const POST = createApiHandler(async (request: NextRequest) => {
   if (isRecurring) {
     workflowInput = {
       ...baseWorkflowInput,
-      checkIntervalMinutes: delivery.check_interval_minutes || 30,
+      checkIntervalMinutes: delivery.check_interval_minutes ?? 30,
       maxChecks: delivery.max_checks ?? -1,
       cutoffHours: env.WORKFLOW_CUTOFF_HOURS,
     } as RecurringCheckWorkflowInput;
-    logger.info(`   Check interval: ${delivery.check_interval_minutes || 30} minutes`);
+    logger.info(`   Check interval: ${delivery.check_interval_minutes ?? 30} minutes`);
     logger.info(`   Max checks: ${delivery.max_checks === -1 ? 'unlimited' : delivery.max_checks}`);
     logger.info(`   Cutoff hours: ${env.WORKFLOW_CUTOFF_HOURS}`);
   } else {
     workflowInput = baseWorkflowInput;
   }
 
-  // Try to start the workflow - if it already exists, return the existing one
+  // Try to start the workflow
+  // ALLOW_DUPLICATE: Creates a new workflow run even if previous exists (completed, failed, cancelled, terminated)
+  // Only prevents duplicate if a workflow is currently RUNNING
   let handle;
   try {
     handle = await client.workflow.start(workflowName, {
       taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',
       workflowId,
       args: [workflowInput],
-      workflowIdReusePolicy: WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY ,
+      workflowIdReusePolicy: WorkflowIdReusePolicy.ALLOW_DUPLICATE,
     });
+    logger.info(`✅ New workflow started: ${workflowId}`);
   } catch (error: unknown) {
-    // If workflow already exists, get its handle
+    // If workflow is currently running, return the existing handle
     if (hasMessage(error) && error.message.includes('WorkflowExecutionAlreadyStarted')) {
-      logger.info(`ℹ️  Workflow ${workflowId} already exists, returning existing handle`);
+      logger.info(`ℹ️  Workflow ${workflowId} is already running, returning existing handle`);
       handle = client.workflow.getHandle(workflowId);
     } else {
       return Result.fail(new InfrastructureError(`Failed to start workflow: ${getErrorMessage(error)}`, { cause: error }));
@@ -154,8 +171,32 @@ export const POST = createApiHandler(async (request: NextRequest) => {
 
   logger.info(`✅ Workflow started: ${handle.workflowId}`);
 
-  // Get workflow description to access runId
+  // Get workflow description to access runId and current status
   const description = await handle.describe();
+
+  // Save workflow execution to database
+  // Each workflow execution (unique run_id) should be tracked separately
+  // Database has UNIQUE(workflow_id, run_id) to prevent true duplicates
+  if (description.status.name === 'RUNNING') {
+    // Always create a new record for each new workflow execution
+    // Even if same workflow_id exists, this has a unique run_id
+    const saveResult = await db.createWorkflowExecution({
+      workflow_id: handle.workflowId,
+      run_id: description.runId,
+      delivery_id: deliveryId,
+      status: 'running',
+    });
+
+    if (!saveResult.success) {
+      // If it fails due to duplicate constraint, that means we already saved this exact execution
+      logger.warn(`⚠️ Failed to save workflow execution to database: ${saveResult.error.message}`);
+    } else {
+      logger.info(`✅ Workflow execution saved to database: ${saveResult.value.id} (workflow_id: ${handle.workflowId}, run_id: ${description.runId})`);
+    }
+  } else {
+    // Workflow already completed/failed before we could save it
+    logger.info(`ℹ️  Workflow already in ${description.status.name} state, not creating database record (should already exist from workflow completion)`);
+  }
 
   return Result.ok({
     success: true,
