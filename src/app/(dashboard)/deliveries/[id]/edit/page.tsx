@@ -26,6 +26,7 @@ import { useDelivery, useUpdateDelivery } from '@/core/infrastructure/http/servi
 import type { UpdateDeliveryInput, Delivery } from '@/core/infrastructure/http/services/deliveries';
 import type { DeliveryStatus } from '@/core/types';
 import { useFormStore } from '@/stores';
+import { useThresholds } from '@/core/infrastructure/http/services/thresholds';
 
 const statusOptions = [
   { label: 'Pending', value: 'pending' },
@@ -42,6 +43,10 @@ export default function EditDeliveryPage() {
 
   const { data: delivery, isLoading, error } = useDelivery(deliveryId);
   const updateDelivery = useUpdateDelivery();
+
+  // Fetch thresholds to show default value
+  const { data: thresholds } = useThresholds();
+  const defaultThreshold = thresholds?.find(t => t.is_default);
 
   // Use Zustand form store for transformations
   const deliveryToFormValues = useFormStore((state) => state.deliveryToFormValues);
@@ -271,6 +276,24 @@ export default function EditDeliveryPage() {
             title="Workflow Settings"
             description="Configure automatic traffic monitoring"
           >
+            <FormField>
+              <Input
+                {...register('delay_threshold_minutes', {
+                  valueAsNumber: true,
+                  min: { value: 1, message: 'Must be at least 1 minute' },
+                  max: { value: 1440, message: 'Cannot exceed 1440 minutes (24 hours)' },
+                })}
+                type="number"
+                label="Delay Threshold (minutes)"
+                placeholder={defaultThreshold ? `Default: ${defaultThreshold.delay_minutes} minutes` : "Leave empty to use default"}
+                helperText={defaultThreshold
+                  ? `Leave empty to use default threshold (${defaultThreshold.delay_minutes} minutes - ${defaultThreshold.name})`
+                  : "Leave empty to use default threshold from Settings."}
+                error={errors.delay_threshold_minutes?.message}
+                fullWidth
+              />
+            </FormField>
+
             <FormField>
               <div className="space-y-1">
                 <Toggle

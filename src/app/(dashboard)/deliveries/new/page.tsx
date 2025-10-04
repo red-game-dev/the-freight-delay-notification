@@ -19,28 +19,55 @@ import { InfoBox } from '@/components/ui/InfoBox';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useCreateDelivery } from '@/core/infrastructure/http/services/deliveries';
 import type { CreateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
-import { useFormDefaults } from '@/stores';
+import { useFormDefaults, useFormStore } from '@/stores';
+import { useUserSettingsStore } from '@/stores/userSettingsStore';
+import { useEffect } from 'react';
+import { useCustomer } from '@/core/infrastructure/http/services/customers';
+import { useThresholds } from '@/core/infrastructure/http/services/thresholds';
 
 export default function NewDeliveryPage() {
   const router = useRouter();
   const createDelivery = useCreateDelivery();
 
-  // Get default values from form store with type inference
-  const defaultValues = useFormDefaults('delivery-new');
+  // Get default values from form store
+  const formDefaults = useFormDefaults('delivery-new');
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    watch,
-    setValue,
-  } = useForm<CreateDeliveryInput>({
-    defaultValues: defaultValues || undefined,
+  // Get customer ID from localStorage (for pre-filling form only)
+  const customerId = useUserSettingsStore((state) => state.settings?.customerId);
+
+  // Fetch customer from DB using React Query - already has email, name, phone
+  const { data: customer } = useCustomer(customerId || null);
+
+  // Fetch thresholds to show default value
+  const { data: thresholds } = useThresholds();
+  const defaultThreshold = thresholds?.find(t => t.is_default);
+
+  // Get customer transformation helper from formStore
+  const customerToFormValues = useFormStore((state) => state.customerToFormValues);
+
+  const form = useForm<CreateDeliveryInput>({
+    defaultValues: formDefaults || undefined,
   });
+
+  const { register, handleSubmit, formState: { errors, isSubmitting }, watch, reset, setValue } = form;
+
+  // Pre-fill form when customer data loads from localStorage
+  useEffect(() => {
+    if (customer) {
+      const customerFormValues = customerToFormValues(customer);
+      // Merge with existing form values instead of overwriting everything
+      reset((formValues) => ({
+        ...formValues,
+        ...customerFormValues,
+      }), { keepDirty: true });
+    }
+  }, [customer, customerToFormValues, reset]);
 
   const onSubmit = async (data: CreateDeliveryInput) => {
     try {
       await createDelivery.mutateAsync(data);
+      // Note: We don't update customerId in localStorage here
+      // Users should update their default customer in Settings only
       router.push('/deliveries');
     } catch (error) {
       // Error handling is done by the mutation hook
@@ -177,7 +204,7 @@ export default function NewDeliveryPage() {
                   label="Email Address"
                   placeholder="john@example.com"
                   error={errors.customer_email?.message}
-                  helperText="Will receive email notifications"
+                  helperText="For email notifications"
                   required
                   fullWidth
                 />
@@ -207,6 +234,24 @@ export default function NewDeliveryPage() {
             title="Workflow Settings"
             description="Configure automatic traffic monitoring"
           >
+            <FormField>
+              <Input
+                {...register('delay_threshold_minutes', {
+                  valueAsNumber: true,
+                  min: { value: 1, message: 'Must be at least 1 minute' },
+                  max: { value: 1440, message: 'Cannot exceed 1440 minutes (24 hours)' },
+                })}
+                type="number"
+                label="Delay Threshold (minutes)"
+                placeholder={defaultThreshold ? `Default: ${defaultThreshold.delay_minutes} minutes` : "Leave empty to use default"}
+                helperText={defaultThreshold
+                  ? `Leave empty to use default threshold (${defaultThreshold.delay_minutes} minutes - ${defaultThreshold.name})`
+                  : "Leave empty to use default threshold from Settings."}
+                error={errors.delay_threshold_minutes?.message}
+                fullWidth
+              />
+            </FormField>
+
             <FormField>
               <div className="space-y-1">
                 <Toggle
