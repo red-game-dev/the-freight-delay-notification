@@ -132,13 +132,25 @@ export function SkeletonForm({
 // Skeleton Stats - for stat cards
 export function SkeletonStats({
   count = 4,
+  columns,
   className = '',
 }: {
   count?: number;
+  columns?: 2 | 3 | 4 | 5 | 6;
   className?: string;
 }) {
+  // Match StatGrid's responsive column layout
+  const cols = columns || (count <= 6 ? (count as 2 | 3 | 4 | 5 | 6) : 4);
+  const colsMap = {
+    2: 'sm:grid-cols-2',
+    3: 'sm:grid-cols-2 lg:grid-cols-3',
+    4: 'sm:grid-cols-2 lg:grid-cols-4',
+    5: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+    6: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+  };
+
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${className}`}>
+    <div className={`grid grid-cols-1 gap-4 ${colsMap[cols]} ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={`stat-${i}`} className="border rounded-lg p-6 space-y-3">
           <Skeleton width="60%" height={16} />
