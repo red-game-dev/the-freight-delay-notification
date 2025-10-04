@@ -27,6 +27,7 @@ export const GET = createApiHandler(async (request) => {
         delay_minutes: t.delay_minutes,
         notification_channels: t.notification_channels,
         is_default: t.is_default,
+        is_system: t.is_system || false,
         created_at: t.created_at,
       }))
   );
