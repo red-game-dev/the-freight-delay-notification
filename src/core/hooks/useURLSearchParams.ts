@@ -27,7 +27,9 @@ export function useURLParams() {
       });
 
       const query = params.toString();
-      router.push(query ? `?${query}` : '', { scroll: options?.scroll ?? false });
+      // Use window.location.pathname to ensure we're updating the same page
+      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      router.push(query ? `${pathname}?${query}` : pathname, { scroll: options?.scroll ?? false });
     },
     [router, searchParams]
   );
@@ -52,14 +54,16 @@ export function useURLParams() {
       const params = new URLSearchParams(searchParams.toString());
       params.delete(key);
       const query = params.toString();
-      router.push(query ? `?${query}` : '', { scroll: options?.scroll ?? false });
+      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      router.push(query ? `${pathname}?${query}` : pathname, { scroll: options?.scroll ?? false });
     },
     [router, searchParams]
   );
 
   const clearAll = useCallback(
     (options?: { scroll?: boolean }) => {
-      router.push('', { scroll: options?.scroll ?? false });
+      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      router.push(pathname, { scroll: options?.scroll ?? false });
     },
     [router]
   );
@@ -77,12 +81,16 @@ export function useURLParams() {
 /**
  * Hook for managing pagination via URL search params
  * Uses optimistic updates to prevent race conditions from rapid clicks
+ * @param key - Optional key for independent pagination (e.g., 'running', 'other')
+ * @param defaultPage - Default page number
  * @example
  * const { page, setPage, resetPage } = useURLPagination();
+ * const { page: runningPage, setPage: setRunningPage } = useURLPagination('running');
  */
-export function useURLPagination(defaultPage = 1) {
+export function useURLPagination(key?: string, defaultPage = 1) {
   const { getParamAsNumber, updateParams } = useURLParams();
-  const urlPage = getParamAsNumber('page', defaultPage);
+  const pageParamName = key ? `${key}Page` : 'page';
+  const urlPage = getParamAsNumber(pageParamName, defaultPage);
 
   // Optimistic local state for immediate updates
   const [optimisticPage, setOptimisticPage] = useState(urlPage);
@@ -107,19 +115,19 @@ export function useURLPagination(defaultPage = 1) {
 
       // Update URL (async)
       if (newPage === defaultPage) {
-        updateParams({ page: null }); // Remove default page from URL
+        updateParams({ [pageParamName]: null }); // Remove default page from URL
       } else {
-        updateParams({ page: newPage.toString() });
+        updateParams({ [pageParamName]: newPage.toString() });
       }
     },
-    [defaultPage, updateParams]
+    [defaultPage, updateParams, pageParamName]
   );
 
   const resetPage = useCallback(() => {
     setOptimisticPage(defaultPage);
     pendingPageRef.current = defaultPage;
-    updateParams({ page: null });
-  }, [defaultPage, updateParams]);
+    updateParams({ [pageParamName]: null });
+  }, [defaultPage, updateParams, pageParamName]);
 
   return {
     page: optimisticPage,
@@ -255,7 +263,7 @@ export function useURLPaginationWithFilter<T extends string>(
   defaultPage = 1,
   options?: { resetPageOnFilter?: boolean }
 ) {
-  const pagination = useURLPagination(defaultPage);
+  const pagination = useURLPagination(undefined, defaultPage);
   const { filter, setFilter: setFilterBase, resetFilter } = useURLFilter(filterName, defaultFilter);
 
   const setFilter = useCallback(
