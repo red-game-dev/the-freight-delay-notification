@@ -39,12 +39,16 @@ export class OpenAIAdapter implements AIAdapter {
 
       const prompt = this.createPrompt(input);
 
+      // Note: In some scenarios, it's better to use JSON output (response_format: { type: "json_object" })
+      // to extract structured data for further manipulation (e.g., translation, formatting, A/B testing).
+      // However, in this case, we don't manipulate the message afterwards - it's sent directly to the customer.
+      // Plain text is simpler and sufficient for our SMS notification use case.
       const completion = await this.client!.chat.completions.create({
         model: this.model,
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful customer service assistant for a freight delivery company. Generate concise, professional, and empathetic delay notifications for customers. Include all relevant details and maintain a positive tone.'
+            content: 'You are a freight delivery notification system. Generate VERY SHORT, friendly traffic delay messages under 160 characters for SMS. Be direct, clear, and concise. No greetings or sign-offs.'
           },
           {
             role: 'user',
@@ -52,7 +56,7 @@ export class OpenAIAdapter implements AIAdapter {
           }
         ],
         temperature: 0.7,
-        max_tokens: 300,
+        max_tokens: 80, // Shorter max tokens for concise SMS messages
       });
 
       const message = completion.choices[0].message.content || this.createFallbackMessageText(input);
@@ -79,24 +83,27 @@ export class OpenAIAdapter implements AIAdapter {
 
   private createPrompt(input: MessageGenerationInput): string {
     const deliveryRef = input.trackingNumber || input.deliveryId;
-    return `Generate a professional and empathetic delivery delay notification email for the following situation:
+    const newETA = new Date(input.estimatedArrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-Tracking Number: ${deliveryRef}
-Route: ${input.origin} to ${input.destination}
-Delay: ${input.delayMinutes} minutes
-Traffic Condition: ${input.trafficCondition}
-Original Arrival Time: ${new Date(input.originalArrival).toLocaleString()}
-New Estimated Arrival: ${new Date(input.estimatedArrival).toLocaleString()}
+    return `Generate a friendly, concise traffic delay notification for:
 
-Please create a brief, clear message that:
-1. Apologizes for the delay
-2. Explains the traffic situation in a customer-friendly way
-3. Provides the new estimated arrival time
-4. Thanks the customer for their patience
+Route: ${input.origin} → ${input.destination}
+Tracking: ${deliveryRef}
+Delay: ${input.delayMinutes} min
+Traffic: ${input.trafficCondition}
+New ETA: ${newETA}
 
-IMPORTANT: Vary the wording, tone, and structure based on the specific situation. Don't use generic templates. Make it feel personalized to THIS specific delay scenario.
+Create a SHORT message (max 160 characters for SMS compatibility) that:
+1. Mentions the route (origin to destination)
+2. Includes tracking number
+3. States the delay duration
+4. Provides new arrival time
 
-Keep it under 150 words and maintain a professional yet friendly tone.`;
+Keep it friendly but VERY brief. No formalities. Direct and clear.
+
+Example format: "${input.origin}→${input.destination} - ${deliveryRef}: ${input.delayMinutes}min delay, ${input.trafficCondition} traffic. ETA ${newETA}"
+
+Generate a similar concise message with slight variations.`;
   }
 
   private generateFallbackMessage(input: MessageGenerationInput): Result<GeneratedMessage> {
@@ -115,31 +122,21 @@ Keep it under 150 words and maintain a professional yet friendly tone.`;
 
   private createFallbackMessageText(input: MessageGenerationInput): string {
     const deliveryRef = input.trackingNumber || input.deliveryId;
-    return `Dear Valued Customer,
+    const newETA = new Date(input.estimatedArrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-We want to inform you that your delivery (Tracking #: ${deliveryRef}) is experiencing a delay of approximately ${input.delayMinutes} minutes due to ${input.trafficCondition} traffic conditions.
-
-Route: ${input.origin} → ${input.destination}
-
-Original arrival time: ${new Date(input.originalArrival).toLocaleTimeString()}
-New estimated arrival: ${new Date(input.estimatedArrival).toLocaleTimeString()}
-
-We sincerely apologize for any inconvenience this delay may cause. Our driver is working to deliver your package as quickly and safely as possible.
-
-Thank you for your patience and understanding.
-
-Best regards,
-Freight Delivery Team`;
+    // SMS-friendly short message (under 160 characters) with route
+    return `${input.origin}→${input.destination} - ${deliveryRef}: ${input.delayMinutes}min delay, ${input.trafficCondition} traffic. ETA ${newETA}`;
   }
 
   private generateSubject(input: MessageGenerationInput): string {
     const deliveryRef = input.trackingNumber || input.deliveryId;
+    // Shorter subject lines
     if (input.delayMinutes > 60) {
-      return `Important: Significant Delay - Tracking #${deliveryRef}`;
+      return `Traffic Delay: ${input.delayMinutes}min - ${deliveryRef}`;
     } else if (input.delayMinutes > 30) {
-      return `Delivery Update: ${input.delayMinutes}-minute delay - #${deliveryRef}`;
+      return `Delay: ${input.delayMinutes}min - ${deliveryRef}`;
     } else {
-      return `Minor Delay Notice - Tracking #${deliveryRef}`;
+      return `Minor delay - ${deliveryRef}`;
     }
   }
 }

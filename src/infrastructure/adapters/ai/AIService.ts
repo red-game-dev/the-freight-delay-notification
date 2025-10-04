@@ -10,6 +10,7 @@ import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter
 import { OpenAIAdapter } from './OpenAIAdapter';
 import { MockAIAdapter } from './MockAIAdapter';
 import { logger } from '@/core/base/utils/Logger';
+import { env } from '../../config/EnvValidator';
 
 export class AIService {
   private adapters: AIAdapter[] = [];
@@ -22,9 +23,17 @@ export class AIService {
    * Initialize all AI adapters and sort by priority
    */
   private initializeAdapters(): void {
+    // Check if we should force use of MockAIAdapter for testing
+    if (env.FORCE_AI_MOCK_ADAPTER) {
+      logger.info(`🧪 [AIService] TESTING MODE: Forcing MockAIAdapter`);
+      this.adapters = [new MockAIAdapter()];
+      return;
+    }
+
+    // Add all available adapters
     const allAdapters: AIAdapter[] = [
-      new OpenAIAdapter(),
-      new MockAIAdapter(),
+      new OpenAIAdapter(), // Priority 1 - gpt-4o-mini for personalized messages
+      new MockAIAdapter(), // Priority 999 - Template fallback
     ];
 
     // Filter available adapters and sort by priority

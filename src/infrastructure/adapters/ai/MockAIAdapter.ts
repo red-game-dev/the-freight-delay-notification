@@ -39,30 +39,25 @@ export class MockAIAdapter implements AIAdapter {
   }
 
   private createMockMessage(input: MessageGenerationInput): string {
-    return `Dear Valued Customer,
+    const deliveryRef = input.trackingNumber || input.deliveryId;
+    const newETA = new Date(input.estimatedArrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-We want to inform you that your delivery (ID: ${input.deliveryId}) is experiencing a delay of approximately ${input.delayMinutes} minutes due to ${input.trafficCondition} traffic conditions.
-
-Route: ${input.origin} → ${input.destination}
-
-Original arrival time: ${new Date(input.originalArrival).toLocaleTimeString()}
-New estimated arrival: ${new Date(input.estimatedArrival).toLocaleTimeString()}
-
-We sincerely apologize for any inconvenience this delay may cause. Our driver is working to deliver your package as quickly and safely as possible.
-
-Thank you for your patience and understanding.
-
-Best regards,
-Freight Delivery Team`;
+    // SMS-friendly short message (under 160 characters) with route
+    // Note: Using plain string template instead of structured object (e.g., JSON) since the message
+    // is sent directly to customers without further manipulation. For scenarios requiring post-processing
+    // like translation, A/B testing, or dynamic formatting, a structured approach would be better.
+    return `${input.origin}→${input.destination} - ${deliveryRef}: ${input.delayMinutes}min delay, ${input.trafficCondition} traffic. ETA ${newETA}`;
   }
 
   private generateSubject(input: MessageGenerationInput): string {
+    const deliveryRef = input.trackingNumber || input.deliveryId;
+    // Shorter subject lines
     if (input.delayMinutes > 60) {
-      return `Important: Significant Delay - Delivery ${input.deliveryId}`;
+      return `Traffic Delay: ${input.delayMinutes}min - ${deliveryRef}`;
     } else if (input.delayMinutes > 30) {
-      return `Delivery Update: ${input.delayMinutes}-minute delay - ID ${input.deliveryId}`;
+      return `Delay: ${input.delayMinutes}min - ${deliveryRef}`;
     } else {
-      return `Minor Delay Notice - Delivery ${input.deliveryId}`;
+      return `Minor delay - ${deliveryRef}`;
     }
   }
 }
