@@ -3,20 +3,18 @@
  * Reusable list primitive with dividers and hover states
  */
 
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export interface ListProps {
   children: ReactNode;
   className?: string;
 }
 
-export function List({ children, className = '' }: ListProps) {
+export function List({ children, className = "" }: ListProps) {
   return (
-    <div className={`divide-y divide-border ${className}`}>
-      {children}
-    </div>
+    <div className={`divide-y divide-border ${className}`}>{children}</div>
   );
 }
 
@@ -30,18 +28,18 @@ export interface ListItemProps {
 export function ListItem({
   children,
   onClick,
-  className = '',
+  className = "",
   hoverable = true,
 }: ListItemProps) {
-  const Component = onClick ? 'button' : 'div';
+  const Component = onClick ? "button" : "div";
 
   return (
     <Component
       onClick={onClick}
       className={`
         p-4 sm:p-6 w-full text-left
-        ${hoverable ? 'hover:bg-muted/50 transition-colors' : ''}
-        ${onClick ? 'cursor-pointer' : ''}
+        ${hoverable ? "hover:bg-muted/50 transition-colors" : ""}
+        ${onClick ? "cursor-pointer" : ""}
         ${className}
       `}
     >
@@ -57,14 +55,15 @@ export interface EmptyStateProps {
   action?: ReactNode;
 }
 
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+}: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center">
-      {icon && (
-        <div className="mb-4 text-muted-foreground">
-          {icon}
-        </div>
-      )}
+      {icon && <div className="mb-4 text-muted-foreground">{icon}</div>}
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
       {description && (
         <p className="text-sm text-muted-foreground mb-4 max-w-sm">

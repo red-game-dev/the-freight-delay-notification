@@ -3,9 +3,9 @@
  * Helpers for validating and sanitizing data using Zod schemas
  */
 
-import { z } from 'zod';
-import { Result } from '@/core/base/utils/Result';
-import { ValidationError } from '@/core/base/errors/BaseError';
+import { z } from "zod";
+import { ValidationError } from "@/core/base/errors/BaseError";
+import { Result } from "@/core/base/utils/Result";
 
 /**
  * Validate data against a Zod schema
@@ -13,17 +13,21 @@ import { ValidationError } from '@/core/base/errors/BaseError';
  */
 export function validate<T extends z.ZodType>(
   schema: T,
-  data: unknown
+  data: unknown,
 ): Result<z.infer<T>> {
   try {
     const validated = schema.parse(data);
     return Result.ok(validated);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const message = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
-      return Result.fail(new ValidationError(message, { errors: error.errors }));
+      const message = error.errors
+        .map((err) => `${err.path.join(".")}: ${err.message}`)
+        .join(", ");
+      return Result.fail(
+        new ValidationError(message, { errors: error.errors }),
+      );
     }
-    return Result.fail(new ValidationError('Validation failed', { error }));
+    return Result.fail(new ValidationError("Validation failed", { error }));
   }
 }
 
@@ -33,14 +37,16 @@ export function validate<T extends z.ZodType>(
  */
 export function validateQuery<T extends z.ZodType>(
   schema: T,
-  request: Request
+  request: Request,
 ): Result<z.infer<T>> {
   try {
     const url = new URL(request.url);
     const params = Object.fromEntries(url.searchParams.entries());
     return validate(schema, params);
   } catch (error) {
-    return Result.fail(new ValidationError('Invalid query parameters', { error }));
+    return Result.fail(
+      new ValidationError("Invalid query parameters", { error }),
+    );
   }
 }
 
@@ -49,13 +55,13 @@ export function validateQuery<T extends z.ZodType>(
  */
 export async function validateBody<T extends z.ZodType>(
   schema: T,
-  request: Request
+  request: Request,
 ): Promise<Result<z.infer<T>>> {
   try {
     const body = await request.json();
     return validate(schema, body);
   } catch (error) {
-    return Result.fail(new ValidationError('Invalid request body', { error }));
+    return Result.fail(new ValidationError("Invalid request body", { error }));
   }
 }
 
@@ -64,7 +70,7 @@ export async function validateBody<T extends z.ZodType>(
  */
 export function validateParams<T extends z.ZodType>(
   schema: T,
-  params: unknown
+  params: unknown,
 ): Result<z.infer<T>> {
   return validate(schema, params);
 }
@@ -75,7 +81,7 @@ export function validateParams<T extends z.ZodType>(
  */
 export function safeParse<T extends z.ZodType>(
   schema: T,
-  data: unknown
+  data: unknown,
 ): z.infer<T> | undefined {
   const result = schema.safeParse(data);
   return result.success ? result.data : undefined;
@@ -87,16 +93,16 @@ export function safeParse<T extends z.ZodType>(
 export function sanitizeString(input: string): string {
   return input
     .trim()
-    .replace(/[<>]/g, '') // Remove < and > to prevent XSS
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, ''); // Remove inline event handlers
+    .replace(/[<>]/g, "") // Remove < and > to prevent XSS
+    .replace(/javascript:/gi, "") // Remove javascript: protocol
+    .replace(/on\w+=/gi, ""); // Remove inline event handlers
 }
 
 /**
  * Sanitize HTML by stripping all tags
  */
 export function stripHtml(input: string): string {
-  return input.replace(/<[^>]*>/g, '');
+  return input.replace(/<[^>]*>/g, "");
 }
 
 /**

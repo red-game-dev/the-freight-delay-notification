@@ -3,10 +3,14 @@
  * GET /api/traffic
  */
 
-import { fetchJson } from '../../../client/fetchJson';
-import { env } from '@/infrastructure/config/EnvValidator';
-import type { PaginatedResponse } from '@/core/utils/paginationUtils';
-import type { TrafficCondition, TrafficSeverity, TrafficIncidentType } from '@/core/types/traffic';
+import type {
+  TrafficCondition,
+  TrafficIncidentType,
+  TrafficSeverity,
+} from "@/core/types/traffic";
+import type { PaginatedResponse } from "@/core/utils/paginationUtils";
+import { env } from "@/infrastructure/config/EnvValidator";
+import { fetchJson } from "../../../client/fetchJson";
 
 export interface AffectedDelivery {
   id: string;
@@ -36,12 +40,15 @@ export interface TrafficStats {
   avg_delay: number;
 }
 
-export interface TrafficSnapshotResponse extends PaginatedResponse<TrafficSnapshot> {
+export interface TrafficSnapshotResponse
+  extends PaginatedResponse<TrafficSnapshot> {
   stats?: TrafficStats;
 }
 
-export async function listTrafficSnapshots(params?: Record<string, string>): Promise<TrafficSnapshotResponse> {
-  const query = params ? `?${new URLSearchParams(params)}` : '';
+export async function listTrafficSnapshots(
+  params?: Record<string, string>,
+): Promise<TrafficSnapshotResponse> {
+  const query = params ? `?${new URLSearchParams(params)}` : "";
   const url = `${env.NEXT_PUBLIC_API_URL}/api/traffic${query}`;
   return fetchJson<TrafficSnapshotResponse>(url);
 }

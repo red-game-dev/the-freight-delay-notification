@@ -4,9 +4,9 @@
  * Implements PDF Step 1 - Calculate delay in minutes
  */
 
-import { Entity } from '../../shared/Entity';
-import { Coordinates } from '../value-objects/Coordinates';
-import type { TrafficCondition } from '@/core/types';
+import type { TrafficCondition } from "@/core/types";
+import { Entity } from "../../shared/Entity";
+import type { Coordinates } from "../value-objects/Coordinates";
 
 interface RouteProps {
   originAddress: string;
@@ -26,8 +26,8 @@ export class Route extends Entity<RouteProps> {
    * Create a new Route entity
    */
   static create(
-    props: Omit<RouteProps, 'createdAt' | 'updatedAt'>,
-    id: string
+    props: Omit<RouteProps, "createdAt" | "updatedAt">,
+    id: string,
   ): Route {
     const now = new Date();
     return new Route(
@@ -36,7 +36,7 @@ export class Route extends Entity<RouteProps> {
         createdAt: now,
         updatedAt: now,
       },
-      id
+      id,
     );
   }
 
@@ -99,7 +99,8 @@ export class Route extends Entity<RouteProps> {
       return 0;
     }
 
-    const delaySeconds = this.props.currentDurationSeconds - this.props.normalDurationSeconds;
+    const delaySeconds =
+      this.props.currentDurationSeconds - this.props.normalDurationSeconds;
     return Math.max(0, Math.round(delaySeconds / 60));
   }
 
@@ -112,7 +113,8 @@ export class Route extends Entity<RouteProps> {
       return 0;
     }
 
-    const delay = this.props.currentDurationSeconds - this.props.normalDurationSeconds;
+    const delay =
+      this.props.currentDurationSeconds - this.props.normalDurationSeconds;
     return Math.max(0, (delay / this.props.normalDurationSeconds) * 100);
   }
 
@@ -128,7 +130,7 @@ export class Route extends Entity<RouteProps> {
    */
   public updateTrafficData(
     currentDurationSeconds: number,
-    trafficCondition: TrafficCondition
+    trafficCondition: TrafficCondition,
   ): void {
     this.props.currentDurationSeconds = currentDurationSeconds;
     this.props.trafficCondition = trafficCondition;
@@ -165,7 +167,7 @@ export class Route extends Entity<RouteProps> {
     const distanceKm = (this.props.distanceMeters / 1000).toFixed(1);
     const normalMin = Math.round(this.props.normalDurationSeconds / 60);
 
-    const result: ReturnType<Route['getDetails']> = {
+    const result: ReturnType<Route["getDetails"]> = {
       route: this.getSummary(),
       distance: `${distanceKm} km`,
       normalDuration: `${normalMin} min`,

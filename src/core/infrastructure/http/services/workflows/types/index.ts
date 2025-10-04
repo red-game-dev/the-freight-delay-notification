@@ -3,7 +3,7 @@
  * Type definitions for workflow-related operations
  */
 
-import type { WorkflowStatus } from '@/core/types';
+import type { WorkflowStatus } from "@/core/types";
 
 export interface Workflow {
   id: string;
@@ -24,7 +24,7 @@ export interface Workflow {
   created_at?: string;
   tracking_number?: string;
   settings?: {
-    type: 'recurring' | 'one-time';
+    type: "recurring" | "one-time";
     check_interval_minutes?: number;
     max_checks?: number;
     checks_performed?: number;

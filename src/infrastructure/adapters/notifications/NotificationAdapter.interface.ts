@@ -3,15 +3,15 @@
  * Defines the contract for all notification providers
  */
 
-import type { Result } from '../../../core/base/utils/Result';
-import type { NotificationChannel } from '@/core/types';
+import type { NotificationChannel } from "@/core/types";
+import type { Result } from "../../../core/base/utils/Result";
 
 export interface NotificationInput {
   to: string;
   subject?: string;
   message: string;
   deliveryId: string;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
 }
 
 export interface NotificationResult {

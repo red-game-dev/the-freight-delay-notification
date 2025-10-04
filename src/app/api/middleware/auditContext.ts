@@ -9,9 +9,9 @@
  * - Audit tracking uses 'system' or customer email from request body
  */
 
-import { NextRequest } from 'next/server';
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { generateId } from '@/core/utils/idUtils';
+import type { NextRequest } from "next/server";
+import { generateId } from "@/core/utils/idUtils";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
 
 /**
  * Set audit context for the current request
@@ -22,25 +22,26 @@ import { generateId } from '@/core/utils/idUtils';
  */
 export async function setAuditContext(
   request: NextRequest,
-  customerEmail?: string
+  customerEmail?: string,
 ): Promise<void> {
   try {
     const db = getDatabaseService();
 
     // Get or generate request ID for tracing
-    const requestId = request.headers.get('x-request-id') ||
-                     request.headers.get('x-vercel-id') ||
-                     generateId();
+    const requestId =
+      request.headers.get("x-request-id") ||
+      request.headers.get("x-vercel-id") ||
+      generateId();
 
     // Use customer email as audit user, or 'system' for internal operations
-    const auditUser = customerEmail || 'system';
+    const auditUser = customerEmail || "system";
 
     // Set audit context in database
     await db.setAuditContext(auditUser, requestId);
   } catch (error) {
     // Don't fail the request if audit context fails
     // Just log it for debugging
-    console.error('[Audit Context] Failed to set audit context:', error);
+    console.error("[Audit Context] Failed to set audit context:", error);
   }
 }
 
@@ -48,14 +49,18 @@ export async function setAuditContext(
  * Extract customer email from request body (for audit tracking)
  * Used to track which customer made changes to their deliveries
  */
-export async function getCustomerEmailFromRequest(request: NextRequest): Promise<string | undefined> {
+export async function getCustomerEmailFromRequest(
+  request: NextRequest,
+): Promise<string | undefined> {
   try {
     // Clone request to read body without consuming it
     const clonedRequest = request.clone();
     const body = await clonedRequest.json();
 
     // Check common fields where customer email might be
-    return body?.customer_email || body?.email || body?.customerEmail || undefined;
+    return (
+      body?.customer_email || body?.email || body?.customerEmail || undefined
+    );
   } catch (error) {
     // Body might not be JSON or might already be consumed
     return undefined;
@@ -66,7 +71,9 @@ export async function getCustomerEmailFromRequest(request: NextRequest): Promise
  * Helper to get customer ID by email
  * Use this when you need to track actions by a specific customer
  */
-export async function getCustomerIdByEmail(email: string): Promise<string | null> {
+export async function getCustomerIdByEmail(
+  email: string,
+): Promise<string | null> {
   try {
     const db = getDatabaseService();
     const result = await db.getCustomerByEmail(email);
@@ -76,7 +83,7 @@ export async function getCustomerIdByEmail(email: string): Promise<string | null
     }
     return null;
   } catch (error) {
-    console.error('[Audit Context] Failed to get customer by email:', error);
+    console.error("[Audit Context] Failed to get customer by email:", error);
     return null;
   }
 }

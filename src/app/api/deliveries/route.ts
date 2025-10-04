@@ -4,22 +4,28 @@
  * POST /api/deliveries - Create a new delivery
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler, getQueryParam } from '@/core/infrastructure/http';
-import type { DeliveryStatus } from '@/infrastructure/database/types/database.types';
-import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
-import { WorkflowIdReusePolicy } from '@temporalio/client';
-import { getGeocodingService } from '@/infrastructure/adapters/geocoding/GeocodingService';
-import { logger } from '@/core/base/utils/Logger';
-import { Result } from '@/core/base/utils/Result';
-import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
-import { ensureDateISO } from '@/core/utils/typeConversion';
-import { createPaginatedResponse } from '@/core/utils/paginationUtils';
-import { validateQuery, validateBody } from '@/core/utils/validation';
-import { listDeliveriesQuerySchema, createDeliverySchema } from '@/core/schemas/delivery';
-import { env } from '@/infrastructure/config/EnvValidator';
-import { WORKFLOW } from '@/core/config/constants/app.constants';
-import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
+import { WorkflowIdReusePolicy } from "@temporalio/client";
+import {
+  getCustomerEmailFromRequest,
+  setAuditContext,
+} from "@/app/api/middleware/auditContext";
+import { logger } from "@/core/base/utils/Logger";
+import { Result } from "@/core/base/utils/Result";
+import { WORKFLOW } from "@/core/config/constants/app.constants";
+import { createApiHandler, getQueryParam } from "@/core/infrastructure/http";
+import {
+  createDeliverySchema,
+  listDeliveriesQuerySchema,
+} from "@/core/schemas/delivery";
+import { createPaginatedResponse } from "@/core/utils/paginationUtils";
+import { ensureDateISO } from "@/core/utils/typeConversion";
+import { validateBody, validateQuery } from "@/core/utils/validation";
+import { createWorkflowId, WorkflowType } from "@/core/utils/workflowUtils";
+import { getGeocodingService } from "@/infrastructure/adapters/geocoding/GeocodingService";
+import { env } from "@/infrastructure/config/EnvValidator";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
+import type { DeliveryStatus } from "@/infrastructure/database/types/database.types";
+import { getTemporalClient } from "@/infrastructure/temporal/TemporalClient";
 
 /**
  * GET /api/deliveries
@@ -81,229 +87,283 @@ export const GET = createApiHandler(async (request) => {
  * Create a new delivery
  * NOTE: This handles the full creation flow (customer -> route -> delivery)
  */
-export const POST = createApiHandler(async (request) => {
-  // Set audit context for tracking changes (use customer email from request body)
-  await setAuditContext(request, await getCustomerEmailFromRequest(request));
+export const POST = createApiHandler(
+  async (request) => {
+    // Set audit context for tracking changes (use customer email from request body)
+    await setAuditContext(request, await getCustomerEmailFromRequest(request));
 
-  // Validate request body
-  const bodyResult = await validateBody(createDeliverySchema, request);
-  if (!bodyResult.success) {
-    return bodyResult;
-  }
-
-  const body = bodyResult.value;
-
-  // Extract fields (already validated by Zod)
-  const {
-    tracking_number,
-    origin,
-    destination,
-    scheduled_delivery,
-    customer_name,
-    customer_email,
-    customer_phone,
-    notes,
-    auto_check_traffic,
-    enable_recurring_checks,
-    check_interval_minutes,
-    max_checks,
-    min_delay_change_threshold,
-    min_hours_between_notifications,
-    delay_threshold_minutes,
-  } = body;
-
-  const db = getDatabaseService();
-  const geocodingService = getGeocodingService();
-
-  // Step 0: Get default threshold from settings if not provided
-  let finalThreshold = delay_threshold_minutes;
-  let defaultNotificationChannels: ('email' | 'sms')[] = ['email', 'sms'];
-
-  if (!finalThreshold) {
-    const defaultThresholdResult = await db.getDefaultThreshold();
-    if (defaultThresholdResult.success && defaultThresholdResult.value) {
-      finalThreshold = defaultThresholdResult.value.delay_minutes;
-      defaultNotificationChannels = defaultThresholdResult.value.notification_channels;
-      logger.info(`📊 Using default threshold from settings: ${finalThreshold} minutes`);
-      logger.info(`📨 Default notification channels: ${defaultNotificationChannels.join(', ')}`);
-    } else {
-      finalThreshold = WORKFLOW.DEFAULT_THRESHOLD_MINUTES;
-      logger.info(`📊 Using fallback threshold: ${finalThreshold} minutes`);
+    // Validate request body
+    const bodyResult = await validateBody(createDeliverySchema, request);
+    if (!bodyResult.success) {
+      return bodyResult;
     }
-  }
 
-  // Step 1: Create or update customer
-  let customer = await db.getCustomerByEmail(customer_email);
-  if (!customer.success || !customer.value) {
-    // Customer doesn't exist - create new
-    const createCustomerResult = await db.createCustomer({
-      name: customer_name,
-      email: customer_email,
-      phone: customer_phone,
-    });
-    if (!createCustomerResult.success) {
-      return createCustomerResult;
-    }
-    customer = createCustomerResult;
-    logger.info(`✅ Created new customer: ${customer.value!.email}`);
-  } else {
-    // Customer exists - update if details changed
-    const existingCustomer = customer.value;
-    const needsUpdate =
-      existingCustomer.name !== customer_name ||
-      existingCustomer.phone !== customer_phone;
+    const body = bodyResult.value;
 
-    if (needsUpdate) {
-      const updateCustomerResult = await db.updateCustomer(existingCustomer.id, {
-        name: customer_name,
-        phone: customer_phone,
-      });
-      if (!updateCustomerResult.success) {
-        logger.warn(`⚠️ Failed to update customer: ${updateCustomerResult.error.message}`);
-        // Don't fail the delivery creation, just log the warning
-      } else {
-        customer = updateCustomerResult;
-        logger.info(`✅ Updated existing customer: ${customer.value!.email}`);
-      }
-    } else {
-      logger.info(`ℹ️ Using existing customer: ${customer.value.email}`);
-    }
-  }
-
-  // Step 2: Geocode addresses to get coordinates
-  logger.info(`🌍 Geocoding addresses: ${origin} → ${destination}`);
-
-  const originGeocodingResult = await geocodingService.geocodeAddress(origin);
-  if (!originGeocodingResult.success) {
-    logger.error(`❌ Failed to geocode origin: ${origin}`, originGeocodingResult.error);
-    return originGeocodingResult;
-  }
-
-  const destinationGeocodingResult = await geocodingService.geocodeAddress(destination);
-  if (!destinationGeocodingResult.success) {
-    logger.error(`❌ Failed to geocode destination: ${destination}`, destinationGeocodingResult.error);
-    return destinationGeocodingResult;
-  }
-
-  logger.info(`✅ Geocoded origin: ${origin} → (${originGeocodingResult.value.lat}, ${originGeocodingResult.value.lng})`);
-  logger.info(`✅ Geocoded destination: ${destination} → (${destinationGeocodingResult.value.lat}, ${destinationGeocodingResult.value.lng})`);
-
-  // Step 3: Create route with geocoded coordinates
-  const routeResult = await db.createRoute({
-    origin_address: origin,
-    origin_coords: originGeocodingResult.value,
-    destination_address: destination,
-    destination_coords: destinationGeocodingResult.value,
-    distance_meters: 0, // Will be calculated by first traffic check
-    normal_duration_seconds: 0, // Will be calculated by first traffic check
-  });
-
-  if (!routeResult.success) {
-    return routeResult;
-  }
-
-  // Step 4: Create delivery
-  const deliveryResult = await db.createDelivery({
-    tracking_number,
-    customer_id: customer.value!.id,
-    route_id: routeResult.value.id,
-    scheduled_delivery: new Date(scheduled_delivery),
-    status: 'pending',
-    delay_threshold_minutes: finalThreshold,
-    auto_check_traffic: auto_check_traffic ?? false,
-    enable_recurring_checks: enable_recurring_checks ?? false,
-    check_interval_minutes: check_interval_minutes ?? 30,
-    max_checks: max_checks ?? -1,
-    checks_performed: 0,
-    min_delay_change_threshold: min_delay_change_threshold ?? 15,
-    min_hours_between_notifications: min_hours_between_notifications ?? 1.0,
-    metadata: {
-      notes,
+    // Extract fields (already validated by Zod)
+    const {
+      tracking_number,
+      origin,
+      destination,
+      scheduled_delivery,
       customer_name,
       customer_email,
       customer_phone,
-      notification_channels: defaultNotificationChannels,
-    },
-  });
+      notes,
+      auto_check_traffic,
+      enable_recurring_checks,
+      check_interval_minutes,
+      max_checks,
+      min_delay_change_threshold,
+      min_hours_between_notifications,
+      delay_threshold_minutes,
+    } = body;
 
-  if (!deliveryResult.success) {
-    return deliveryResult;
-  }
+    const db = getDatabaseService();
+    const geocodingService = getGeocodingService();
 
-  // Step 4: If auto_check_traffic or enable_recurring_checks is enabled, trigger workflow
-  logger.info(`🔍 Checking workflow triggers - auto_check: ${auto_check_traffic}, recurring: ${enable_recurring_checks}`);
+    // Step 0: Get default threshold from settings if not provided
+    let finalThreshold = delay_threshold_minutes;
+    let defaultNotificationChannels: ("email" | "sms")[] = ["email", "sms"];
 
-  if (auto_check_traffic || enable_recurring_checks) {
-    logger.info(`🚀 Auto-triggering workflow for delivery ${deliveryResult.value.id}`);
-    try {
-      // Construct base workflow input from the data we just created
-      const baseWorkflowInput = {
-        deliveryId: deliveryResult.value.id,
-        routeId: routeResult.value.id,
-        customerId: customer.value!.id,
-        customerEmail: customer.value!.email,
-        customerPhone: customer.value!.phone || undefined,
-        origin: {
-          address: routeResult.value.origin_address,
-          coordinates: {
-            lat: routeResult.value.origin_coords.lat,
-            lng: routeResult.value.origin_coords.lng,
+    if (!finalThreshold) {
+      const defaultThresholdResult = await db.getDefaultThreshold();
+      if (defaultThresholdResult.success && defaultThresholdResult.value) {
+        finalThreshold = defaultThresholdResult.value.delay_minutes;
+        defaultNotificationChannels =
+          defaultThresholdResult.value.notification_channels;
+        logger.info(
+          `📊 Using default threshold from settings: ${finalThreshold} minutes`,
+        );
+        logger.info(
+          `📨 Default notification channels: ${defaultNotificationChannels.join(", ")}`,
+        );
+      } else {
+        finalThreshold = WORKFLOW.DEFAULT_THRESHOLD_MINUTES;
+        logger.info(`📊 Using fallback threshold: ${finalThreshold} minutes`);
+      }
+    }
+
+    // Step 1: Create or update customer
+    let customer = await db.getCustomerByEmail(customer_email);
+    if (!customer.success || !customer.value) {
+      // Customer doesn't exist - create new
+      const createCustomerResult = await db.createCustomer({
+        name: customer_name,
+        email: customer_email,
+        phone: customer_phone,
+      });
+      if (!createCustomerResult.success) {
+        return createCustomerResult;
+      }
+      customer = createCustomerResult;
+      logger.info(`✅ Created new customer: ${customer.value!.email}`);
+    } else {
+      // Customer exists - update if details changed
+      const existingCustomer = customer.value;
+      const needsUpdate =
+        existingCustomer.name !== customer_name ||
+        existingCustomer.phone !== customer_phone;
+
+      if (needsUpdate) {
+        const updateCustomerResult = await db.updateCustomer(
+          existingCustomer.id,
+          {
+            name: customer_name,
+            phone: customer_phone,
           },
-        },
-        destination: {
-          address: routeResult.value.destination_address,
-          coordinates: {
-            lat: routeResult.value.destination_coords.lat,
-            lng: routeResult.value.destination_coords.lng,
+        );
+        if (!updateCustomerResult.success) {
+          logger.warn(
+            `⚠️ Failed to update customer: ${updateCustomerResult.error.message}`,
+          );
+          // Don't fail the delivery creation, just log the warning
+        } else {
+          customer = updateCustomerResult;
+          logger.info(`✅ Updated existing customer: ${customer.value!.email}`);
+        }
+      } else {
+        logger.info(`ℹ️ Using existing customer: ${customer.value.email}`);
+      }
+    }
+
+    // Step 2: Geocode addresses to get coordinates
+    logger.info(`🌍 Geocoding addresses: ${origin} → ${destination}`);
+
+    const originGeocodingResult = await geocodingService.geocodeAddress(origin);
+    if (!originGeocodingResult.success) {
+      logger.error(
+        `❌ Failed to geocode origin: ${origin}`,
+        originGeocodingResult.error,
+      );
+      return originGeocodingResult;
+    }
+
+    const destinationGeocodingResult =
+      await geocodingService.geocodeAddress(destination);
+    if (!destinationGeocodingResult.success) {
+      logger.error(
+        `❌ Failed to geocode destination: ${destination}`,
+        destinationGeocodingResult.error,
+      );
+      return destinationGeocodingResult;
+    }
+
+    logger.info(
+      `✅ Geocoded origin: ${origin} → (${originGeocodingResult.value.lat}, ${originGeocodingResult.value.lng})`,
+    );
+    logger.info(
+      `✅ Geocoded destination: ${destination} → (${destinationGeocodingResult.value.lat}, ${destinationGeocodingResult.value.lng})`,
+    );
+
+    // Step 3: Create route with geocoded coordinates
+    const routeResult = await db.createRoute({
+      origin_address: origin,
+      origin_coords: originGeocodingResult.value,
+      destination_address: destination,
+      destination_coords: destinationGeocodingResult.value,
+      distance_meters: 0, // Will be calculated by first traffic check
+      normal_duration_seconds: 0, // Will be calculated by first traffic check
+    });
+
+    if (!routeResult.success) {
+      return routeResult;
+    }
+
+    // Step 4: Create delivery
+    const deliveryResult = await db.createDelivery({
+      tracking_number,
+      customer_id: customer.value!.id,
+      route_id: routeResult.value.id,
+      scheduled_delivery: new Date(scheduled_delivery),
+      status: "pending",
+      delay_threshold_minutes: finalThreshold,
+      auto_check_traffic: auto_check_traffic ?? false,
+      enable_recurring_checks: enable_recurring_checks ?? false,
+      check_interval_minutes: check_interval_minutes ?? 30,
+      max_checks: max_checks ?? -1,
+      checks_performed: 0,
+      min_delay_change_threshold: min_delay_change_threshold ?? 15,
+      min_hours_between_notifications: min_hours_between_notifications ?? 1.0,
+      metadata: {
+        notes,
+        customer_name,
+        customer_email,
+        customer_phone,
+        notification_channels: defaultNotificationChannels,
+      },
+    });
+
+    if (!deliveryResult.success) {
+      return deliveryResult;
+    }
+
+    // Step 4: If auto_check_traffic or enable_recurring_checks is enabled, trigger workflow
+    logger.info(
+      `🔍 Checking workflow triggers - auto_check: ${auto_check_traffic}, recurring: ${enable_recurring_checks}`,
+    );
+
+    if (auto_check_traffic || enable_recurring_checks) {
+      logger.info(
+        `🚀 Auto-triggering workflow for delivery ${deliveryResult.value.id}`,
+      );
+      try {
+        // Construct base workflow input from the data we just created
+        const baseWorkflowInput = {
+          deliveryId: deliveryResult.value.id,
+          routeId: routeResult.value.id,
+          customerId: customer.value!.id,
+          customerEmail: customer.value!.email,
+          customerPhone: customer.value!.phone || undefined,
+          origin: {
+            address: routeResult.value.origin_address,
+            coordinates: {
+              lat: routeResult.value.origin_coords.lat,
+              lng: routeResult.value.origin_coords.lng,
+            },
           },
-        },
-        scheduledTime: ensureDateISO(deliveryResult.value.scheduled_delivery)!,
-        thresholdMinutes: deliveryResult.value.delay_threshold_minutes ?? 30,
-      };
-
-      const client = await getTemporalClient();
-
-      // Decide which workflow to trigger
-      if (body.enable_recurring_checks) {
-        // Trigger RecurringTrafficCheckWorkflow
-        const maxChecks = body.max_checks ?? -1; // -1 means unlimited
-        const workflowInput = {
-          ...baseWorkflowInput,
-          checkIntervalMinutes: body.check_interval_minutes ?? 30,
-          maxChecks,
-          cutoffHours: env.WORKFLOW_CUTOFF_HOURS,
+          destination: {
+            address: routeResult.value.destination_address,
+            coordinates: {
+              lat: routeResult.value.destination_coords.lat,
+              lng: routeResult.value.destination_coords.lng,
+            },
+          },
+          scheduledTime: ensureDateISO(
+            deliveryResult.value.scheduled_delivery,
+          )!,
+          thresholdMinutes: deliveryResult.value.delay_threshold_minutes ?? 30,
         };
 
-        const workflowId = createWorkflowId(WorkflowType.RECURRING_CHECK, deliveryResult.value.id, false);
+        const client = await getTemporalClient();
 
-        const handle = await client.workflow.start('RecurringTrafficCheckWorkflow', {
-          taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',
-          workflowId,
-          args: [workflowInput],
-          workflowIdReusePolicy: WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY,
-        });
+        // Decide which workflow to trigger
+        if (body.enable_recurring_checks) {
+          // Trigger RecurringTrafficCheckWorkflow
+          const maxChecks = body.max_checks ?? -1; // -1 means unlimited
+          const workflowInput = {
+            ...baseWorkflowInput,
+            checkIntervalMinutes: body.check_interval_minutes ?? 30,
+            maxChecks,
+            cutoffHours: env.WORKFLOW_CUTOFF_HOURS,
+          };
 
-        logger.info(`✅ Auto-triggered recurring workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);
-        logger.info(`   Check interval: ${body.check_interval_minutes ?? 30} minutes, Max checks: ${maxChecks === -1 ? 'unlimited' : maxChecks}`);
-      } else {
-        // Trigger one-time DelayNotificationWorkflow
-        const workflowId = createWorkflowId(WorkflowType.DELAY_NOTIFICATION, deliveryResult.value.id, false);
+          const workflowId = createWorkflowId(
+            WorkflowType.RECURRING_CHECK,
+            deliveryResult.value.id,
+            false,
+          );
 
-        const handle = await client.workflow.start('DelayNotificationWorkflow', {
-          taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-queue',
-          workflowId,
-          args: [baseWorkflowInput],
-          workflowIdReusePolicy: WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY,
-        });
+          const handle = await client.workflow.start(
+            "RecurringTrafficCheckWorkflow",
+            {
+              taskQueue:
+                process.env.TEMPORAL_TASK_QUEUE || "freight-delay-queue",
+              workflowId,
+              args: [workflowInput],
+              workflowIdReusePolicy:
+                WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY,
+            },
+          );
 
-        logger.info(`✅ Auto-triggered one-time workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`);
+          logger.info(
+            `✅ Auto-triggered recurring workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`,
+          );
+          logger.info(
+            `   Check interval: ${body.check_interval_minutes ?? 30} minutes, Max checks: ${maxChecks === -1 ? "unlimited" : maxChecks}`,
+          );
+        } else {
+          // Trigger one-time DelayNotificationWorkflow
+          const workflowId = createWorkflowId(
+            WorkflowType.DELAY_NOTIFICATION,
+            deliveryResult.value.id,
+            false,
+          );
+
+          const handle = await client.workflow.start(
+            "DelayNotificationWorkflow",
+            {
+              taskQueue:
+                process.env.TEMPORAL_TASK_QUEUE || "freight-delay-queue",
+              workflowId,
+              args: [baseWorkflowInput],
+              workflowIdReusePolicy:
+                WorkflowIdReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY,
+            },
+          );
+
+          logger.info(
+            `✅ Auto-triggered one-time workflow ${handle.workflowId} for delivery ${deliveryResult.value.id}`,
+          );
+        }
+      } catch (error: unknown) {
+        logger.error("Failed to auto-trigger workflow:", error);
+        // Don't fail the delivery creation if workflow trigger fails
+        // The user can still manually trigger it later
       }
-    } catch (error: unknown) {
-      logger.error('Failed to auto-trigger workflow:', error);
-      // Don't fail the delivery creation if workflow trigger fails
-      // The user can still manually trigger it later
     }
-  }
 
-  return deliveryResult;
-}, { successStatus: 201 });
+    return deliveryResult;
+  },
+  { successStatus: 201 },
+);

@@ -3,12 +3,16 @@
  * React Query mutation hook for cancelling a workflow
  */
 
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { useNotificationStore, useErrorStore, createErrorFromException } from '@/stores';
-import { cancelWorkflow } from './cancelWorkflow';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createErrorFromException,
+  useErrorStore,
+  useNotificationStore,
+} from "@/stores";
+import { queryKeys } from "../../../queryKeys";
+import { cancelWorkflow } from "./cancelWorkflow";
 
 export function useCancelWorkflow() {
   const queryClient = useQueryClient();
@@ -16,15 +20,19 @@ export function useCancelWorkflow() {
   return useMutation({
     mutationFn: cancelWorkflow,
     onSuccess: (_, input) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.workflows.detail(input.workflowId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workflows.detail(input.workflowId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.workflows.all });
-      const message = input.force ? 'Workflow terminated successfully' : 'Workflow cancelled successfully';
+      const message = input.force
+        ? "Workflow terminated successfully"
+        : "Workflow cancelled successfully";
       useNotificationStore.getState().success(message);
     },
     onError: (err: Error) => {
-      useErrorStore.getState().addError(
-        createErrorFromException(err, 'useCancelWorkflow')
-      );
+      useErrorStore
+        .getState()
+        .addError(createErrorFromException(err, "useCancelWorkflow"));
     },
   });
 }

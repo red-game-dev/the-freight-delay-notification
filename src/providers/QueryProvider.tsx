@@ -3,13 +3,13 @@
  * Wraps the application with QueryClientProvider
  */
 
-'use client';
+"use client";
 
-import { FC, ReactNode } from 'react';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { queryClient } from '@/core/infrastructure/http/queryClient';
-import { clientEnv } from '@/infrastructure/config/ClientEnv';
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import type { FC, ReactNode } from "react";
+import { queryClient } from "@/core/infrastructure/http/queryClient";
+import { clientEnv } from "@/infrastructure/config/ClientEnv";
 
 interface QueryProviderProps {
   children: ReactNode;

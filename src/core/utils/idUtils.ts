@@ -3,7 +3,7 @@
  * Universal ID generation using nanoid
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
 /**
  * Generate a standard ID (21 characters, URL-safe)

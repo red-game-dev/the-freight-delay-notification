@@ -3,18 +3,21 @@
  * Zod schemas for customer-related operations
  */
 
-import { z } from 'zod';
-import { uuidSchema } from './common';
-import { sanitizeString } from '@/core/utils/validation';
+import { z } from "zod";
+import { sanitizeString } from "@/core/utils/validation";
+import { uuidSchema } from "./common";
 
 /**
  * Create customer input schema
  */
 export const createCustomerSchema = z.object({
-  name: z.string().min(1).max(200).trim()
-    .transform(sanitizeString),
+  name: z.string().min(1).max(200).trim().transform(sanitizeString),
   email: z.string().email().toLowerCase().trim(),
-  phone: z.string().max(50).trim().optional()
+  phone: z
+    .string()
+    .max(50)
+    .trim()
+    .optional()
     .transform((val) => val || undefined),
 });
 

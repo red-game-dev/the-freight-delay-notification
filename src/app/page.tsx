@@ -2,33 +2,40 @@
  * Home Page / Dashboard Landing
  */
 
-import Link from 'next/link';
-import { Package, Activity, Bell, Workflow, ArrowRight, BookOpen } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import {
+  Activity,
+  ArrowRight,
+  Bell,
+  BookOpen,
+  Package,
+  Workflow,
+} from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 
 const features = [
   {
-    name: 'Deliveries',
-    description: 'Monitor and manage all freight deliveries in real-time',
-    href: '/deliveries',
+    name: "Deliveries",
+    description: "Monitor and manage all freight deliveries in real-time",
+    href: "/deliveries",
     icon: Package,
   },
   {
-    name: 'Monitoring',
-    description: 'Track traffic conditions and detect potential delays',
-    href: '/monitoring',
+    name: "Monitoring",
+    description: "Track traffic conditions and detect potential delays",
+    href: "/monitoring",
     icon: Activity,
   },
   {
-    name: 'Notifications',
-    description: 'View sent notifications and delivery confirmations',
-    href: '/notifications',
+    name: "Notifications",
+    description: "View sent notifications and delivery confirmations",
+    href: "/notifications",
     icon: Bell,
   },
   {
-    name: 'Workflows',
-    description: 'Monitor Temporal workflow executions and their status',
-    href: '/workflows',
+    name: "Workflows",
+    description: "Monitor Temporal workflow executions and their status",
+    href: "/workflows",
     icon: Workflow,
   },
 ];
@@ -42,8 +49,8 @@ export default function HomePage() {
             Freight Delay Notification System
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-            Proactively notify customers about delivery delays using real-time traffic data,
-            AI-generated messages, and automated workflows.
+            Proactively notify customers about delivery delays using real-time
+            traffic data, AI-generated messages, and automated workflows.
           </p>
           <Link href="/how-to-use">
             <Button
@@ -72,7 +79,9 @@ export default function HomePage() {
                   <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
                 <h3 className="font-semibold mb-2">{feature.name}</h3>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {feature.description}
+                </p>
               </Link>
             );
           })}

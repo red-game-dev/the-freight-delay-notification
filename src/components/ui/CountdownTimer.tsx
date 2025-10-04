@@ -3,11 +3,11 @@
  * Live countdown timer with color variants based on time remaining
  */
 
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Clock } from 'lucide-react';
-import { cn } from '@/core/base/utils/cn';
+import { Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { cn } from "@/core/base/utils/cn";
 
 interface CountdownTimerProps {
   /** Target timestamp to count down to */
@@ -17,7 +17,7 @@ interface CountdownTimerProps {
   /** Prefix text (e.g., "Next check") */
   prefix?: string;
   /** Size variant */
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: "xs" | "sm" | "md" | "lg";
   /** Custom className */
   className?: string;
   /** Callback when countdown reaches zero */
@@ -41,28 +41,28 @@ function getColorVariant(totalSeconds: number): {
   // Critical: < 5 minutes
   if (totalSeconds < 300) {
     return {
-      text: 'text-red-600 dark:text-red-400',
-      background: 'bg-red-50 dark:bg-red-900/10',
+      text: "text-red-600 dark:text-red-400",
+      background: "bg-red-50 dark:bg-red-900/10",
     };
   }
   // Warning: < 15 minutes
   if (totalSeconds < 900) {
     return {
-      text: 'text-orange-600 dark:text-orange-400',
-      background: 'bg-orange-50 dark:bg-orange-900/10',
+      text: "text-orange-600 dark:text-orange-400",
+      background: "bg-orange-50 dark:bg-orange-900/10",
     };
   }
   // Caution: < 30 minutes
   if (totalSeconds < 1800) {
     return {
-      text: 'text-yellow-600 dark:text-yellow-400',
-      background: 'bg-yellow-50 dark:bg-yellow-900/10',
+      text: "text-yellow-600 dark:text-yellow-400",
+      background: "bg-yellow-50 dark:bg-yellow-900/10",
     };
   }
   // Normal: >= 30 minutes
   return {
-    text: 'text-blue-600 dark:text-blue-400',
-    background: 'bg-blue-50 dark:bg-blue-900/10',
+    text: "text-blue-600 dark:text-blue-400",
+    background: "bg-blue-50 dark:bg-blue-900/10",
   };
 }
 
@@ -90,7 +90,7 @@ function calculateTimeRemaining(targetTime: number): TimeRemaining {
  */
 function formatTimeRemaining(time: TimeRemaining): string {
   if (time.total <= 0) {
-    return 'Running now...';
+    return "Running now...";
   }
 
   if (time.hours > 0) {
@@ -102,29 +102,29 @@ function formatTimeRemaining(time: TimeRemaining): string {
 }
 
 const sizeClasses = {
-  xs: 'text-xs',
-  sm: 'text-sm',
-  md: 'text-base',
-  lg: 'text-lg',
+  xs: "text-xs",
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-lg",
 };
 
 const iconSizeClasses = {
-  xs: 'h-3 w-3',
-  sm: 'h-3.5 w-3.5',
-  md: 'h-4 w-4',
-  lg: 'h-5 w-5',
+  xs: "h-3 w-3",
+  sm: "h-3.5 w-3.5",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
 };
 
 export function CountdownTimer({
   targetTime,
   showIcon = true,
-  prefix = 'Next check',
-  size = 'sm',
+  prefix = "Next check",
+  size = "sm",
   className,
   onComplete,
 }: CountdownTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(
-    calculateTimeRemaining(targetTime)
+    calculateTimeRemaining(targetTime),
   );
 
   useEffect(() => {
@@ -151,14 +151,16 @@ export function CountdownTimer({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-medium transition-colors',
+        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-medium transition-colors",
         sizeClasses[size],
         colorVariant.text,
         colorVariant.background,
-        className
+        className,
       )}
     >
-      {showIcon && <Clock className={cn(iconSizeClasses[size], 'flex-shrink-0')} />}
+      {showIcon && (
+        <Clock className={cn(iconSizeClasses[size], "flex-shrink-0")} />
+      )}
       <span className="whitespace-nowrap">
         {prefix && `${prefix} `}
         {formattedTime}
@@ -173,12 +175,12 @@ export function CountdownTimer({
 export function CountdownTimerInline({
   targetTime,
   showIcon = true,
-  prefix = 'Next check',
-  size = 'sm',
+  prefix = "Next check",
+  size = "sm",
   className,
 }: CountdownTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(
-    calculateTimeRemaining(targetTime)
+    calculateTimeRemaining(targetTime),
   );
 
   useEffect(() => {
@@ -197,13 +199,15 @@ export function CountdownTimerInline({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 font-medium',
+        "inline-flex items-center gap-1 font-medium",
         sizeClasses[size],
         colorVariant.text,
-        className
+        className,
       )}
     >
-      {showIcon && <Clock className={cn(iconSizeClasses[size], 'flex-shrink-0')} />}
+      {showIcon && (
+        <Clock className={cn(iconSizeClasses[size], "flex-shrink-0")} />
+      )}
       <span className="whitespace-nowrap">
         {prefix && `${prefix} `}
         {formattedTime}

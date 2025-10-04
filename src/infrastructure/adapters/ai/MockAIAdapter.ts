@@ -3,25 +3,33 @@
  * Always-available fallback for testing without real AI service
  */
 
-import { logger } from '@/core/base/utils/Logger';
-import { Result, success } from '../../../core/base/utils/Result';
-import { AIAdapter, MessageGenerationInput, GeneratedMessage } from './AIAdapter.interface';
+import { logger } from "@/core/base/utils/Logger";
+import { type Result, success } from "../../../core/base/utils/Result";
+import type {
+  AIAdapter,
+  GeneratedMessage,
+  MessageGenerationInput,
+} from "./AIAdapter.interface";
 
 export class MockAIAdapter implements AIAdapter {
-  public readonly providerName = 'Mock AI';
+  public readonly providerName = "Mock AI";
   public readonly priority = 999; // Lowest priority - only used as last resort
 
   isAvailable(): boolean {
     return true; // Always available for testing
   }
 
-  async generateMessage(input: MessageGenerationInput): Promise<Result<GeneratedMessage>> {
-    logger.info(`🤖 [Mock AI] Generating mock message for delivery ${input.deliveryId}`);
+  async generateMessage(
+    input: MessageGenerationInput,
+  ): Promise<Result<GeneratedMessage>> {
+    logger.info(
+      `🤖 [Mock AI] Generating mock message for delivery ${input.deliveryId}`,
+    );
     logger.info(`   Delay: ${input.delayMinutes} minutes`);
     logger.info(`   Traffic: ${input.trafficCondition}`);
 
     // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     const message = this.createMockMessage(input);
     const subject = this.generateSubject(input);
@@ -32,7 +40,7 @@ export class MockAIAdapter implements AIAdapter {
     return success({
       message,
       subject,
-      model: 'mock-template',
+      model: "mock-template",
       tokens: message.length, // Mock token count
       generatedAt: new Date(),
     });
@@ -40,7 +48,10 @@ export class MockAIAdapter implements AIAdapter {
 
   private createMockMessage(input: MessageGenerationInput): string {
     const deliveryRef = input.trackingNumber || input.deliveryId;
-    const newETA = new Date(input.estimatedArrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newETA = new Date(input.estimatedArrival).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
     // SMS-friendly short message (under 160 characters) with route
     // Note: Using plain string template instead of structured object (e.g., JSON) since the message

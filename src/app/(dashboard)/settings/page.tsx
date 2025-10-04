@@ -3,38 +3,58 @@
  * Manage thresholds (DB-based) and user preferences (localStorage)
  */
 
-'use client';
+"use client";
 
-import { useEffect, useState, FormEvent } from 'react';
-import { useForm } from 'react-hook-form';
-import { Plus, Edit, Trash2, CheckCircle, User, Bell, Star } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Modal } from '@/components/ui/Modal';
-import { FormField, FormRow, FormSection } from '@/components/ui/FormField';
-import { Alert } from '@/components/ui/Alert';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { SkeletonCard } from '@/components/ui/Skeleton';
-import { InfoBox } from '@/components/ui/InfoBox';
 import {
-  useThresholds,
+  Bell,
+  CheckCircle,
+  Edit,
+  Plus,
+  Star,
+  Trash2,
+  User,
+} from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { FormField, FormRow, FormSection } from "@/components/ui/FormField";
+import { InfoBox } from "@/components/ui/InfoBox";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+import {
+  type UpdateCustomerInput,
+  useCreateCustomer,
+  useCustomer,
+  useUpdateCustomer,
+} from "@/core/infrastructure/http/services/customers";
+import type {
+  CreateThresholdInput,
+  Threshold,
+} from "@/core/infrastructure/http/services/thresholds";
+import {
   useCreateThreshold,
-  useUpdateThreshold,
   useDeleteThreshold,
-} from '@/core/infrastructure/http/services/thresholds';
-import type { Threshold, CreateThresholdInput } from '@/core/infrastructure/http/services/thresholds';
-import { useFormStore, useFormDefaults } from '@/stores';
-import { useUserSettingsStore } from '@/stores/userSettingsStore';
-import { useCustomer, useUpdateCustomer, useCreateCustomer, type UpdateCustomerInput } from '@/core/infrastructure/http/services/customers';
+  useThresholds,
+  useUpdateThreshold,
+} from "@/core/infrastructure/http/services/thresholds";
+import { useFormDefaults, useFormStore } from "@/stores";
+import { useUserSettingsStore } from "@/stores/userSettingsStore";
 
 export default function SettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingThreshold, setEditingThreshold] = useState<Threshold | null>(null);
-  const [deletingThreshold, setDeletingThreshold] = useState<Threshold | null>(null);
+  const [editingThreshold, setEditingThreshold] = useState<Threshold | null>(
+    null,
+  );
+  const [deletingThreshold, setDeletingThreshold] = useState<Threshold | null>(
+    null,
+  );
 
   // DB thresholds
   const { data: thresholds, isLoading } = useThresholds();
@@ -43,7 +63,9 @@ export default function SettingsPage() {
   const deleteThreshold = useDeleteThreshold();
 
   // User settings (localStorage)
-  const customerId = useUserSettingsStore((state) => state.settings?.customerId);
+  const customerId = useUserSettingsStore(
+    (state) => state.settings?.customerId,
+  );
   const setCustomerId = useUserSettingsStore((state) => state.setCustomerId);
 
   // Fetch customer from DB using React Query
@@ -52,12 +74,14 @@ export default function SettingsPage() {
   const createCustomerMutation = useCreateCustomer();
 
   // Form store helpers
-  const customerToSettingsFormValues = useFormStore((state) => state.customerToSettingsFormValues);
-  const customerDefaults = useFormDefaults('customer-settings');
+  const customerToSettingsFormValues = useFormStore(
+    (state) => state.customerToSettingsFormValues,
+  );
+  const customerDefaults = useFormDefaults("customer-settings");
 
   // Customer form using react-hook-form
   const customerForm = useForm<UpdateCustomerInput>({
-    defaultValues: customerDefaults || { name: '', email: '', phone: '' },
+    defaultValues: customerDefaults || { name: "", email: "", phone: "" },
   });
 
   // Update form when customer data loads from DB
@@ -90,7 +114,7 @@ export default function SettingsPage() {
       setIsDeleteModalOpen(false);
       setDeletingThreshold(null);
     } catch (error) {
-      console.error('Failed to delete threshold:', error);
+      console.error("Failed to delete threshold:", error);
     }
   };
 
@@ -109,7 +133,7 @@ export default function SettingsPage() {
     // The backend should handle unsetting the previous default
     try {
       // First, find the current default and unset it
-      const currentDefault = thresholds?.find(t => t.is_default);
+      const currentDefault = thresholds?.find((t) => t.is_default);
 
       if (currentDefault && currentDefault.id !== threshold.id) {
         // Unset the old default first
@@ -125,7 +149,7 @@ export default function SettingsPage() {
         data: { is_default: true },
       });
     } catch (error) {
-      console.error('Failed to set default threshold:', error);
+      console.error("Failed to set default threshold:", error);
     }
   };
 
@@ -141,12 +165,14 @@ export default function SettingsPage() {
         setCustomerId(customer.id);
       } else {
         // Create new customer (or get existing if email already exists)
-        const savedCustomer = await createCustomerMutation.mutateAsync(data as any);
+        const savedCustomer = await createCustomerMutation.mutateAsync(
+          data as any,
+        );
         // Store customer ID in localStorage
         setCustomerId(savedCustomer.id);
       }
     } catch (error) {
-      console.error('Failed to save customer:', error);
+      console.error("Failed to save customer:", error);
     }
   };
 
@@ -164,7 +190,10 @@ export default function SettingsPage() {
 
       {/* Customer Defaults */}
       <Card>
-        <form onSubmit={customerForm.handleSubmit(onSaveCustomer)} className="p-6">
+        <form
+          onSubmit={customerForm.handleSubmit(onSaveCustomer)}
+          className="p-6"
+        >
           <FormSection
             title="Customer Defaults"
             description="Pre-fill customer information when creating new deliveries (stored in browser)"
@@ -172,7 +201,7 @@ export default function SettingsPage() {
             <FormRow columns={1}>
               <FormField>
                 <Input
-                  {...customerForm.register('name')}
+                  {...customerForm.register("name")}
                   label="Default Customer Name"
                   placeholder="John Doe"
                   fullWidth
@@ -183,7 +212,7 @@ export default function SettingsPage() {
             <FormRow columns={2}>
               <FormField>
                 <Input
-                  {...customerForm.register('email')}
+                  {...customerForm.register("email")}
                   type="email"
                   label="Default Email"
                   placeholder="john@example.com"
@@ -193,7 +222,7 @@ export default function SettingsPage() {
 
               <FormField>
                 <Input
-                  {...customerForm.register('phone')}
+                  {...customerForm.register("phone")}
                   type="tel"
                   label="Default Phone"
                   placeholder="+1 (555) 123-4567"
@@ -203,9 +232,7 @@ export default function SettingsPage() {
             </FormRow>
 
             <div className="flex justify-end pt-4">
-              <Button type="submit">
-                Save Customer Defaults
-              </Button>
+              <Button type="submit">Save Customer Defaults</Button>
             </div>
           </FormSection>
         </form>
@@ -220,7 +247,8 @@ export default function SettingsPage() {
               Delay Thresholds
             </h2>
             <p className="text-sm text-muted-foreground">
-              Manage notification thresholds. One threshold must be marked as default.
+              Manage notification thresholds. One threshold must be marked as
+              default.
             </p>
           </div>
         </div>
@@ -239,7 +267,9 @@ export default function SettingsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{threshold.name}</h3>
+                        <h3 className="text-lg font-semibold">
+                          {threshold.name}
+                        </h3>
                         {threshold.is_system && (
                           <Badge variant="info" className="text-xs">
                             System
@@ -256,14 +286,18 @@ export default function SettingsPage() {
                         <div>
                           <span className="font-medium text-foreground">
                             {threshold.delay_minutes} minutes
-                          </span>{' '}
+                          </span>{" "}
                           - Notify if delivery is delayed by this amount
                         </div>
 
                         <div className="flex items-center gap-2">
                           <span>Channels:</span>
                           {threshold.notification_channels.map((channel) => (
-                            <Badge key={channel} variant="default" className="text-xs">
+                            <Badge
+                              key={channel}
+                              variant="default"
+                              className="text-xs"
+                            >
                               {channel.toUpperCase()}
                             </Badge>
                           ))}
@@ -289,7 +323,11 @@ export default function SettingsPage() {
                         onClick={() => handleEdit(threshold)}
                         disabled={threshold.is_system}
                         leftIcon={<Edit className="h-4 w-4" />}
-                        title={threshold.is_system ? "Cannot edit system threshold" : "Edit threshold"}
+                        title={
+                          threshold.is_system
+                            ? "Cannot edit system threshold"
+                            : "Edit threshold"
+                        }
                       >
                         Edit
                       </Button>
@@ -303,8 +341,8 @@ export default function SettingsPage() {
                           threshold.is_system
                             ? "Cannot delete system threshold"
                             : threshold.is_default
-                            ? "Cannot delete default threshold"
-                            : "Delete threshold"
+                              ? "Cannot delete default threshold"
+                              : "Delete threshold"
                         }
                       >
                         Delete
@@ -318,8 +356,13 @@ export default function SettingsPage() {
         ) : (
           <Card>
             <div className="p-12 text-center">
-              <p className="text-muted-foreground mb-4">No thresholds configured yet</p>
-              <Button onClick={handleCreate} leftIcon={<Plus className="h-4 w-4" />}>
+              <p className="text-muted-foreground mb-4">
+                No thresholds configured yet
+              </p>
+              <Button
+                onClick={handleCreate}
+                leftIcon={<Plus className="h-4 w-4" />}
+              >
                 Create First Threshold
               </Button>
             </div>
@@ -342,13 +385,15 @@ export default function SettingsPage() {
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-medium mb-2">{deletingThreshold.name}</h4>
               <p className="text-sm text-muted-foreground">
-                {deletingThreshold.delay_minutes} minutes - {deletingThreshold.notification_channels.join(', ')}
+                {deletingThreshold.delay_minutes} minutes -{" "}
+                {deletingThreshold.notification_channels.join(", ")}
               </p>
             </div>
           )}
 
           <p className="text-sm text-muted-foreground">
-            This action cannot be undone. Deliveries using this threshold will need to be updated.
+            This action cannot be undone. Deliveries using this threshold will
+            need to be updated.
           </p>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t">
@@ -384,21 +429,32 @@ interface ThresholdModalProps {
   onClose: () => void;
   threshold: Threshold | null;
   onCreate: (data: CreateThresholdInput) => Promise<Threshold>;
-  onUpdate: (data: { id: string; data: Partial<CreateThresholdInput> }) => Promise<Threshold>;
+  onUpdate: (data: {
+    id: string;
+    data: Partial<CreateThresholdInput>;
+  }) => Promise<Threshold>;
 }
 
-function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: ThresholdModalProps) {
+function ThresholdModal({
+  isOpen,
+  onClose,
+  threshold,
+  onCreate,
+  onUpdate,
+}: ThresholdModalProps) {
   const [formData, setFormData] = useState<CreateThresholdInput>({
-    name: '',
+    name: "",
     delay_minutes: 30,
-    notification_channels: ['email', 'sms'],
+    notification_channels: ["email", "sms"],
     is_default: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use form store for transformations and defaults with type inference
-  const thresholdToFormValues = useFormStore((state) => state.thresholdToFormValues);
-  const defaults = useFormDefaults('threshold-create');
+  const thresholdToFormValues = useFormStore(
+    (state) => state.thresholdToFormValues,
+  );
+  const defaults = useFormDefaults("threshold-create");
 
   // Pre-populate form when editing or reset to defaults when creating
   useEffect(() => {
@@ -406,12 +462,14 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
       setFormData(thresholdToFormValues(threshold));
     } else {
       const fallbackDefaults: CreateThresholdInput = {
-        name: '',
+        name: "",
         delay_minutes: 30,
-        notification_channels: ['email', 'sms'],
+        notification_channels: ["email", "sms"],
         is_default: false,
       };
-      setFormData(defaults ? { ...fallbackDefaults, ...defaults } : fallbackDefaults);
+      setFormData(
+        defaults ? { ...fallbackDefaults, ...defaults } : fallbackDefaults,
+      );
     }
   }, [threshold, thresholdToFormValues, defaults]);
 
@@ -428,19 +486,22 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
 
       onClose();
     } catch (error) {
-      console.error('Failed to save threshold:', error);
+      console.error("Failed to save threshold:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const toggleChannel = (channel: 'email' | 'sms') => {
+  const toggleChannel = (channel: "email" | "sms") => {
     setFormData((prev) => {
       const channels = prev.notification_channels;
       if (channels.includes(channel)) {
         // Don't allow removing all channels
         if (channels.length === 1) return prev;
-        return { ...prev, notification_channels: channels.filter((c) => c !== channel) };
+        return {
+          ...prev,
+          notification_channels: channels.filter((c) => c !== channel),
+        };
       } else {
         return { ...prev, notification_channels: [...channels, channel] };
       }
@@ -451,7 +512,7 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={threshold ? 'Edit Threshold' : 'New Threshold'}
+      title={threshold ? "Edit Threshold" : "New Threshold"}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <FormField>
@@ -459,7 +520,9 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
             label="Threshold Name"
             placeholder="Standard Delay Threshold"
             value={formData.name}
-            onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, name: e.target.value }))
+            }
             required
             fullWidth
           />
@@ -471,7 +534,12 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
             label="Delay Threshold (minutes)"
             placeholder="30"
             value={formData.delay_minutes.toString()}
-            onChange={(e) => setFormData((prev) => ({ ...prev, delay_minutes: parseInt(e.target.value) || 0 }))}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                delay_minutes: parseInt(e.target.value) || 0,
+              }))
+            }
             helperText="Notify customers if delay exceeds this amount"
             required
             fullWidth
@@ -480,17 +548,19 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
         </FormField>
 
         <FormField>
-          <label className="block text-sm font-medium mb-2">Notification Channels</label>
+          <label className="block text-sm font-medium mb-2">
+            Notification Channels
+          </label>
           <div className="flex gap-3">
             <Checkbox
               label="Email"
-              checked={formData.notification_channels.includes('email')}
-              onChange={() => toggleChannel('email')}
+              checked={formData.notification_channels.includes("email")}
+              onChange={() => toggleChannel("email")}
             />
             <Checkbox
               label="SMS"
-              checked={formData.notification_channels.includes('sms')}
-              onChange={() => toggleChannel('sms')}
+              checked={formData.notification_channels.includes("sms")}
+              onChange={() => toggleChannel("sms")}
             />
           </div>
         </FormField>
@@ -499,7 +569,9 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
           <Checkbox
             label="Set as system default threshold"
             checked={formData.is_default}
-            onChange={(e) => setFormData((prev) => ({ ...prev, is_default: e.target.checked }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, is_default: e.target.checked }))
+            }
           />
         </FormField>
 
@@ -507,8 +579,12 @@ function ThresholdModal({ isOpen, onClose, threshold, onCreate, onUpdate }: Thre
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" loading={isSubmitting} leftIcon={<CheckCircle className="h-4 w-4" />}>
-            {threshold ? 'Save Changes' : 'Create Threshold'}
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            leftIcon={<CheckCircle className="h-4 w-4" />}
+          >
+            {threshold ? "Save Changes" : "Create Threshold"}
           </Button>
         </div>
       </form>

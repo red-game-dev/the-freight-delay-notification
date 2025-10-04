@@ -3,24 +3,33 @@
  * Track sent notifications and delivery confirmations
  */
 
-'use client';
+"use client";
 
-import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
-import { StatCard, StatGrid } from '@/components/ui/StatCard';
-import { ViewModeSwitcher } from '@/components/ui/ViewModeSwitcher';
-import { ViewModeRenderer } from '@/components/ui/ViewModeRenderer';
-import { getNotificationStatusVariant } from '@/core/utils/statusUtils';
-import { List, ListItem } from '@/components/ui/List';
-import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { Alert } from '@/components/ui/Alert';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { Mail, MessageSquare, CheckCircle2, XCircle, Bell, Clock, RefreshCw, ExternalLink } from 'lucide-react';
-import { useNotifications } from '@/core/infrastructure/http/services/notifications';
-import { useURLPagination } from '@/core/hooks/useURLSearchParams';
-import Link from 'next/link';
+import {
+  Bell,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Mail,
+  MessageSquare,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
+import Link from "next/link";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { List, ListItem } from "@/components/ui/List";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { SkeletonList, SkeletonStats } from "@/components/ui/Skeleton";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { ViewModeRenderer } from "@/components/ui/ViewModeRenderer";
+import { ViewModeSwitcher } from "@/components/ui/ViewModeSwitcher";
+import { useURLPagination } from "@/core/hooks/useURLSearchParams";
+import { useNotifications } from "@/core/infrastructure/http/services/notifications";
+import { getNotificationStatusVariant } from "@/core/utils/statusUtils";
 
 export default function NotificationsPage() {
   // URL-based state for pagination
@@ -28,8 +37,8 @@ export default function NotificationsPage() {
 
   const { data: response, isLoading: notificationsLoading } = useNotifications({
     page: page.toString(),
-    limit: '10',
-    includeStats: 'true'
+    limit: "10",
+    includeStats: "true",
   });
 
   const notifications = response?.data || [];
@@ -78,12 +87,16 @@ export default function NotificationsPage() {
         pageKey="notifications"
         items={notifications}
         isLoading={notificationsLoading}
-        pagination={pagination ? {
-          page: pagination.page,
-          totalPages: pagination.totalPages,
-          total: pagination.total,
-          limit: 10,
-        } : undefined}
+        pagination={
+          pagination
+            ? {
+                page: pagination.page,
+                totalPages: pagination.totalPages,
+                total: pagination.total,
+                limit: 10,
+              }
+            : undefined
+        }
         onPageChange={setPage}
         loadingComponent={<SkeletonList items={5} />}
         emptyComponent={
@@ -93,13 +106,12 @@ export default function NotificationsPage() {
             description="No notifications have been sent yet. Notifications are sent automatically when deliveries experience delays."
           />
         }
-        listHeader={
-          <SectionHeader title="Recent Notifications" size="lg" />
-        }
+        listHeader={<SectionHeader title="Recent Notifications" size="lg" />}
         renderList={(notifications) => (
           <List>
             {notifications.map((notification) => {
-              const hasError = notification.status === 'failed' && notification.error_message;
+              const hasError =
+                notification.status === "failed" && notification.error_message;
               const retryCount = notification.retry_count || 0;
               const attemptedAt = notification.attempted_at;
               const trackingNumber = notification.tracking_number;
@@ -108,7 +120,7 @@ export default function NotificationsPage() {
                 <ListItem key={notification.id}>
                   <div className="flex items-start gap-4 w-full">
                     <div className="flex-shrink-0">
-                      {notification.channel === 'email' ? (
+                      {notification.channel === "email" ? (
                         <Mail className="h-5 w-5 text-muted-foreground" />
                       ) : (
                         <MessageSquare className="h-5 w-5 text-muted-foreground" />
@@ -131,7 +143,9 @@ export default function NotificationsPage() {
                           </span>
                         )}
                         <Badge
-                          variant={getNotificationStatusVariant(notification.status)}
+                          variant={getNotificationStatusVariant(
+                            notification.status,
+                          )}
                         >
                           {notification.status}
                         </Badge>
@@ -141,7 +155,10 @@ export default function NotificationsPage() {
                         {retryCount > 0 && (
                           <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
                             <RefreshCw className="h-3 w-3" />
-                            <span>{retryCount} {retryCount === 1 ? 'retry' : 'retries'}</span>
+                            <span>
+                              {retryCount}{" "}
+                              {retryCount === 1 ? "retry" : "retries"}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -152,28 +169,43 @@ export default function NotificationsPage() {
                       </p>
 
                       {/* Message preview */}
-                      <p className="text-sm mb-3 line-clamp-2">{notification.message}</p>
+                      <p className="text-sm mb-3 line-clamp-2">
+                        {notification.message}
+                      </p>
 
                       {/* Timestamps */}
                       <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground mb-2">
                         {attemptedAt && (
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            <span>Attempted: {new Date(attemptedAt).toLocaleString()}</span>
+                            <span>
+                              Attempted:{" "}
+                              {new Date(attemptedAt).toLocaleString()}
+                            </span>
                           </div>
                         )}
                         {notification.sent_at && (
                           <div className="flex items-center gap-1">
                             <CheckCircle2 className="h-3 w-3" />
-                            <span>Sent: {new Date(notification.sent_at).toLocaleString()}</span>
+                            <span>
+                              Sent:{" "}
+                              {new Date(notification.sent_at).toLocaleString()}
+                            </span>
                           </div>
                         )}
-                        {!attemptedAt && !notification.sent_at && notification.created_at && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>Created: {new Date(notification.created_at).toLocaleString()}</span>
-                          </div>
-                        )}
+                        {!attemptedAt &&
+                          !notification.sent_at &&
+                          notification.created_at && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                Created:{" "}
+                                {new Date(
+                                  notification.created_at,
+                                ).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
                       </div>
 
                       {/* Go to Delivery link */}
@@ -196,13 +228,19 @@ export default function NotificationsPage() {
                             <div className="space-y-2">
                               {notification.error_message && (
                                 <div>
-                                  <p className="font-medium text-sm mb-1">Error Message:</p>
-                                  <p className="text-sm opacity-90">{notification.error_message}</p>
+                                  <p className="font-medium text-sm mb-1">
+                                    Error Message:
+                                  </p>
+                                  <p className="text-sm opacity-90">
+                                    {notification.error_message}
+                                  </p>
                                 </div>
                               )}
                               {notification.error_message && (
                                 <div>
-                                  <p className="font-medium text-sm mb-1">Technical Details:</p>
+                                  <p className="font-medium text-sm mb-1">
+                                    Technical Details:
+                                  </p>
                                   <pre className="text-xs opacity-90 overflow-auto p-2 bg-black/10 dark:bg-white/10 rounded">
                                     {notification.error_message}
                                   </pre>
@@ -211,7 +249,11 @@ export default function NotificationsPage() {
                             </div>
                           }
                         >
-                          The notification could not be delivered. {retryCount > 0 ? `Attempted ${retryCount + 1} time(s).` : ''} Check the details below for more information.
+                          The notification could not be delivered.{" "}
+                          {retryCount > 0
+                            ? `Attempted ${retryCount + 1} time(s).`
+                            : ""}{" "}
+                          Check the details below for more information.
                         </Alert>
                       )}
                     </div>
@@ -224,34 +266,49 @@ export default function NotificationsPage() {
         renderGrid={(notifications) => (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {notifications.map((notification) => {
-              const Icon = notification.channel === 'email' ? Mail : MessageSquare;
+              const Icon =
+                notification.channel === "email" ? Mail : MessageSquare;
 
               return (
-                <Link key={notification.id} href={`/deliveries/${notification.delivery_id}`}>
+                <Link
+                  key={notification.id}
+                  href={`/deliveries/${notification.delivery_id}`}
+                >
                   <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer h-full">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Icon className="h-5 w-5 text-muted-foreground" />
                         <span className="font-semibold text-sm truncate">
-                          {notification.tracking_number || notification.delivery_id.substring(0, 8)}
+                          {notification.tracking_number ||
+                            notification.delivery_id.substring(0, 8)}
                         </span>
                       </div>
-                      <Badge variant={getNotificationStatusVariant(notification.status)} className="text-xs">
+                      <Badge
+                        variant={getNotificationStatusVariant(
+                          notification.status,
+                        )}
+                        className="text-xs"
+                      >
                         {notification.status}
                       </Badge>
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">To: {notification.recipient}</p>
-                      <p className="text-sm line-clamp-2">{notification.message}</p>
+                      <p className="text-xs text-muted-foreground">
+                        To: {notification.recipient}
+                      </p>
+                      <p className="text-sm line-clamp-2">
+                        {notification.message}
+                      </p>
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
                         <Clock className="h-3 w-3" />
                         <span>
                           {notification.sent_at
                             ? new Date(notification.sent_at).toLocaleString()
-                            : new Date(notification.created_at).toLocaleString()
-                          }
+                            : new Date(
+                                notification.created_at,
+                              ).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -264,7 +321,8 @@ export default function NotificationsPage() {
         renderCompact={(notifications) => (
           <div className="divide-y">
             {notifications.map((notification) => {
-              const Icon = notification.channel === 'email' ? Mail : MessageSquare;
+              const Icon =
+                notification.channel === "email" ? Mail : MessageSquare;
 
               return (
                 <Link
@@ -278,9 +336,15 @@ export default function NotificationsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="font-medium text-sm truncate">
-                            {notification.tracking_number || notification.delivery_id.substring(0, 12)}
+                            {notification.tracking_number ||
+                              notification.delivery_id.substring(0, 12)}
                           </span>
-                          <Badge variant={getNotificationStatusVariant(notification.status)} className="text-xs flex-shrink-0">
+                          <Badge
+                            variant={getNotificationStatusVariant(
+                              notification.status,
+                            )}
+                            className="text-xs flex-shrink-0"
+                          >
                             {notification.status}
                           </Badge>
                           <span className="text-xs uppercase text-muted-foreground flex-shrink-0">
@@ -297,8 +361,9 @@ export default function NotificationsPage() {
                         <Clock className="h-3 w-3" />
                         {notification.sent_at
                           ? new Date(notification.sent_at).toLocaleDateString()
-                          : new Date(notification.created_at).toLocaleDateString()
-                        }
+                          : new Date(
+                              notification.created_at,
+                            ).toLocaleDateString()}
                       </div>
                     </div>
                   </div>

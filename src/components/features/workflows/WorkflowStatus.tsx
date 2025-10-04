@@ -3,13 +3,20 @@
  * Shows aggregated statistics about workflow executions
  */
 
-'use client';
+"use client";
 
-import * as React from 'react';
-import { PlayCircle, CheckCircle2, XCircle, Clock, AlertCircle, StopCircle } from 'lucide-react';
-import { StatCard, StatGrid } from '@/components/ui/StatCard';
-import { SkeletonStats } from '@/components/ui/Skeleton';
-import { useWorkflowStats } from '@/core/infrastructure/http/services/workflows';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  PlayCircle,
+  StopCircle,
+  XCircle,
+} from "lucide-react";
+import * as React from "react";
+import { SkeletonStats } from "@/components/ui/Skeleton";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { useWorkflowStats } from "@/core/infrastructure/http/services/workflows";
 
 export function WorkflowStatus() {
   const { data: stats, isLoading } = useWorkflowStats();

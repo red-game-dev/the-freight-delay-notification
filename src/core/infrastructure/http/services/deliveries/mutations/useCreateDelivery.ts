@@ -3,13 +3,17 @@
  * React Query mutation hook for creating deliveries
  */
 
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { createDelivery } from './createDelivery';
-import { useNotificationStore, useErrorStore, createErrorFromException } from '@/stores';
-import type { CreateDeliveryInput } from '../types';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createErrorFromException,
+  useErrorStore,
+  useNotificationStore,
+} from "@/stores";
+import { queryKeys } from "../../../queryKeys";
+import type { CreateDeliveryInput } from "../types";
+import { createDelivery } from "./createDelivery";
 
 export function useCreateDelivery() {
   const queryClient = useQueryClient();
@@ -18,12 +22,12 @@ export function useCreateDelivery() {
     mutationFn: (data: CreateDeliveryInput) => createDelivery(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.deliveries.all });
-      useNotificationStore.getState().success('Delivery created successfully');
+      useNotificationStore.getState().success("Delivery created successfully");
     },
     onError: (err: Error) => {
-      useErrorStore.getState().addError(
-        createErrorFromException(err, 'useCreateDelivery')
-      );
+      useErrorStore
+        .getState()
+        .addError(createErrorFromException(err, "useCreateDelivery"));
     },
   });
 }

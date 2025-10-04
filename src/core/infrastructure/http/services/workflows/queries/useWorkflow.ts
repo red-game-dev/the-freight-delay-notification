@@ -3,11 +3,11 @@
  * React Query hook for fetching a single workflow
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { getWorkflow } from './getWorkflow';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { getWorkflow } from "./getWorkflow";
 
 export function useWorkflow(id: string) {
   return useQuery({

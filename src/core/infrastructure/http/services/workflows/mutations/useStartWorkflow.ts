@@ -3,12 +3,16 @@
  * React Query mutation hook for starting a workflow
  */
 
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { useNotificationStore, useErrorStore, createErrorFromException } from '@/stores';
-import { startWorkflow } from './startWorkflow';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createErrorFromException,
+  useErrorStore,
+  useNotificationStore,
+} from "@/stores";
+import { queryKeys } from "../../../queryKeys";
+import { startWorkflow } from "./startWorkflow";
 
 export function useStartWorkflow() {
   const queryClient = useQueryClient();
@@ -17,12 +21,12 @@ export function useStartWorkflow() {
     mutationFn: startWorkflow,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workflows.all });
-      useNotificationStore.getState().success('Workflow started successfully');
+      useNotificationStore.getState().success("Workflow started successfully");
     },
     onError: (err: Error) => {
-      useErrorStore.getState().addError(
-        createErrorFromException(err, 'useStartWorkflow')
-      );
+      useErrorStore
+        .getState()
+        .addError(createErrorFromException(err, "useStartWorkflow"));
     },
   });
 }

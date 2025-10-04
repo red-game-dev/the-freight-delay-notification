@@ -10,14 +10,14 @@
 export function buildGoogleMapsDirectionsUrl(
   origin: string,
   destination: string,
-  travelMode: 'driving' | 'walking' | 'bicycling' | 'transit' = 'driving'
+  travelMode: "driving" | "walking" | "bicycling" | "transit" = "driving",
 ): string | null {
   if (!origin || !destination) {
     return null;
   }
 
   const params = new URLSearchParams({
-    api: '1',
+    api: "1",
     origin: origin,
     destination: destination,
     travelmode: travelMode,
@@ -35,7 +35,7 @@ export function buildGoogleMapsSearchUrl(address: string): string | null {
   }
 
   const params = new URLSearchParams({
-    api: '1',
+    api: "1",
     query: address,
   });
 
@@ -47,7 +47,7 @@ export function buildGoogleMapsSearchUrl(address: string): string | null {
  */
 export function buildGoogleMapsPlaceUrl(lat: number, lng: number): string {
   const params = new URLSearchParams({
-    api: '1',
+    api: "1",
     query: `${lat},${lng}`,
   });
 
@@ -64,7 +64,7 @@ export interface Coordinates {
 
 export function calculateCenter(points: Coordinates[]): Coordinates {
   if (points.length === 0) {
-    return { lat: 40.7128, lng: -74.0060 }; // Default: NYC
+    return { lat: 40.7128, lng: -74.006 }; // Default: NYC
   }
 
   const total = points.reduce(
@@ -72,7 +72,7 @@ export function calculateCenter(points: Coordinates[]): Coordinates {
       lat: acc.lat + point.lat,
       lng: acc.lng + point.lng,
     }),
-    { lat: 0, lng: 0 }
+    { lat: 0, lng: 0 },
   );
 
   return {
@@ -86,8 +86,8 @@ export function calculateCenter(points: Coordinates[]): Coordinates {
  */
 export function isValidCoordinate(lat: number, lng: number): boolean {
   return (
-    typeof lat === 'number' &&
-    typeof lng === 'number' &&
+    typeof lat === "number" &&
+    typeof lng === "number" &&
     isFinite(lat) &&
     isFinite(lng) &&
     lat >= -90 &&

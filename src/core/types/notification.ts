@@ -6,9 +6,9 @@
 /**
  * Notification delivery channels
  */
-export type NotificationChannel = 'email' | 'sms';
+export type NotificationChannel = "email" | "sms";
 
 /**
  * Notification delivery status
  */
-export type NotificationStatus = 'pending' | 'sent' | 'failed' | 'skipped';
+export type NotificationStatus = "pending" | "sent" | "failed" | "skipped";

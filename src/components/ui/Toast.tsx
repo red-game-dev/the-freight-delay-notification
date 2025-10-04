@@ -3,14 +3,27 @@
  * For showing temporary success/error/info messages
  */
 
-'use client';
+"use client";
 
-import { FC, ReactNode, createContext, useCallback, useContext, useState } from 'react';
-import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import { generateShortId } from '@/core/utils/idUtils';
-import { Button } from './Button';
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  X,
+} from "lucide-react";
+import {
+  createContext,
+  type FC,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useState,
+} from "react";
+import { generateShortId } from "@/core/utils/idUtils";
+import { Button } from "./Button";
 
-export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
+export type ToastVariant = "success" | "error" | "warning" | "info";
 
 export interface Toast {
   id: string;
@@ -21,7 +34,11 @@ export interface Toast {
 
 interface ToastContextValue {
   toasts: Toast[];
-  showToast: (message: string, variant?: ToastVariant, duration?: number) => void;
+  showToast: (
+    message: string,
+    variant?: ToastVariant,
+    duration?: number,
+  ) => void;
   removeToast: (id: string) => void;
 }
 
@@ -30,7 +47,7 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
+    throw new Error("useToast must be used within ToastProvider");
   }
   return context;
 };
@@ -43,7 +60,7 @@ export const ToastProvider: FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback(
-    (message: string, variant: ToastVariant = 'info', duration = 5000) => {
+    (message: string, variant: ToastVariant = "info", duration = 5000) => {
       const id = generateShortId();
       const newToast: Toast = { id, message, variant, duration };
 
@@ -55,7 +72,7 @@ export const ToastProvider: FC<ToastProviderProps> = ({ children }) => {
         }, duration);
       }
     },
-    []
+    [],
   );
 
   const removeToast = useCallback((id: string) => {
@@ -95,19 +112,23 @@ interface ToastItemProps {
 const variantConfig = {
   success: {
     icon: CheckCircle2,
-    className: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+    className:
+      "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200",
   },
   error: {
     icon: AlertCircle,
-    className: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+    className:
+      "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200",
   },
   warning: {
     icon: AlertTriangle,
-    className: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200',
+    className:
+      "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200",
   },
   info: {
     icon: Info,
-    className: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200',
+    className:
+      "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200",
   },
 };
 
@@ -148,9 +169,9 @@ export const useToastHelpers = () => {
   const { showToast } = useToast();
 
   return {
-    success: (message: string) => showToast(message, 'success'),
-    error: (message: string) => showToast(message, 'error'),
-    warning: (message: string) => showToast(message, 'warning'),
-    info: (message: string) => showToast(message, 'info'),
+    success: (message: string) => showToast(message, "success"),
+    error: (message: string) => showToast(message, "error"),
+    warning: (message: string) => showToast(message, "warning"),
+    info: (message: string) => showToast(message, "info"),
   };
 };

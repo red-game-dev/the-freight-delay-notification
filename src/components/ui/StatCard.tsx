@@ -3,9 +3,9 @@
  * Reusable across dashboard pages
  */
 
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export interface StatCardProps {
   title: string;
@@ -24,7 +24,7 @@ export function StatCard({
   value,
   icon,
   trend,
-  iconColor = 'text-primary',
+  iconColor = "text-primary",
   description,
 }: StatCardProps) {
   return (
@@ -36,10 +36,12 @@ export function StatCard({
           {trend && (
             <p
               className={`mt-1 text-sm font-medium ${
-                trend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                trend.isPositive
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400"
               }`}
             >
-              {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
+              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}%
             </p>
           )}
           {description && (
@@ -63,11 +65,11 @@ export interface StatGridProps {
 
 export function StatGrid({ children, columns = 4 }: StatGridProps) {
   const colsMap = {
-    2: 'sm:grid-cols-2',
-    3: 'sm:grid-cols-3',
-    4: 'sm:grid-cols-2 lg:grid-cols-4',
-    5: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
-    6: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+    2: "sm:grid-cols-2",
+    3: "sm:grid-cols-3",
+    4: "sm:grid-cols-2 lg:grid-cols-4",
+    5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
+    6: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6",
   };
 
   return (

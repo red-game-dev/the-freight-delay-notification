@@ -3,11 +3,10 @@
  * Main entry point for HTTP-related utilities
  */
 
-// Types
-export type * from './types';
-
 // Handlers
-export * from './handlers';
+export * from "./handlers";
+// Types
+export type * from "./types";
 
 // Utils
-export * from './utils';
+export * from "./utils";

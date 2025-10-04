@@ -3,8 +3,8 @@
  * Combines clsx for conditional classes with tailwind-merge for proper Tailwind CSS class merging
  */
 
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 /**
  * Merges class names with Tailwind CSS conflict resolution

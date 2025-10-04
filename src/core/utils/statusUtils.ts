@@ -3,24 +3,24 @@
  * Functions for mapping statuses to UI variants
  */
 
-import { getTrafficConfig } from './trafficUtils';
+import { getTrafficConfig } from "./trafficUtils";
 
-export type BadgeVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
+export type BadgeVariant = "default" | "success" | "error" | "warning" | "info";
 
 /**
  * Get badge variant for delivery status
  */
 export function getDeliveryStatusVariant(status: string): BadgeVariant {
   const statusMap: Record<string, BadgeVariant> = {
-    delivered: 'success',
-    delayed: 'error',
-    in_transit: 'warning',
-    pending: 'default',
-    cancelled: 'error',
-    failed: 'error',
+    delivered: "success",
+    delayed: "error",
+    in_transit: "warning",
+    pending: "default",
+    cancelled: "error",
+    failed: "error",
   };
 
-  return statusMap[status.toLowerCase()] || 'default';
+  return statusMap[status.toLowerCase()] || "default";
 }
 
 /**
@@ -29,14 +29,14 @@ export function getDeliveryStatusVariant(status: string): BadgeVariant {
  */
 export function getNotificationStatusVariant(status: string): BadgeVariant {
   const statusMap: Record<string, BadgeVariant> = {
-    sent: 'success',
-    delivered: 'success',
-    failed: 'error',
-    pending: 'warning',
-    queued: 'info',
+    sent: "success",
+    delivered: "success",
+    failed: "error",
+    pending: "warning",
+    queued: "info",
   };
 
-  return statusMap[status.toLowerCase()] || 'default';
+  return statusMap[status.toLowerCase()] || "default";
 }
 
 /**

@@ -2,38 +2,37 @@
  * Database Infrastructure - Main Export
  */
 
-// Service
-export { DatabaseService, getDatabaseService, resetDatabaseService } from './DatabaseService';
-
 // Adapters
-export type { DatabaseAdapter } from './adapters/DatabaseAdapter.interface';
-export { SupabaseDatabaseAdapter } from './adapters/SupabaseDatabaseAdapter';
-export { MockDatabaseAdapter } from './adapters/MockDatabaseAdapter';
-
+export type { DatabaseAdapter } from "./adapters/DatabaseAdapter.interface";
+export { MockDatabaseAdapter } from "./adapters/MockDatabaseAdapter";
+export { SupabaseDatabaseAdapter } from "./adapters/SupabaseDatabaseAdapter";
+// Service
+export {
+  DatabaseService,
+  getDatabaseService,
+  resetDatabaseService,
+} from "./DatabaseService";
 // Types
 export type {
-  Customer,
-  CreateCustomerInput,
-  Route,
-  CreateRouteInput,
-  Delivery,
-  CreateDeliveryInput,
-  UpdateDeliveryInput,
-  Notification,
-  CreateNotificationInput,
-  UpdateNotificationInput,
-  TrafficSnapshot,
-  CreateTrafficSnapshotInput,
-  WorkflowExecution,
-  CreateWorkflowExecutionInput,
-  UpdateWorkflowExecutionInput,
   Coordinates,
-  NotificationPreferences,
-} from './types/database.types';
-
-export type {
+  CreateCustomerInput,
+  CreateDeliveryInput,
+  CreateNotificationInput,
+  CreateRouteInput,
+  CreateTrafficSnapshotInput,
+  CreateWorkflowExecutionInput,
+  Customer,
+  Delivery,
   DeliveryStatus,
-  TrafficCondition,
+  Notification,
   NotificationChannel,
+  NotificationPreferences,
   NotificationStatus,
-} from './types/database.types';
+  Route,
+  TrafficCondition,
+  TrafficSnapshot,
+  UpdateDeliveryInput,
+  UpdateNotificationInput,
+  UpdateWorkflowExecutionInput,
+  WorkflowExecution,
+} from "./types/database.types";

@@ -1,10 +1,10 @@
-import { Worker, NativeConnection } from '@temporalio/worker';
-import * as activities from '../../workflows/activities';
-import { env } from '../config/EnvValidator';
-import { logger } from '../../core/base/utils/Logger';
-import { InfrastructureError } from '../../core/base/errors/BaseError';
-import { getBuildIdFromEnv, getBuildInfo } from './BuildVersion';
-import path from 'path';
+import { NativeConnection, Worker } from "@temporalio/worker";
+import path from "path";
+import { InfrastructureError } from "../../core/base/errors/BaseError";
+import { logger } from "../../core/base/utils/Logger";
+import * as activities from "../../workflows/activities";
+import { env } from "../config/EnvValidator";
+import { getBuildIdFromEnv, getBuildInfo } from "./BuildVersion";
 
 let worker: Worker | null = null;
 
@@ -14,13 +14,13 @@ export async function createTemporalWorker(): Promise<Worker> {
     const buildInfo = getBuildInfo();
     const buildId = getBuildIdFromEnv();
 
-    logger.info('🏗️  Worker Build Information:');
+    logger.info("🏗️  Worker Build Information:");
     logger.info(`   Build ID: ${buildId}`);
     logger.info(`   Git Hash: ${buildInfo.gitHash}`);
     logger.info(`   Git Branch: ${buildInfo.gitBranch}`);
     logger.info(`   Timestamp: ${buildInfo.timestamp}`);
     if (buildInfo.isDirty) {
-      logger.warn('   ⚠️  Working directory has uncommitted changes');
+      logger.warn("   ⚠️  Working directory has uncommitted changes");
     }
 
     // Create connection to Temporal server
@@ -31,30 +31,32 @@ export async function createTemporalWorker(): Promise<Worker> {
 
     // Add Temporal Cloud authentication if API key is provided
     if (env.TEMPORAL_API_KEY) {
-      logger.info('🔐 Connecting to Temporal Cloud with API key authentication');
+      logger.info(
+        "🔐 Connecting to Temporal Cloud with API key authentication",
+      );
       connectionOptions.tls = {
         // Temporal Cloud uses TLS by default
       };
       connectionOptions.metadata = {
-        'temporal-namespace': env.TEMPORAL_NAMESPACE,
-        'authorization': `Bearer ${env.TEMPORAL_API_KEY}`,
+        "temporal-namespace": env.TEMPORAL_NAMESPACE,
+        authorization: `Bearer ${env.TEMPORAL_API_KEY}`,
       };
     } else {
-      logger.info('🔌 Connecting to local Temporal server');
+      logger.info("🔌 Connecting to local Temporal server");
     }
 
     const connection = await NativeConnection.connect(connectionOptions);
 
     // Enable worker versioning via environment variable
     // Set TEMPORAL_WORKER_VERSIONING=true to enable (recommended for production)
-    const useVersioning = env.TEMPORAL_WORKER_VERSIONING === 'true';
+    const useVersioning = env.TEMPORAL_WORKER_VERSIONING === "true";
 
     // Create worker with workflow and activity registrations
     worker = await Worker.create({
       connection,
       namespace: env.TEMPORAL_NAMESPACE,
       taskQueue: env.TEMPORAL_TASK_QUEUE,
-      workflowsPath: path.resolve(__dirname, '../../workflows/workflows.ts'),
+      workflowsPath: path.resolve(__dirname, "../../workflows/workflows.ts"),
       activities,
 
       // Worker configuration
@@ -72,15 +74,19 @@ export async function createTemporalWorker(): Promise<Worker> {
       }),
     });
 
-    logger.info('✅ Temporal worker created successfully');
+    logger.info("✅ Temporal worker created successfully");
     logger.info(`   Task Queue: ${env.TEMPORAL_TASK_QUEUE}`);
     logger.info(`   Namespace: ${env.TEMPORAL_NAMESPACE}`);
-    logger.info(`   Versioning: ${useVersioning ? '✅ Enabled' : '❌ Disabled (use TEMPORAL_WORKER_VERSIONING=true)'}`);
+    logger.info(
+      `   Versioning: ${useVersioning ? "✅ Enabled" : "❌ Disabled (use TEMPORAL_WORKER_VERSIONING=true)"}`,
+    );
 
     return worker;
   } catch (error) {
-    logger.error('❌ Failed to create Temporal worker:', error);
-    throw new InfrastructureError('Could not create Temporal worker', { cause: error });
+    logger.error("❌ Failed to create Temporal worker:", error);
+    throw new InfrastructureError("Could not create Temporal worker", {
+      cause: error,
+    });
   }
 }
 
@@ -89,15 +95,15 @@ export async function startWorker(): Promise<void> {
     worker = await createTemporalWorker();
   }
 
-  logger.info('🏃 Starting Temporal worker...');
+  logger.info("🏃 Starting Temporal worker...");
   await worker.run();
 }
 
 export async function stopWorker(): Promise<void> {
   if (worker) {
-    logger.info('🛑 Shutting down Temporal worker...');
+    logger.info("🛑 Shutting down Temporal worker...");
     await worker.shutdown();
     worker = null;
-    logger.info('✅ Temporal worker stopped');
+    logger.info("✅ Temporal worker stopped");
   }
 }

@@ -3,24 +3,32 @@
  * Shows all notifications sent for a delivery
  */
 
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Alert } from '@/components/ui/Alert';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { Loader2 } from 'lucide-react';
-import { useNotifications } from '@/core/infrastructure/http/services/notifications';
-import type { Notification } from '@/core/infrastructure/http/services/notifications';
-import { getNotificationChannelConfig, getNotificationStatusConfig } from '@/core/utils/notificationStatusUtils';
+import { Loader2 } from "lucide-react";
+import * as React from "react";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import type { Notification } from "@/core/infrastructure/http/services/notifications";
+import { useNotifications } from "@/core/infrastructure/http/services/notifications";
+import {
+  getNotificationChannelConfig,
+  getNotificationStatusConfig,
+} from "@/core/utils/notificationStatusUtils";
 
 interface DeliveryNotificationsListProps {
   deliveryId: string;
 }
 
-export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsListProps) {
-  const { data, isLoading, error } = useNotifications({ delivery_id: deliveryId, limit: '10' });
+export function DeliveryNotificationsList({
+  deliveryId,
+}: DeliveryNotificationsListProps) {
+  const { data, isLoading, error } = useNotifications({
+    delivery_id: deliveryId,
+    limit: "10",
+  });
 
   if (isLoading) {
     return (
@@ -41,7 +49,8 @@ export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsL
         <div className="p-6">
           <SectionHeader title="Notifications" className="mb-4" />
           <Alert variant="error">
-            Failed to load notifications. {error instanceof Error ? error.message : 'Please try again.'}
+            Failed to load notifications.{" "}
+            {error instanceof Error ? error.message : "Please try again."}
           </Alert>
         </div>
       </Card>
@@ -55,20 +64,26 @@ export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsL
       <div className="p-6">
         <SectionHeader
           title="Notifications"
-          description={`${notifications.length} notification${notifications.length !== 1 ? 's' : ''} sent`}
+          description={`${notifications.length} notification${notifications.length !== 1 ? "s" : ""} sent`}
           className="mb-4"
         />
 
         {notifications.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>No notifications sent yet.</p>
-            <p className="text-sm mt-1">Notifications will appear here when delays are detected.</p>
+            <p className="text-sm mt-1">
+              Notifications will appear here when delays are detected.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             {notifications.map((notification) => {
-              const channelInfo = getNotificationChannelConfig(notification.channel);
-              const statusInfo = getNotificationStatusConfig(notification.status);
+              const channelInfo = getNotificationChannelConfig(
+                notification.channel,
+              );
+              const statusInfo = getNotificationStatusConfig(
+                notification.status,
+              );
               const ChannelIcon = channelInfo.icon;
               const StatusIcon = statusInfo.icon;
 
@@ -80,13 +95,20 @@ export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsL
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex items-center gap-2">
                       <ChannelIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">{channelInfo.label}</span>
-                      <span className="text-sm text-muted-foreground">to {notification.recipient}</span>
+                      <span className="text-sm font-medium">
+                        {channelInfo.label}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        to {notification.recipient}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {notification.delay_minutes !== undefined && notification.delay_minutes !== null && (
-                        <Badge variant="warning">{notification.delay_minutes} min delay</Badge>
-                      )}
+                      {notification.delay_minutes !== undefined &&
+                        notification.delay_minutes !== null && (
+                          <Badge variant="warning">
+                            {notification.delay_minutes} min delay
+                          </Badge>
+                        )}
                       <Badge variant={statusInfo.variant}>
                         <StatusIcon className="h-3 w-3 mr-1" />
                         {statusInfo.label}
@@ -107,7 +129,9 @@ export function DeliveryNotificationsList({ deliveryId }: DeliveryNotificationsL
                         : `Created ${new Date(notification.created_at).toLocaleString()}`}
                     </span>
                     {notification.external_id && (
-                      <span className="font-mono">ID: {notification.external_id}</span>
+                      <span className="font-mono">
+                        ID: {notification.external_id}
+                      </span>
                     )}
                   </div>
 

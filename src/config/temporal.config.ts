@@ -6,26 +6,26 @@
 export const temporalConfig = {
   // Server configuration
   server: {
-    address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
-    namespace: process.env.TEMPORAL_NAMESPACE || 'default',
+    address: process.env.TEMPORAL_ADDRESS || "localhost:7233",
+    namespace: process.env.TEMPORAL_NAMESPACE || "default",
   },
 
   // Worker configuration
   worker: {
-    taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'freight-delay-notifications',
+    taskQueue: process.env.TEMPORAL_TASK_QUEUE || "freight-delay-notifications",
     maxConcurrentActivityExecutions: 10,
     maxConcurrentWorkflowExecutions: 5,
   },
 
   // Workflow configuration
   workflow: {
-    executionTimeout: '30m',
-    runTimeout: '10m',
-    taskTimeout: '1m',
+    executionTimeout: "30m",
+    runTimeout: "10m",
+    taskTimeout: "1m",
     retryPolicy: {
-      initialInterval: '1s',
+      initialInterval: "1s",
       backoffCoefficient: 2,
-      maximumInterval: '30s',
+      maximumInterval: "30s",
       maximumAttempts: 3,
     },
   },
@@ -33,33 +33,33 @@ export const temporalConfig = {
   // Activity-specific timeouts
   activities: {
     trafficCheck: {
-      startToCloseTimeout: '30s',
-      heartbeatTimeout: '10s',
+      startToCloseTimeout: "30s",
+      heartbeatTimeout: "10s",
       retry: {
-        initialInterval: '5s',
+        initialInterval: "5s",
         backoffCoefficient: 2,
         maximumAttempts: 3,
-        maximumInterval: '30s',
+        maximumInterval: "30s",
       },
     },
     aiGeneration: {
-      startToCloseTimeout: '60s',
-      heartbeatTimeout: '20s',
+      startToCloseTimeout: "60s",
+      heartbeatTimeout: "20s",
       retry: {
-        initialInterval: '2s',
+        initialInterval: "2s",
         backoffCoefficient: 2,
         maximumAttempts: 3,
-        maximumInterval: '20s',
+        maximumInterval: "20s",
       },
     },
     notification: {
-      startToCloseTimeout: '45s',
-      heartbeatTimeout: '15s',
+      startToCloseTimeout: "45s",
+      heartbeatTimeout: "15s",
       retry: {
-        initialInterval: '3s',
+        initialInterval: "3s",
         backoffCoefficient: 2,
         maximumAttempts: 5,
-        maximumInterval: '60s',
+        maximumInterval: "60s",
       },
     },
   },
@@ -67,14 +67,14 @@ export const temporalConfig = {
   // Development settings
   development: {
     enableLogging: true,
-    logLevel: 'debug',
+    logLevel: "debug",
     enableMetrics: false,
   },
 
   // Production settings
   production: {
     enableLogging: true,
-    logLevel: 'info',
+    logLevel: "info",
     enableMetrics: true,
   },
 };

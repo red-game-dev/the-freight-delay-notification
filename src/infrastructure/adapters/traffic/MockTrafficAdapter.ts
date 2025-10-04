@@ -3,14 +3,17 @@
  * Fallback for testing when no API keys are configured
  */
 
-import { TrafficAdapter } from './TrafficAdapter.interface';
-import { Result, success } from '../../../core/base/utils/Result';
-import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
-import { logger } from '@/core/base/utils/Logger';
-import { env } from '../../config/EnvValidator';
+import { logger } from "@/core/base/utils/Logger";
+import { type Result, success } from "../../../core/base/utils/Result";
+import type {
+  RouteInput,
+  TrafficData,
+} from "../../../types/shared/traffic.types";
+import { env } from "../../config/EnvValidator";
+import type { TrafficAdapter } from "./TrafficAdapter.interface";
 
 export class MockTrafficAdapter implements TrafficAdapter {
-  public readonly providerName = 'Mock Data';
+  public readonly providerName = "Mock Data";
   public readonly priority = 999; // Lowest priority (last resort)
 
   isAvailable(): boolean {
@@ -18,13 +21,15 @@ export class MockTrafficAdapter implements TrafficAdapter {
   }
 
   async getTrafficData(route: RouteInput): Promise<Result<TrafficData>> {
-    logger.info(`🎭 [${this.providerName}] Using mock traffic data for testing`);
+    logger.info(
+      `🎭 [${this.providerName}] Using mock traffic data for testing`,
+    );
 
     // Calculate route hash for distance (always needed)
     const routeHash = this.hashRoute(route);
 
     let delayMinutes: number;
-    let trafficCondition: TrafficData['trafficCondition'];
+    let trafficCondition: TrafficData["trafficCondition"];
 
     // Check for forced traffic scenario
     if (env.FORCE_TRAFFIC_SCENARIO) {
@@ -32,21 +37,21 @@ export class MockTrafficAdapter implements TrafficAdapter {
 
       // Parse scenario: predefined or custom number
       switch (scenario) {
-        case 'light':
+        case "light":
           delayMinutes = 0;
-          trafficCondition = 'light';
+          trafficCondition = "light";
           break;
-        case 'moderate':
+        case "moderate":
           delayMinutes = 20;
-          trafficCondition = 'moderate';
+          trafficCondition = "moderate";
           break;
-        case 'heavy':
+        case "heavy":
           delayMinutes = 45;
-          trafficCondition = 'heavy';
+          trafficCondition = "heavy";
           break;
-        case 'severe':
+        case "severe":
           delayMinutes = 90;
-          trafficCondition = 'severe';
+          trafficCondition = "severe";
           break;
         default:
           // Try to parse as number
@@ -54,17 +59,19 @@ export class MockTrafficAdapter implements TrafficAdapter {
           if (isNaN(delayMinutes)) delayMinutes = 0;
           // Determine condition based on delay
           if (delayMinutes < 20) {
-            trafficCondition = 'light';
+            trafficCondition = "light";
           } else if (delayMinutes < 35) {
-            trafficCondition = 'moderate';
+            trafficCondition = "moderate";
           } else if (delayMinutes < 50) {
-            trafficCondition = 'heavy';
+            trafficCondition = "heavy";
           } else {
-            trafficCondition = 'severe';
+            trafficCondition = "severe";
           }
       }
 
-      logger.info(`🧪 [${this.providerName}] TESTING MODE: Forcing '${scenario}' scenario (${delayMinutes} min delay, ${trafficCondition} traffic)`);
+      logger.info(
+        `🧪 [${this.providerName}] TESTING MODE: Forcing '${scenario}' scenario (${delayMinutes} min delay, ${trafficCondition} traffic)`,
+      );
     } else {
       // Generate somewhat random but consistent delay based on route
       const baseDelay = 15 + (routeHash % 45); // 15-60 minutes
@@ -72,18 +79,18 @@ export class MockTrafficAdapter implements TrafficAdapter {
 
       // Determine traffic condition based on delay
       if (delayMinutes < 20) {
-        trafficCondition = 'light';
+        trafficCondition = "light";
       } else if (delayMinutes < 35) {
-        trafficCondition = 'moderate';
+        trafficCondition = "moderate";
       } else if (delayMinutes < 50) {
-        trafficCondition = 'heavy';
+        trafficCondition = "heavy";
       } else {
-        trafficCondition = 'severe';
+        trafficCondition = "severe";
       }
     }
 
     const normalDuration = 30 * 60; // 30 minutes in seconds
-    const estimatedDuration = normalDuration + (delayMinutes * 60);
+    const estimatedDuration = normalDuration + delayMinutes * 60;
 
     const mockData: TrafficData = {
       delayMinutes,
@@ -91,10 +98,10 @@ export class MockTrafficAdapter implements TrafficAdapter {
       estimatedDuration,
       normalDuration,
       fetchedAt: new Date(),
-      provider: 'google', // Pretend to be google for consistency
+      provider: "google", // Pretend to be google for consistency
       distance: {
         value: 15000 + (routeHash % 20000), // 15-35km
-        unit: 'meters',
+        unit: "meters",
       },
     };
 
@@ -114,7 +121,7 @@ export class MockTrafficAdapter implements TrafficAdapter {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);

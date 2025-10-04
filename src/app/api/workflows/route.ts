@@ -3,15 +3,19 @@
  * GET /api/workflows - List all workflow executions (database + active deliveries)
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler } from '@/core/infrastructure/http';
-import { Result } from '@/core/base/utils/Result';
-import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
-import { createWorkflowId, parseWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
-import { createPaginatedResponse } from '@/core/utils/paginationUtils';
-import { validateQuery } from '@/core/utils/validation';
-import { listWorkflowsQuerySchema } from '@/core/schemas/workflow';
-import { setAuditContext } from '@/app/api/middleware/auditContext';
+import { setAuditContext } from "@/app/api/middleware/auditContext";
+import { Result } from "@/core/base/utils/Result";
+import { createApiHandler } from "@/core/infrastructure/http";
+import { listWorkflowsQuerySchema } from "@/core/schemas/workflow";
+import { createPaginatedResponse } from "@/core/utils/paginationUtils";
+import { validateQuery } from "@/core/utils/validation";
+import {
+  createWorkflowId,
+  parseWorkflowId,
+  WorkflowType,
+} from "@/core/utils/workflowUtils";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
+import { getTemporalClient } from "@/infrastructure/temporal/TemporalClient";
 
 interface WorkflowListItem {
   id: string;
@@ -22,10 +26,10 @@ interface WorkflowListItem {
   started_at: Date;
   completed_at: Date | null;
   error_message: string | null;
-  source: 'database' | 'temporal';
+  source: "database" | "temporal";
   tracking_number?: string;
   settings?: {
-    type: 'recurring' | 'one-time';
+    type: "recurring" | "one-time";
     check_interval_minutes: number;
     max_checks: number;
     checks_performed: number;
@@ -57,13 +61,19 @@ export const GET = createApiHandler(async (request) => {
     return queryResult;
   }
 
-  const { page, limit, delivery_id: deliveryId, status, statusNot } = queryResult.value;
+  const {
+    page,
+    limit,
+    delivery_id: deliveryId,
+    status,
+    statusNot,
+  } = queryResult.value;
 
   if (deliveryId) {
     // Get completed workflows from database
     const dbWorkflows = Result.unwrapOr(
       await db.listWorkflowExecutionsByDelivery(deliveryId),
-      []
+      [],
     );
 
     // Get delivery details for workflow settings
@@ -92,7 +102,7 @@ export const GET = createApiHandler(async (request) => {
 
           // Map Temporal status names to our format
           let status = description.status.name.toLowerCase();
-          if (status === 'terminated') status = 'cancelled';
+          if (status === "terminated") status = "cancelled";
 
           workflows.push({
             id: workflowId,
@@ -103,65 +113,86 @@ export const GET = createApiHandler(async (request) => {
             started_at: description.startTime,
             completed_at: description.closeTime || null,
             error_message: null, // Error details stored in DB, not easily extractable from Temporal description
-            source: 'temporal' as const,
+            source: "temporal" as const,
             tracking_number: delivery.tracking_number,
             settings: {
-              type: parseWorkflowId(workflowId)?.type === WorkflowType.RECURRING_CHECK ? 'recurring' : 'one-time',
+              type:
+                parseWorkflowId(workflowId)?.type ===
+                WorkflowType.RECURRING_CHECK
+                  ? "recurring"
+                  : "one-time",
               check_interval_minutes: delivery.check_interval_minutes,
               max_checks: delivery.max_checks,
               checks_performed: delivery.checks_performed,
               delay_threshold_minutes: delivery.delay_threshold_minutes,
               min_delay_change_threshold: delivery.min_delay_change_threshold,
-              min_hours_between_notifications: delivery.min_hours_between_notifications,
+              min_hours_between_notifications:
+                delivery.min_hours_between_notifications,
               scheduled_delivery: delivery.scheduled_delivery,
-              last_check_time: delivery.updated_at instanceof Date
-                ? delivery.updated_at.toISOString()
-                : delivery.updated_at, // For accurate next run calculation
+              last_check_time:
+                delivery.updated_at instanceof Date
+                  ? delivery.updated_at.toISOString()
+                  : delivery.updated_at, // For accurate next run calculation
             },
           });
 
           // Sync DB status if it's stale (optional - keeps DB in sync)
           // Match by BOTH workflow_id AND run_id to update the correct execution
-          const dbWorkflow = dbWorkflows.find(w => w.workflow_id === workflowId && w.run_id === description.runId);
+          const dbWorkflow = dbWorkflows.find(
+            (w) =>
+              w.workflow_id === workflowId && w.run_id === description.runId,
+          );
           if (dbWorkflow && dbWorkflow.status !== status) {
             // Update DB status in background (don't await)
             db.updateWorkflowExecution(dbWorkflow.id, {
               status: status as any,
               completed_at: description.closeTime || undefined,
-            }).catch(err => {
+            }).catch((err) => {
               // Ignore errors - DB sync is best-effort
             });
           }
         } catch (err) {
           // Workflow doesn't exist in Temporal or error fetching it
           // It may still exist in database, so we'll show it from there
-          console.warn(`Failed to fetch workflow ${workflowId} from Temporal:`, err);
-          continue;
+          console.warn(
+            `Failed to fetch workflow ${workflowId} from Temporal:`,
+            err,
+          );
         }
       }
     }
 
     // Add database workflows that aren't already shown from Temporal
     // Deduplicate by (workflow_id, run_id) pair
-    workflows.push(...dbWorkflows
-      .filter(w => !temporalExecutions.has(`${w.workflow_id}:${w.run_id}`))
-      .map(w => ({
-        ...w,
-        started_at: w.started_at instanceof Date ? w.started_at : new Date(w.started_at),
-        completed_at: w.completed_at ? (w.completed_at instanceof Date ? w.completed_at : new Date(w.completed_at)) : null,
-        source: 'database' as const,
-      }))
+    workflows.push(
+      ...dbWorkflows
+        .filter((w) => !temporalExecutions.has(`${w.workflow_id}:${w.run_id}`))
+        .map((w) => ({
+          ...w,
+          started_at:
+            w.started_at instanceof Date
+              ? w.started_at
+              : new Date(w.started_at),
+          completed_at: w.completed_at
+            ? w.completed_at instanceof Date
+              ? w.completed_at
+              : new Date(w.completed_at)
+            : null,
+          source: "database" as const,
+        })),
     );
 
     // Apply status filters if provided
     let filteredWorkflows = workflows;
 
     if (status) {
-      filteredWorkflows = filteredWorkflows.filter(w => w.status === status);
+      filteredWorkflows = filteredWorkflows.filter((w) => w.status === status);
     }
 
     if (statusNot) {
-      filteredWorkflows = filteredWorkflows.filter(w => w.status !== statusNot);
+      filteredWorkflows = filteredWorkflows.filter(
+        (w) => w.status !== statusNot,
+      );
     }
 
     // Sort by started_at descending
@@ -188,9 +219,17 @@ export const GET = createApiHandler(async (request) => {
   }
 
   // Get completed workflows from database via DatabaseService
-  const dbWorkflows = Result.unwrapOr(await db.listWorkflowExecutions(1000), []);
-  console.log(`[Workflows API] Found ${dbWorkflows.length} workflows in database`);
-  console.log(`[Workflows API] DB workflow statuses:`, dbWorkflows.map(w => ({ id: w.workflow_id, status: w.status })));
+  const dbWorkflows = Result.unwrapOr(
+    await db.listWorkflowExecutions(1000),
+    [],
+  );
+  console.log(
+    `[Workflows API] Found ${dbWorkflows.length} workflows in database`,
+  );
+  console.log(
+    `[Workflows API] DB workflow statuses:`,
+    dbWorkflows.map((w) => ({ id: w.workflow_id, status: w.status })),
+  );
 
   // Get all recent deliveries with workflow settings via DatabaseService
   const allDeliveries = Result.unwrapOr(await db.listDeliveries(1000), []);
@@ -221,7 +260,7 @@ export const GET = createApiHandler(async (request) => {
 
           // Map Temporal status names to our format
           let status = description.status.name.toLowerCase();
-          if (status === 'terminated') status = 'cancelled';
+          if (status === "terminated") status = "cancelled";
 
           workflows.push({
             id: workflowId,
@@ -232,40 +271,46 @@ export const GET = createApiHandler(async (request) => {
             started_at: description.startTime,
             completed_at: description.closeTime || null,
             error_message: null,
-            source: 'temporal' as const,
+            source: "temporal" as const,
             tracking_number: delivery.tracking_number,
             // Add workflow settings
             settings: {
-              type: parseWorkflowId(workflowId)?.type === WorkflowType.RECURRING_CHECK ? 'recurring' : 'one-time',
+              type:
+                parseWorkflowId(workflowId)?.type ===
+                WorkflowType.RECURRING_CHECK
+                  ? "recurring"
+                  : "one-time",
               check_interval_minutes: delivery.check_interval_minutes,
               max_checks: delivery.max_checks,
               checks_performed: delivery.checks_performed,
               delay_threshold_minutes: delivery.delay_threshold_minutes,
               min_delay_change_threshold: delivery.min_delay_change_threshold,
-              min_hours_between_notifications: delivery.min_hours_between_notifications,
+              min_hours_between_notifications:
+                delivery.min_hours_between_notifications,
               scheduled_delivery: delivery.scheduled_delivery,
-              last_check_time: delivery.updated_at instanceof Date
-                ? delivery.updated_at.toISOString()
-                : delivery.updated_at, // For accurate next run calculation
+              last_check_time:
+                delivery.updated_at instanceof Date
+                  ? delivery.updated_at.toISOString()
+                  : delivery.updated_at, // For accurate next run calculation
             },
           });
 
           // Sync DB status if it's stale (optional - keeps DB in sync)
           // Match by BOTH workflow_id AND run_id to update the correct execution
-          const dbWorkflow = dbWorkflows?.find(w => w.workflow_id === workflowId && w.run_id === description.runId);
+          const dbWorkflow = dbWorkflows?.find(
+            (w) =>
+              w.workflow_id === workflowId && w.run_id === description.runId,
+          );
           if (dbWorkflow && dbWorkflow.status !== status) {
             // Update DB status in background (don't await)
             db.updateWorkflowExecution(dbWorkflow.id, {
               status: status as any,
               completed_at: description.closeTime || undefined,
-            }).catch(err => {
+            }).catch((err) => {
               // Ignore errors - DB sync is best-effort
             });
           }
-        } catch (err) {
-          // Workflow doesn't exist in Temporal, skip it
-          continue;
-        }
+        } catch (err) {}
       }
     }
   }
@@ -273,14 +318,22 @@ export const GET = createApiHandler(async (request) => {
   // Add database workflows that aren't already shown from Temporal
   // Deduplicate by (workflow_id, run_id) pair
   if (dbWorkflows) {
-    workflows.push(...dbWorkflows
-      .filter(w => !temporalExecutions.has(`${w.workflow_id}:${w.run_id}`))
-      .map(w => ({
-        ...w,
-        started_at: w.started_at instanceof Date ? w.started_at : new Date(w.started_at),
-        completed_at: w.completed_at ? (w.completed_at instanceof Date ? w.completed_at : new Date(w.completed_at)) : null,
-        source: 'database' as const,
-      }))
+    workflows.push(
+      ...dbWorkflows
+        .filter((w) => !temporalExecutions.has(`${w.workflow_id}:${w.run_id}`))
+        .map((w) => ({
+          ...w,
+          started_at:
+            w.started_at instanceof Date
+              ? w.started_at
+              : new Date(w.started_at),
+          completed_at: w.completed_at
+            ? w.completed_at instanceof Date
+              ? w.completed_at
+              : new Date(w.completed_at)
+            : null,
+          source: "database" as const,
+        })),
     );
   }
 
@@ -288,11 +341,11 @@ export const GET = createApiHandler(async (request) => {
   let filteredWorkflows = workflows;
 
   if (status) {
-    filteredWorkflows = filteredWorkflows.filter(w => w.status === status);
+    filteredWorkflows = filteredWorkflows.filter((w) => w.status === status);
   }
 
   if (statusNot) {
-    filteredWorkflows = filteredWorkflows.filter(w => w.status !== statusNot);
+    filteredWorkflows = filteredWorkflows.filter((w) => w.status !== statusNot);
   }
 
   // Sort by started_at descending

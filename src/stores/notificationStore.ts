@@ -9,14 +9,14 @@
  * - Supports manual dismiss and notification queue
  */
 
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { generateShortId } from '@/core/utils/idUtils';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { generateShortId } from "@/core/utils/idUtils";
 
 export interface Notification {
   id: string;
   message: string;
-  type: 'success' | 'info' | 'warning';
+  type: "success" | "info" | "warning";
   timestamp: number;
   duration?: number; // Auto-dismiss duration in ms (0 = no auto-dismiss)
   dismissed?: boolean;
@@ -28,7 +28,9 @@ interface NotificationStore {
   notifications: Notification[];
 
   // Actions
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
+  addNotification: (
+    notification: Omit<Notification, "id" | "timestamp">,
+  ) => void;
   dismissNotification: (id: string) => void;
   clearNotifications: () => void;
   clearDismissed: () => void;
@@ -65,7 +67,7 @@ export const useNotificationStore = create<NotificationStore>()(
             (n) =>
               n.message === newNotification.message &&
               !n.dismissed &&
-              Date.now() - n.timestamp < 3000
+              Date.now() - n.timestamp < 3000,
           );
 
           if (isDuplicate) {
@@ -89,7 +91,7 @@ export const useNotificationStore = create<NotificationStore>()(
       dismissNotification: (id) => {
         set((state) => ({
           notifications: state.notifications.map((n) =>
-            n.id === id ? { ...n, dismissed: true } : n
+            n.id === id ? { ...n, dismissed: true } : n,
           ),
         }));
 
@@ -115,7 +117,7 @@ export const useNotificationStore = create<NotificationStore>()(
       success: (message, duration) => {
         get().addNotification({
           message,
-          type: 'success',
+          type: "success",
           duration,
         });
       },
@@ -124,7 +126,7 @@ export const useNotificationStore = create<NotificationStore>()(
       info: (message, duration) => {
         get().addNotification({
           message,
-          type: 'info',
+          type: "info",
           duration,
         });
       },
@@ -133,7 +135,7 @@ export const useNotificationStore = create<NotificationStore>()(
       warning: (message, duration) => {
         get().addNotification({
           message,
-          type: 'warning',
+          type: "warning",
           duration,
         });
       },
@@ -144,7 +146,7 @@ export const useNotificationStore = create<NotificationStore>()(
       },
     }),
     {
-      name: 'freight-delay-notification-store',
-    }
-  )
+      name: "freight-delay-notification-store",
+    },
+  ),
 );

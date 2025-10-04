@@ -3,9 +3,9 @@
  * Converts addresses to geographic coordinates
  */
 
-import { Result, success, failure } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { GoogleMapsAdapter } from '../traffic/GoogleMapsAdapter';
+import { InfrastructureError } from "../../../core/base/errors/BaseError";
+import { failure, type Result, success } from "../../../core/base/utils/Result";
+import { GoogleMapsAdapter } from "../traffic/GoogleMapsAdapter";
 
 export interface GeocodingResult {
   lat: number;
@@ -27,7 +27,7 @@ export class GeocodingService {
    */
   async geocodeAddress(address: string): Promise<Result<GeocodingResult>> {
     if (!address || address.trim().length === 0) {
-      return failure(new InfrastructureError('Address cannot be empty'));
+      return failure(new InfrastructureError("Address cannot be empty"));
     }
 
     // Try Google Maps first (highest priority)
@@ -44,25 +44,31 @@ export class GeocodingService {
     }
 
     // If Google Maps fails, return error (can add Mapbox fallback later)
-    return failure(new InfrastructureError(
-      'Geocoding failed: No geocoding provider available',
-      { address }
-    ));
+    return failure(
+      new InfrastructureError(
+        "Geocoding failed: No geocoding provider available",
+        { address },
+      ),
+    );
   }
 
   /**
    * Batch geocode multiple addresses
    */
-  async geocodeAddresses(addresses: string[]): Promise<Result<GeocodingResult[]>> {
+  async geocodeAddresses(
+    addresses: string[],
+  ): Promise<Result<GeocodingResult[]>> {
     const results: GeocodingResult[] = [];
 
     for (const address of addresses) {
       const result = await this.geocodeAddress(address);
       if (!result.success) {
-        return failure(new InfrastructureError(
-          `Failed to geocode address: ${address}`,
-          { address, error: result.error }
-        ));
+        return failure(
+          new InfrastructureError(`Failed to geocode address: ${address}`, {
+            address,
+            error: result.error,
+          }),
+        );
       }
       results.push(result.value);
     }

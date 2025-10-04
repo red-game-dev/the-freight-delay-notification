@@ -3,12 +3,12 @@
  * GET /api/workflows/[id] - Get workflow by ID
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createParamApiHandler } from '@/core/infrastructure/http';
-import { Result } from '@/core/base/utils/Result';
-import { validateParams } from '@/core/utils/validation';
-import { workflowIdParamSchema } from '@/core/schemas/workflow';
-import { setAuditContext } from '@/app/api/middleware/auditContext';
+import { setAuditContext } from "@/app/api/middleware/auditContext";
+import { Result } from "@/core/base/utils/Result";
+import { createParamApiHandler } from "@/core/infrastructure/http";
+import { workflowIdParamSchema } from "@/core/schemas/workflow";
+import { validateParams } from "@/core/utils/validation";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
 
 /**
  * GET /api/workflows/[id]
@@ -28,16 +28,17 @@ export const GET = createParamApiHandler(async (request, context) => {
   const db = getDatabaseService();
 
   // Transform result to only expose safe fields
-  return Result.map(
-    await db.getWorkflowExecutionById(id),
-    (workflow) => workflow ? {
-      id: workflow.id,
-      workflow_id: workflow.workflow_id,
-      delivery_id: workflow.delivery_id,
-      status: workflow.status,
-      started_at: workflow.started_at,
-      completed_at: workflow.completed_at,
-      error_message: workflow.error_message,
-    } : null
+  return Result.map(await db.getWorkflowExecutionById(id), (workflow) =>
+    workflow
+      ? {
+          id: workflow.id,
+          workflow_id: workflow.workflow_id,
+          delivery_id: workflow.delivery_id,
+          status: workflow.status,
+          started_at: workflow.started_at,
+          completed_at: workflow.completed_at,
+          error_message: workflow.error_message,
+        }
+      : null,
   );
 });

@@ -3,9 +3,9 @@
  * Provides consistent logging across the application
  */
 
-import { isDevelopment } from './environment';
+import { isDevelopment } from "./environment";
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogLevel = "debug" | "info" | "warn" | "error";
 
 class Logger {
   private isDev = isDevelopment();
@@ -30,16 +30,16 @@ class Logger {
 
   log(level: LogLevel, message: string, ...args: unknown[]): void {
     switch (level) {
-      case 'debug':
+      case "debug":
         this.debug(message, ...args);
         break;
-      case 'info':
+      case "info":
         this.info(message, ...args);
         break;
-      case 'warn':
+      case "warn":
         this.warn(message, ...args);
         break;
-      case 'error':
+      case "error":
         this.error(message, ...args);
         break;
     }
@@ -56,10 +56,10 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
-  if (error && typeof error === 'object' && 'message' in error) {
+  if (error && typeof error === "object" && "message" in error) {
     return String(error.message);
   }
   return String(error);
@@ -79,9 +79,9 @@ export function hasMessage(error: unknown): error is { message: string } {
   return (
     error !== null &&
     error !== undefined &&
-    typeof error === 'object' &&
-    'message' in error &&
-    typeof (error as { message: unknown }).message === 'string'
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string"
   );
 }
 
@@ -92,8 +92,8 @@ export function hasCode(error: unknown): error is { code: string | number } {
   return (
     error !== null &&
     error !== undefined &&
-    typeof error === 'object' &&
-    'code' in error
+    typeof error === "object" &&
+    "code" in error
   );
 }
 
@@ -104,9 +104,9 @@ export function hasName(error: unknown): error is { name: string } {
   return (
     error !== null &&
     error !== undefined &&
-    typeof error === 'object' &&
-    'name' in error &&
-    typeof (error as { name: unknown }).name === 'string'
+    typeof error === "object" &&
+    "name" in error &&
+    typeof (error as { name: unknown }).name === "string"
   );
 }
 
@@ -117,7 +117,7 @@ export function hasCause(error: unknown): error is { cause: unknown } {
   return (
     error !== null &&
     error !== undefined &&
-    typeof error === 'object' &&
-    'cause' in error
+    typeof error === "object" &&
+    "cause" in error
   );
 }

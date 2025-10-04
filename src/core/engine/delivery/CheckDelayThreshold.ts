@@ -3,9 +3,9 @@
  * PDF Step 2: Check if delay exceeds threshold (e.g., 30 minutes)
  */
 
-import { Result, success } from '../../base/utils/Result';
-import type { TrafficData } from '../../../types/shared/traffic.types';
-import { logger } from '@/core/base/utils/Logger';
+import { logger } from "@/core/base/utils/Logger";
+import type { TrafficData } from "../../../types/shared/traffic.types";
+import { type Result, success } from "../../base/utils/Result";
 
 export interface ThresholdCheckResult {
   exceedsThreshold: boolean;
@@ -24,7 +24,10 @@ export class CheckDelayThresholdUseCase {
    * @param thresholdMinutes - Delay threshold in minutes (default: 30)
    * @returns Result with threshold check details
    */
-  execute(trafficData: TrafficData, thresholdMinutes = 30): Result<ThresholdCheckResult> {
+  execute(
+    trafficData: TrafficData,
+    thresholdMinutes = 30,
+  ): Result<ThresholdCheckResult> {
     const { delayMinutes } = trafficData;
     const exceedsThreshold = delayMinutes > thresholdMinutes;
 
@@ -41,11 +44,15 @@ export class CheckDelayThresholdUseCase {
     // PDF requirement: Log key steps
     if (exceedsThreshold) {
       logger.info(`🚨 Step 2: Threshold EXCEEDED - proceeding to notification`);
-      logger.info(`   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`);
+      logger.info(
+        `   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`,
+      );
       logger.info(`   Decision: PROCEED to Step 3 (Generate AI message)`);
     } else {
       logger.info(`✅ Step 2: Delay within threshold - NO action needed`);
-      logger.info(`   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`);
+      logger.info(
+        `   Delay: ${delayMinutes} min | Threshold: ${thresholdMinutes} min`,
+      );
       logger.info(`   Decision: SKIP remaining steps`);
     }
 

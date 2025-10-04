@@ -3,19 +3,19 @@
  * Functions for converting between different coordinate formats (PostGIS, objects, strings)
  */
 
-import type { Coordinates } from '@/infrastructure/database/types/database.types';
+import type { Coordinates } from "@/infrastructure/database/types/database.types";
 
 /**
  * Convert PostGIS POINT string or object to Coordinates
  * Handles formats: "POINT(lng lat)", "(lng,lat)", or {x, y} objects
  */
 export function pointToCoordinates(
-  point: string | { x: number; y: number } | null | undefined
+  point: string | { x: number; y: number } | null | undefined,
 ): Coordinates | null {
   if (!point) return null;
 
   // If already an object with x/y (PostGIS can return parsed objects)
-  if (typeof point === 'object' && 'x' in point && 'y' in point) {
+  if (typeof point === "object" && "x" in point && "y" in point) {
     return {
       x: point.x,
       y: point.y,
@@ -25,12 +25,12 @@ export function pointToCoordinates(
   }
 
   // If string format "(lng,lat)" or "POINT(lng lat)" or "lng,lat"
-  if (typeof point === 'string') {
+  if (typeof point === "string") {
     // Remove POINT() wrapper if present and parentheses
     const cleaned = point
-      .replace(/^POINT\s*\(/i, '')
-      .replace(/\)$/, '')
-      .replace(/[()]/g, '');
+      .replace(/^POINT\s*\(/i, "")
+      .replace(/\)$/, "")
+      .replace(/[()]/g, "");
 
     // Split by comma or space
     const parts = cleaned
@@ -70,7 +70,10 @@ export function coordinatesToPoint(coords: Coordinates): string {
 /**
  * Calculate the midpoint between two coordinates
  */
-export function getMidpoint(coord1: Coordinates, coord2: Coordinates): Coordinates {
+export function getMidpoint(
+  coord1: Coordinates,
+  coord2: Coordinates,
+): Coordinates {
   const lat1 = coord1.lat ?? coord1.x;
   const lng1 = coord1.lng ?? coord1.y;
   const lat2 = coord2.lat ?? coord2.x;
@@ -90,14 +93,16 @@ export function getMidpoint(coord1: Coordinates, coord2: Coordinates): Coordinat
 /**
  * Validate if coordinates are valid (non-zero, within bounds)
  */
-export function isValidCoordinates(coords: Coordinates | null | undefined): coords is Coordinates {
+export function isValidCoordinates(
+  coords: Coordinates | null | undefined,
+): coords is Coordinates {
   if (!coords) return false;
 
   const lat = coords.lat ?? coords.x;
   const lng = coords.lng ?? coords.y;
 
   // Check if values exist and are numbers
-  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+  if (typeof lat !== "number" || typeof lng !== "number") return false;
 
   // Check if not NaN
   if (isNaN(lat) || isNaN(lng)) return false;

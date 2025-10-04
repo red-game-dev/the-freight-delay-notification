@@ -3,7 +3,7 @@
  * Type definitions for notification-related operations
  */
 
-import type { NotificationChannel, NotificationStatus } from '@/core/types';
+import type { NotificationChannel, NotificationStatus } from "@/core/types";
 
 export interface Notification {
   id: string;

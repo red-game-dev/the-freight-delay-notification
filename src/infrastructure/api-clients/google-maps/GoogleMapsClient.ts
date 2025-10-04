@@ -3,12 +3,19 @@
  * PDF Step 1: Primary traffic data source
  */
 
-import { Client, TrafficModel, TravelMode } from '@googlemaps/google-maps-services-js';
-import { env } from '../../config/EnvValidator';
-import { Result, success, failure } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
-import { logger, getErrorMessage } from '@/core/base/utils/Logger';
+import {
+  Client,
+  TrafficModel,
+  TravelMode,
+} from "@googlemaps/google-maps-services-js";
+import { getErrorMessage, logger } from "@/core/base/utils/Logger";
+import { InfrastructureError } from "../../../core/base/errors/BaseError";
+import { failure, type Result, success } from "../../../core/base/utils/Result";
+import type {
+  RouteInput,
+  TrafficData,
+} from "../../../types/shared/traffic.types";
+import { env } from "../../config/EnvValidator";
 
 export class GoogleMapsClient {
   private client: Client;
@@ -16,7 +23,7 @@ export class GoogleMapsClient {
 
   constructor() {
     this.client = new Client({});
-    this.apiKey = env.GOOGLE_MAPS_API_KEY || '';
+    this.apiKey = env.GOOGLE_MAPS_API_KEY || "";
   }
 
   /**
@@ -27,11 +34,12 @@ export class GoogleMapsClient {
     try {
       // Check if API key is configured
       if (!this.apiKey) {
-        logger.info('⚠️ Google Maps API key not configured, skipping...');
-        return failure(new InfrastructureError(
-          'Google Maps API key not configured',
-          { route }
-        ));
+        logger.info("⚠️ Google Maps API key not configured, skipping...");
+        return failure(
+          new InfrastructureError("Google Maps API key not configured", {
+            route,
+          }),
+        );
       }
 
       logger.info(`🗺️ Fetching Google Maps traffic data...`);
@@ -41,45 +49,49 @@ export class GoogleMapsClient {
         params: {
           origin: route.origin,
           destination: route.destination,
-          departure_time: route.departureTime || 'now',
+          departure_time: route.departureTime || "now",
           traffic_model: TrafficModel.best_guess,
           mode: TravelMode.driving,
           key: this.apiKey,
         },
       });
 
-      if (response.data.status !== 'OK' || !response.data.routes.length) {
-        return failure(new InfrastructureError(
-          `Google Maps API error: ${response.data.status}`,
-          {
-            status: response.data.status,
-            error_message: response.data.error_message,
-            route
-          }
-        ));
+      if (response.data.status !== "OK" || !response.data.routes.length) {
+        return failure(
+          new InfrastructureError(
+            `Google Maps API error: ${response.data.status}`,
+            {
+              status: response.data.status,
+              error_message: response.data.error_message,
+              route,
+            },
+          ),
+        );
       }
 
       const routeData = response.data.routes[0];
       const leg = routeData.legs[0];
 
       // Get duration in traffic vs normal duration
-      const durationInTraffic = leg.duration_in_traffic?.value || leg.duration.value;
+      const durationInTraffic =
+        leg.duration_in_traffic?.value || leg.duration.value;
       const normalDuration = leg.duration.value;
       const delaySeconds = Math.max(0, durationInTraffic - normalDuration);
       const delayMinutes = Math.round(delaySeconds / 60);
 
       // Determine traffic condition based on delay percentage
-      const delayPercentage = normalDuration > 0 ? (delaySeconds / normalDuration) * 100 : 0;
-      let trafficCondition: TrafficData['trafficCondition'];
+      const delayPercentage =
+        normalDuration > 0 ? (delaySeconds / normalDuration) * 100 : 0;
+      let trafficCondition: TrafficData["trafficCondition"];
 
       if (delayPercentage < 10) {
-        trafficCondition = 'light';
+        trafficCondition = "light";
       } else if (delayPercentage < 25) {
-        trafficCondition = 'moderate';
+        trafficCondition = "moderate";
       } else if (delayPercentage < 50) {
-        trafficCondition = 'heavy';
+        trafficCondition = "heavy";
       } else {
-        trafficCondition = 'severe';
+        trafficCondition = "severe";
       }
 
       const trafficData: TrafficData = {
@@ -88,10 +100,10 @@ export class GoogleMapsClient {
         estimatedDuration: durationInTraffic,
         normalDuration,
         fetchedAt: new Date(),
-        provider: 'google',
+        provider: "google",
         distance: {
           value: leg.distance.value,
-          unit: 'meters',
+          unit: "meters",
         },
       };
 
@@ -107,11 +119,13 @@ export class GoogleMapsClient {
 
       return success(trafficData);
     } catch (error: unknown) {
-      logger.error('❌ Google Maps API error:', getErrorMessage(error));
-      return failure(new InfrastructureError(
-        'Failed to fetch traffic data from Google Maps',
-        { error: getErrorMessage(error), route }
-      ));
+      logger.error("❌ Google Maps API error:", getErrorMessage(error));
+      return failure(
+        new InfrastructureError(
+          "Failed to fetch traffic data from Google Maps",
+          { error: getErrorMessage(error), route },
+        ),
+      );
     }
   }
 }

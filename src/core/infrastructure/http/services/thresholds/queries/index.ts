@@ -3,10 +3,9 @@
  * Exports all query operations (GET requests)
  */
 
+export { getThreshold } from "./getThreshold";
 // Fetchers
-export { listThresholds } from './listThresholds';
-export { getThreshold } from './getThreshold';
-
+export { listThresholds } from "./listThresholds";
+export { useThreshold } from "./useThreshold";
 // Hooks
-export { useThresholds } from './useThresholds';
-export { useThreshold } from './useThreshold';
+export { useThresholds } from "./useThresholds";

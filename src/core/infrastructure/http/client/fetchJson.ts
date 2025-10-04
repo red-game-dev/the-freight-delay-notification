@@ -3,7 +3,12 @@
  * Standardized fetch wrapper using existing HttpError system
  */
 
-import { BadRequestError, NotFoundHttpError, InternalServerError, HttpError } from '@/core/base/errors/HttpError';
+import {
+  BadRequestError,
+  HttpError,
+  InternalServerError,
+  NotFoundHttpError,
+} from "@/core/base/errors/HttpError";
 
 /**
  * Fetch JSON with automatic error handling using HttpError
@@ -15,13 +20,13 @@ import { BadRequestError, NotFoundHttpError, InternalServerError, HttpError } fr
  */
 export async function fetchJson<T>(
   url: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
   try {
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options?.headers,
       },
     });
@@ -33,14 +38,20 @@ export async function fetchJson<T>(
       try {
         errorData = await response.json();
         const data = errorData as Record<string, unknown>;
-        errorMessage = (data.message as string) || (data.error as string) || response.statusText;
+        errorMessage =
+          (data.message as string) ||
+          (data.error as string) ||
+          response.statusText;
       } catch {
         errorMessage = response.statusText || `HTTP ${response.status}`;
         errorData = { message: errorMessage };
       }
 
       // Map to appropriate HttpError based on status code
-      const errorContext = typeof errorData === 'object' && errorData !== null ? errorData as Record<string, unknown> : undefined;
+      const errorContext =
+        typeof errorData === "object" && errorData !== null
+          ? (errorData as Record<string, unknown>)
+          : undefined;
       switch (response.status) {
         case 400:
           throw new BadRequestError(errorMessage, errorContext);
@@ -60,7 +71,12 @@ export async function fetchJson<T>(
     const json = await response.json();
 
     // Unwrap API response if it has the standard format { success, data }
-    if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
+    if (
+      json &&
+      typeof json === "object" &&
+      "success" in json &&
+      "data" in json
+    ) {
       return json.data as T;
     }
 
@@ -73,16 +89,14 @@ export async function fetchJson<T>(
 
     // Wrap network/parsing errors
     if (error instanceof Error) {
-      throw new InternalServerError(
-        error.message || 'Network error',
-        { originalError: error }
-      );
+      throw new InternalServerError(error.message || "Network error", {
+        originalError: error,
+      });
     }
 
     // Unknown error
-    throw new InternalServerError(
-      'An unexpected error occurred',
-      { originalError: error }
-    );
+    throw new InternalServerError("An unexpected error occurred", {
+      originalError: error,
+    });
   }
 }

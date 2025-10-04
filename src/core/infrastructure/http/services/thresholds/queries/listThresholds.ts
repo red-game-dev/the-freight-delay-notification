@@ -3,9 +3,9 @@
  * GET /api/thresholds
  */
 
-import { fetchJson } from '../../../client/fetchJson';
-import { env } from '@/infrastructure/config/EnvValidator';
-import type { Threshold } from '../types';
+import { env } from "@/infrastructure/config/EnvValidator";
+import { fetchJson } from "../../../client/fetchJson";
+import type { Threshold } from "../types";
 
 export async function listThresholds(): Promise<Threshold[]> {
   const url = `${env.NEXT_PUBLIC_API_URL}/api/thresholds`;

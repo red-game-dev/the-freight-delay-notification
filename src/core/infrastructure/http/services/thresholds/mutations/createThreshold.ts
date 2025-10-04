@@ -3,14 +3,16 @@
  * POST /api/thresholds
  */
 
-import { fetchJson } from '../../../client/fetchJson';
-import { env } from '@/infrastructure/config/EnvValidator';
-import type { Threshold, CreateThresholdInput } from '../types';
+import { env } from "@/infrastructure/config/EnvValidator";
+import { fetchJson } from "../../../client/fetchJson";
+import type { CreateThresholdInput, Threshold } from "../types";
 
-export async function createThreshold(data: CreateThresholdInput): Promise<Threshold> {
+export async function createThreshold(
+  data: CreateThresholdInput,
+): Promise<Threshold> {
   const url = `${env.NEXT_PUBLIC_API_URL}/api/thresholds`;
   return fetchJson<Threshold>(url, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
 }

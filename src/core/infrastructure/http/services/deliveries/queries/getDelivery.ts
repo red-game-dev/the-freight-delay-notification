@@ -3,9 +3,9 @@
  * GET /api/deliveries/:id
  */
 
-import { fetchJson } from '../../../client/fetchJson';
-import { env } from '@/infrastructure/config/EnvValidator';
-import type { Delivery } from '../types';
+import { env } from "@/infrastructure/config/EnvValidator";
+import { fetchJson } from "../../../client/fetchJson";
+import type { Delivery } from "../types";
 
 export async function getDelivery(id: string): Promise<Delivery> {
   const url = `${env.NEXT_PUBLIC_API_URL}/api/deliveries/${id}`;

@@ -3,63 +3,76 @@
  * Form for creating a new delivery
  */
 
-'use client';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { ArrowLeft, Save } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Input';
-import { DateTimePicker } from '@/components/ui/DateTimePicker';
-import { Toggle } from '@/components/ui/Toggle';
-import { FormField, FormRow, FormSection } from '@/components/ui/FormField';
-import { Card } from '@/components/ui/Card';
-import { Select } from '@/components/ui/Select';
-import { InfoBox } from '@/components/ui/InfoBox';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { useCreateDelivery } from '@/core/infrastructure/http/services/deliveries';
-import type { CreateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
-import { useFormDefaults, useFormStore } from '@/stores';
-import { useUserSettingsStore } from '@/stores/userSettingsStore';
-import { useEffect } from 'react';
-import { useCustomer } from '@/core/infrastructure/http/services/customers';
-import { useThresholds } from '@/core/infrastructure/http/services/thresholds';
+"use client";
+import { ArrowLeft, Save } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
+import { FormField, FormRow, FormSection } from "@/components/ui/FormField";
+import { InfoBox } from "@/components/ui/InfoBox";
+import { Input, Textarea } from "@/components/ui/Input";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Select } from "@/components/ui/Select";
+import { Toggle } from "@/components/ui/Toggle";
+import { useCustomer } from "@/core/infrastructure/http/services/customers";
+import type { CreateDeliveryInput } from "@/core/infrastructure/http/services/deliveries";
+import { useCreateDelivery } from "@/core/infrastructure/http/services/deliveries";
+import { useThresholds } from "@/core/infrastructure/http/services/thresholds";
+import { useFormDefaults, useFormStore } from "@/stores";
+import { useUserSettingsStore } from "@/stores/userSettingsStore";
 
 export default function NewDeliveryPage() {
   const router = useRouter();
   const createDelivery = useCreateDelivery();
 
   // Get default values from form store
-  const formDefaults = useFormDefaults('delivery-new');
+  const formDefaults = useFormDefaults("delivery-new");
 
   // Get customer ID from localStorage (for pre-filling form only)
-  const customerId = useUserSettingsStore((state) => state.settings?.customerId);
+  const customerId = useUserSettingsStore(
+    (state) => state.settings?.customerId,
+  );
 
   // Fetch customer from DB using React Query - already has email, name, phone
   const { data: customer } = useCustomer(customerId || null);
 
   // Fetch thresholds to show default value
   const { data: thresholds } = useThresholds();
-  const defaultThreshold = thresholds?.find(t => t.is_default);
+  const defaultThreshold = thresholds?.find((t) => t.is_default);
 
   // Get customer transformation helper from formStore
-  const customerToFormValues = useFormStore((state) => state.customerToFormValues);
+  const customerToFormValues = useFormStore(
+    (state) => state.customerToFormValues,
+  );
 
   const form = useForm<CreateDeliveryInput>({
     defaultValues: formDefaults || undefined,
   });
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, watch, reset, setValue } = form;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    watch,
+    reset,
+    setValue,
+  } = form;
 
   // Pre-fill form when customer data loads from localStorage
   useEffect(() => {
     if (customer) {
       const customerFormValues = customerToFormValues(customer);
       // Merge with existing form values instead of overwriting everything
-      reset((formValues) => ({
-        ...formValues,
-        ...customerFormValues,
-      }), { keepDirty: true });
+      reset(
+        (formValues) => ({
+          ...formValues,
+          ...customerFormValues,
+        }),
+        { keepDirty: true },
+      );
     }
   }, [customer, customerToFormValues, reset]);
 
@@ -68,10 +81,10 @@ export default function NewDeliveryPage() {
       await createDelivery.mutateAsync(data);
       // Note: We don't update customerId in localStorage here
       // Users should update their default customer in Settings only
-      router.push('/deliveries');
+      router.push("/deliveries");
     } catch (error) {
       // Error handling is done by the mutation hook
-      console.error('Failed to create delivery:', error);
+      console.error("Failed to create delivery:", error);
     }
   };
 
@@ -103,8 +116,8 @@ export default function NewDeliveryPage() {
             <FormRow columns={2}>
               <FormField>
                 <Input
-                  {...register('tracking_number', {
-                    required: 'Tracking number is required',
+                  {...register("tracking_number", {
+                    required: "Tracking number is required",
                   })}
                   label="Tracking Number"
                   placeholder="FD-2024-001"
@@ -116,8 +129,8 @@ export default function NewDeliveryPage() {
 
               <FormField>
                 <DateTimePicker
-                  {...register('scheduled_delivery', {
-                    required: 'Scheduled delivery is required',
+                  {...register("scheduled_delivery", {
+                    required: "Scheduled delivery is required",
                   })}
                   label="Scheduled Delivery"
                   error={errors.scheduled_delivery?.message}
@@ -130,8 +143,8 @@ export default function NewDeliveryPage() {
             <FormRow columns={2}>
               <FormField>
                 <Input
-                  {...register('origin', {
-                    required: 'Origin is required',
+                  {...register("origin", {
+                    required: "Origin is required",
                   })}
                   label="Origin Address"
                   placeholder="Downtown Los Angeles, CA"
@@ -144,8 +157,8 @@ export default function NewDeliveryPage() {
 
               <FormField>
                 <Input
-                  {...register('destination', {
-                    required: 'Destination is required',
+                  {...register("destination", {
+                    required: "Destination is required",
                   })}
                   label="Destination Address"
                   placeholder="LAX Airport, CA"
@@ -159,7 +172,7 @@ export default function NewDeliveryPage() {
 
             <FormField>
               <Textarea
-                {...register('notes')}
+                {...register("notes")}
                 label="Delivery Notes"
                 placeholder="Any special instructions..."
                 rows={3}
@@ -178,8 +191,8 @@ export default function NewDeliveryPage() {
             <FormRow columns={1}>
               <FormField>
                 <Input
-                  {...register('customer_name', {
-                    required: 'Customer name is required',
+                  {...register("customer_name", {
+                    required: "Customer name is required",
                   })}
                   label="Customer Name"
                   placeholder="John Doe"
@@ -193,11 +206,11 @@ export default function NewDeliveryPage() {
             <FormRow columns={2}>
               <FormField>
                 <Input
-                  {...register('customer_email', {
-                    required: 'Email is required',
+                  {...register("customer_email", {
+                    required: "Email is required",
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Invalid email address',
+                      message: "Invalid email address",
                     },
                   })}
                   type="email"
@@ -212,10 +225,10 @@ export default function NewDeliveryPage() {
 
               <FormField>
                 <Input
-                  {...register('customer_phone', {
+                  {...register("customer_phone", {
                     pattern: {
                       value: /^[\d\s+()-]+$/,
-                      message: 'Invalid phone number',
+                      message: "Invalid phone number",
                     },
                   })}
                   type="tel"
@@ -236,17 +249,26 @@ export default function NewDeliveryPage() {
           >
             <FormField>
               <Input
-                {...register('delay_threshold_minutes', {
+                {...register("delay_threshold_minutes", {
                   valueAsNumber: true,
-                  min: { value: 1, message: 'Must be at least 1 minute' },
-                  max: { value: 1440, message: 'Cannot exceed 1440 minutes (24 hours)' },
+                  min: { value: 1, message: "Must be at least 1 minute" },
+                  max: {
+                    value: 1440,
+                    message: "Cannot exceed 1440 minutes (24 hours)",
+                  },
                 })}
                 type="number"
                 label="Delay Threshold (minutes)"
-                placeholder={defaultThreshold ? `Default: ${defaultThreshold.delay_minutes} minutes` : "Leave empty to use default"}
-                helperText={defaultThreshold
-                  ? `Leave empty to use default threshold (${defaultThreshold.delay_minutes} minutes - ${defaultThreshold.name})`
-                  : "Leave empty to use default threshold from Settings."}
+                placeholder={
+                  defaultThreshold
+                    ? `Default: ${defaultThreshold.delay_minutes} minutes`
+                    : "Leave empty to use default"
+                }
+                helperText={
+                  defaultThreshold
+                    ? `Leave empty to use default threshold (${defaultThreshold.delay_minutes} minutes - ${defaultThreshold.name})`
+                    : "Leave empty to use default threshold from Settings."
+                }
                 error={errors.delay_threshold_minutes?.message}
                 fullWidth
               />
@@ -255,12 +277,15 @@ export default function NewDeliveryPage() {
             <FormField>
               <div className="space-y-1">
                 <Toggle
-                  checked={!!watch('auto_check_traffic')}
-                  onChange={(checked) => setValue('auto_check_traffic', checked)}
+                  checked={!!watch("auto_check_traffic")}
+                  onChange={(checked) =>
+                    setValue("auto_check_traffic", checked)
+                  }
                   label="Automatically check traffic on creation"
                 />
                 <p className="text-xs text-muted-foreground ml-[calc(2.75rem)]">
-                  When enabled, the system will immediately check for traffic delays after creating this delivery
+                  When enabled, the system will immediately check for traffic
+                  delays after creating this delivery
                 </p>
               </div>
             </FormField>
@@ -268,23 +293,26 @@ export default function NewDeliveryPage() {
             <FormField>
               <div className="space-y-1">
                 <Toggle
-                  checked={!!watch('enable_recurring_checks')}
-                  onChange={(checked) => setValue('enable_recurring_checks', checked)}
+                  checked={!!watch("enable_recurring_checks")}
+                  onChange={(checked) =>
+                    setValue("enable_recurring_checks", checked)
+                  }
                   label="Enable recurring traffic checks"
                 />
                 <p className="text-xs text-muted-foreground ml-[calc(2.75rem)]">
-                  Continuously monitor traffic at configured intervals until delivery completion
+                  Continuously monitor traffic at configured intervals until
+                  delivery completion
                 </p>
               </div>
             </FormField>
 
-            {watch('enable_recurring_checks') && (
+            {watch("enable_recurring_checks") && (
               <>
                 <FormRow columns={2}>
                   <FormField>
                     <Select
-                      {...register('check_interval_minutes', {
-                        required: watch('enable_recurring_checks'),
+                      {...register("check_interval_minutes", {
+                        required: watch("enable_recurring_checks"),
                         valueAsNumber: true,
                       })}
                       label="Check Interval"
@@ -293,28 +321,28 @@ export default function NewDeliveryPage() {
                       fullWidth
                       optionGroups={[
                         {
-                          label: 'Minutes',
+                          label: "Minutes",
                           options: [
-                            { value: 15, label: 'Every 15 minutes' },
-                            { value: 30, label: 'Every 30 minutes' },
+                            { value: 15, label: "Every 15 minutes" },
+                            { value: 30, label: "Every 30 minutes" },
                           ],
                         },
                         {
-                          label: 'Hours',
+                          label: "Hours",
                           options: [
-                            { value: 60, label: 'Every 1 hour' },
-                            { value: 120, label: 'Every 2 hours' },
-                            { value: 180, label: 'Every 3 hours' },
-                            { value: 360, label: 'Every 6 hours' },
-                            { value: 720, label: 'Every 12 hours' },
+                            { value: 60, label: "Every 1 hour" },
+                            { value: 120, label: "Every 2 hours" },
+                            { value: 180, label: "Every 3 hours" },
+                            { value: 360, label: "Every 6 hours" },
+                            { value: 720, label: "Every 12 hours" },
                           ],
                         },
                         {
-                          label: 'Days/Weeks',
+                          label: "Days/Weeks",
                           options: [
-                            { value: 1440, label: 'Daily (every 24 hours)' },
-                            { value: 10080, label: 'Weekly (every 7 days)' },
-                            { value: 43200, label: 'Monthly (every 30 days)' },
+                            { value: 1440, label: "Daily (every 24 hours)" },
+                            { value: 10080, label: "Weekly (every 7 days)" },
+                            { value: 43200, label: "Monthly (every 30 days)" },
                           ],
                         },
                       ]}
@@ -323,10 +351,10 @@ export default function NewDeliveryPage() {
 
                   <FormField>
                     <Input
-                      {...register('max_checks', {
+                      {...register("max_checks", {
                         valueAsNumber: true,
-                        min: { value: 1, message: 'Must be at least 1' },
-                        max: { value: 1000, message: 'Cannot exceed 1000' },
+                        min: { value: 1, message: "Must be at least 1" },
+                        max: { value: 1000, message: "Cannot exceed 1000" },
                       })}
                       type="number"
                       label="Maximum Checks"
@@ -341,10 +369,16 @@ export default function NewDeliveryPage() {
                 <FormRow columns={2}>
                   <FormField>
                     <Input
-                      {...register('min_delay_change_threshold', {
+                      {...register("min_delay_change_threshold", {
                         valueAsNumber: true,
-                        min: { value: 5, message: 'Must be at least 5 minutes' },
-                        max: { value: 120, message: 'Cannot exceed 120 minutes' },
+                        min: {
+                          value: 5,
+                          message: "Must be at least 5 minutes",
+                        },
+                        max: {
+                          value: 120,
+                          message: "Cannot exceed 120 minutes",
+                        },
                       })}
                       type="number"
                       label="Minimum Delay Change (minutes)"
@@ -357,10 +391,13 @@ export default function NewDeliveryPage() {
 
                   <FormField>
                     <Input
-                      {...register('min_hours_between_notifications', {
+                      {...register("min_hours_between_notifications", {
                         valueAsNumber: true,
-                        min: { value: 0.5, message: 'Must be at least 0.5 hours' },
-                        max: { value: 24, message: 'Cannot exceed 24 hours' },
+                        min: {
+                          value: 0.5,
+                          message: "Must be at least 0.5 hours",
+                        },
+                        max: { value: 24, message: "Cannot exceed 24 hours" },
                       })}
                       type="number"
                       step="0.1"
@@ -377,7 +414,9 @@ export default function NewDeliveryPage() {
                   <ul className="space-y-1">
                     <li>✓ After reaching maximum number of checks</li>
                     <li>✓ When scheduled delivery time + 2 hours passes</li>
-                    <li>✓ When delivery status changes to delivered/cancelled</li>
+                    <li>
+                      ✓ When delivery status changes to delivered/cancelled
+                    </li>
                   </ul>
                 </InfoBox>
               </>
@@ -386,7 +425,11 @@ export default function NewDeliveryPage() {
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-6 border-t">
-            <Button type="button" variant="outline" onClick={() => router.back()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+            >
               Cancel
             </Button>
             <Button

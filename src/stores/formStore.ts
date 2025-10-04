@@ -10,11 +10,21 @@
  * - Type-safe with TypeScript generics
  */
 
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import type { Delivery, UpdateDeliveryInput, CreateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
-import type { Threshold, CreateThresholdInput } from '@/core/infrastructure/http/services/thresholds';
-import type { Customer, UpdateCustomerInput } from '@/core/infrastructure/http/services/customers';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
+import type {
+  Customer,
+  UpdateCustomerInput,
+} from "@/core/infrastructure/http/services/customers";
+import type {
+  CreateDeliveryInput,
+  Delivery,
+  UpdateDeliveryInput,
+} from "@/core/infrastructure/http/services/deliveries";
+import type {
+  CreateThresholdInput,
+  Threshold,
+} from "@/core/infrastructure/http/services/thresholds";
 
 // ============================================================================
 // Form Type Definitions
@@ -25,11 +35,11 @@ import type { Customer, UpdateCustomerInput } from '@/core/infrastructure/http/s
  * Add new form types here to enable type inference
  */
 export interface FormTypeRegistry {
-  'delivery-new': CreateDeliveryInput;
-  'delivery-edit': UpdateDeliveryInput;
-  'threshold-create': CreateThresholdInput;
-  'threshold-edit': CreateThresholdInput;
-  'customer-settings': UpdateCustomerInput;
+  "delivery-new": CreateDeliveryInput;
+  "delivery-edit": UpdateDeliveryInput;
+  "threshold-create": CreateThresholdInput;
+  "threshold-edit": CreateThresholdInput;
+  "customer-settings": UpdateCustomerInput;
 }
 
 export type FormType = keyof FormTypeRegistry;
@@ -48,16 +58,16 @@ const INITIAL_DELIVERY_DEFAULTS: Partial<CreateDeliveryInput> = {
 };
 
 const INITIAL_THRESHOLD_DEFAULTS: Partial<CreateThresholdInput> = {
-  name: '',
+  name: "",
   delay_minutes: 30,
-  notification_channels: ['email', 'sms'],
+  notification_channels: ["email", "sms"],
   is_default: false,
 };
 
 const INITIAL_CUSTOMER_DEFAULTS: Partial<UpdateCustomerInput> = {
-  name: '',
-  email: '',
-  phone: '',
+  name: "",
+  email: "",
+  phone: "",
 };
 
 /**
@@ -67,11 +77,11 @@ const INITIAL_CUSTOMER_DEFAULTS: Partial<UpdateCustomerInput> = {
 const FORM_DEFAULTS_REGISTRY: {
   [K in FormType]: Partial<FormTypeRegistry[K]>;
 } = {
-  'delivery-new': INITIAL_DELIVERY_DEFAULTS,
-  'delivery-edit': INITIAL_DELIVERY_DEFAULTS,
-  'threshold-create': INITIAL_THRESHOLD_DEFAULTS,
-  'threshold-edit': INITIAL_THRESHOLD_DEFAULTS,
-  'customer-settings': INITIAL_CUSTOMER_DEFAULTS,
+  "delivery-new": INITIAL_DELIVERY_DEFAULTS,
+  "delivery-edit": INITIAL_DELIVERY_DEFAULTS,
+  "threshold-create": INITIAL_THRESHOLD_DEFAULTS,
+  "threshold-edit": INITIAL_THRESHOLD_DEFAULTS,
+  "customer-settings": INITIAL_CUSTOMER_DEFAULTS,
 };
 
 // ============================================================================
@@ -109,7 +119,10 @@ interface FormStore {
 
   // Delivery-specific transformations
   deliveryToFormValues: (delivery: Delivery) => UpdateDeliveryInput;
-  formValuesToUpdatePayload: (formData: UpdateDeliveryInput, status?: Delivery['status']) => UpdateDeliveryInput;
+  formValuesToUpdatePayload: (
+    formData: UpdateDeliveryInput,
+    status?: Delivery["status"],
+  ) => UpdateDeliveryInput;
 
   // Threshold-specific transformations
   thresholdToFormValues: (threshold: Threshold) => CreateThresholdInput;
@@ -129,16 +142,18 @@ export const useFormStore = create<FormStore>()(
       (set, get) => ({
         // Initial state
         drafts: [],
-        defaults: Object.entries(FORM_DEFAULTS_REGISTRY).map(([formType, defaults]) => ({
-          formType,
-          defaults,
-        })),
+        defaults: Object.entries(FORM_DEFAULTS_REGISTRY).map(
+          ([formType, defaults]) => ({
+            formType,
+            defaults,
+          }),
+        ),
 
         // Save form draft for unsaved changes
         saveDraft: (formType, formId, data) => {
           set((state) => {
             const existingIndex = state.drafts.findIndex(
-              (d) => d.formType === formType && d.formId === formId
+              (d) => d.formType === formType && d.formId === formId,
             );
 
             const newDraft: FormDraft = {
@@ -163,7 +178,7 @@ export const useFormStore = create<FormStore>()(
         // Get saved draft
         getDraft: (formType, formId) => {
           const draft = get().drafts.find(
-            (d) => d.formType === formType && d.formId === formId
+            (d) => d.formType === formType && d.formId === formId,
           );
           return draft ? draft.data : null;
         },
@@ -172,7 +187,7 @@ export const useFormStore = create<FormStore>()(
         clearDraft: (formType, formId) => {
           set((state) => ({
             drafts: state.drafts.filter(
-              (d) => !(d.formType === formType && d.formId === formId)
+              (d) => !(d.formType === formType && d.formId === formId),
             ),
           }));
         },
@@ -191,21 +206,28 @@ export const useFormStore = create<FormStore>()(
 
         // Get default values for a form type
         getDefaults: (formType) => {
-          const formDefaults = get().defaults.find((d) => d.formType === formType);
+          const formDefaults = get().defaults.find(
+            (d) => d.formType === formType,
+          );
           return formDefaults ? formDefaults.defaults : null;
         },
 
         // Set default values for a form type
         setDefaults: (formType, defaults) => {
           set((state) => {
-            const existingIndex = state.defaults.findIndex((d) => d.formType === formType);
+            const existingIndex = state.defaults.findIndex(
+              (d) => d.formType === formType,
+            );
 
             if (existingIndex >= 0) {
               // Update existing defaults
               const updatedDefaults = [...state.defaults];
               updatedDefaults[existingIndex] = {
                 formType,
-                defaults: { ...updatedDefaults[existingIndex].defaults, ...defaults },
+                defaults: {
+                  ...updatedDefaults[existingIndex].defaults,
+                  ...defaults,
+                },
               };
               return { defaults: updatedDefaults };
             } else {
@@ -223,17 +245,25 @@ export const useFormStore = create<FormStore>()(
 
           if (initialDefaults) {
             set((state) => {
-              const existingIndex = state.defaults.findIndex((d) => d.formType === formType);
+              const existingIndex = state.defaults.findIndex(
+                (d) => d.formType === formType,
+              );
 
               if (existingIndex >= 0) {
                 // Update existing
                 const updatedDefaults = [...state.defaults];
-                updatedDefaults[existingIndex] = { formType, defaults: initialDefaults };
+                updatedDefaults[existingIndex] = {
+                  formType,
+                  defaults: initialDefaults,
+                };
                 return { defaults: updatedDefaults };
               } else {
                 // Add new
                 return {
-                  defaults: [...state.defaults, { formType, defaults: initialDefaults }],
+                  defaults: [
+                    ...state.defaults,
+                    { formType, defaults: initialDefaults },
+                  ],
                 };
               }
             });
@@ -249,19 +279,24 @@ export const useFormStore = create<FormStore>()(
             // Format scheduled_delivery for datetime-local input (YYYY-MM-DDTHH:mm)
             scheduled_delivery: delivery.scheduled_delivery
               ? new Date(delivery.scheduled_delivery).toISOString().slice(0, 16)
-              : '',
+              : "",
             customer_name: delivery.customer_name,
             customer_email: delivery.customer_email,
-            customer_phone: delivery.customer_phone || '',
-            notes: delivery.notes ?? '',
+            customer_phone: delivery.customer_phone || "",
+            notes: delivery.notes ?? "",
             auto_check_traffic: delivery.auto_check_traffic ?? false,
             enable_recurring_checks: delivery.enable_recurring_checks ?? false,
             check_interval_minutes: delivery.check_interval_minutes ?? 30,
             // Don't set max_checks if it's -1 (unlimited)
-            max_checks: delivery.max_checks && delivery.max_checks !== -1 ? delivery.max_checks : undefined,
+            max_checks:
+              delivery.max_checks && delivery.max_checks !== -1
+                ? delivery.max_checks
+                : undefined,
             delay_threshold_minutes: delivery.delay_threshold_minutes ?? 30,
-            min_delay_change_threshold: delivery.min_delay_change_threshold ?? 15,
-            min_hours_between_notifications: delivery.min_hours_between_notifications ?? 1.0,
+            min_delay_change_threshold:
+              delivery.min_delay_change_threshold ?? 15,
+            min_hours_between_notifications:
+              delivery.min_hours_between_notifications ?? 1.0,
           };
         },
 
@@ -296,8 +331,9 @@ export const useFormStore = create<FormStore>()(
 
         // Transform customer to delivery form values (customer_name, customer_email, customer_phone)
         customerToFormValues: (customer) => {
-          const phone = customer.phone || '';
-          const formattedPhone = phone && !phone.startsWith('+') ? `+${phone}` : phone;
+          const phone = customer.phone || "";
+          const formattedPhone =
+            phone && !phone.startsWith("+") ? `+${phone}` : phone;
 
           return {
             customer_name: customer.name,
@@ -308,8 +344,9 @@ export const useFormStore = create<FormStore>()(
 
         // Transform customer to settings form values (name, email, phone)
         customerToSettingsFormValues: (customer) => {
-          const phone = customer.phone || '';
-          const formattedPhone = phone && !phone.startsWith('+') ? `+${phone}` : phone;
+          const phone = customer.phone || "";
+          const formattedPhone =
+            phone && !phone.startsWith("+") ? `+${phone}` : phone;
 
           return {
             name: customer.name,
@@ -319,18 +356,18 @@ export const useFormStore = create<FormStore>()(
         },
       }),
       {
-        name: 'freight-delay-form-store',
+        name: "freight-delay-form-store",
         // Only persist drafts and defaults
         partialize: (state) => ({
           drafts: state.drafts,
           defaults: state.defaults,
         }),
-      }
+      },
     ),
     {
-      name: 'form-store',
-    }
-  )
+      name: "form-store",
+    },
+  ),
 );
 
 // ============================================================================
@@ -342,8 +379,12 @@ export const useFormStore = create<FormStore>()(
  * @example
  * const defaults = useFormDefaults('delivery-new'); // Type: Partial<CreateDeliveryInput> | null
  */
-export function useFormDefaults<T extends FormType>(formType: T): Partial<FormTypeRegistry[T]> | null {
-  return useFormStore((state) => state.getDefaults<FormTypeRegistry[T]>(formType));
+export function useFormDefaults<T extends FormType>(
+  formType: T,
+): Partial<FormTypeRegistry[T]> | null {
+  return useFormStore((state) =>
+    state.getDefaults<FormTypeRegistry[T]>(formType),
+  );
 }
 
 /**
@@ -353,9 +394,11 @@ export function useFormDefaults<T extends FormType>(formType: T): Partial<FormTy
  */
 export function useFormDraft<T extends FormType>(
   formType: T,
-  formId: string
+  formId: string,
 ): Partial<FormTypeRegistry[T]> | null {
-  return useFormStore((state) => state.getDraft<FormTypeRegistry[T]>(formType, formId));
+  return useFormStore((state) =>
+    state.getDraft<FormTypeRegistry[T]>(formType, formId),
+  );
 }
 
 /**

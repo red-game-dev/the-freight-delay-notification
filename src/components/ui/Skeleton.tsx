@@ -3,40 +3,41 @@
  * Provides skeleton loaders for various UI elements
  */
 
-'use client';
+"use client";
 
-import { CSSProperties } from 'react';
+import type { CSSProperties } from "react";
 
 interface SkeletonProps {
   className?: string;
-  variant?: 'text' | 'circular' | 'rectangular';
+  variant?: "text" | "circular" | "rectangular";
   width?: string | number;
   height?: string | number;
   animate?: boolean;
 }
 
 export function Skeleton({
-  className = '',
-  variant = 'rectangular',
+  className = "",
+  variant = "rectangular",
   width,
   height,
   animate = true,
 }: SkeletonProps) {
   const variantClasses = {
-    text: 'rounded',
-    circular: 'rounded-full',
-    rectangular: 'rounded-md',
+    text: "rounded",
+    circular: "rounded-full",
+    rectangular: "rounded-md",
   };
 
   const style: CSSProperties = {};
-  if (width) style.width = typeof width === 'number' ? `${width}px` : width;
-  if (height) style.height = typeof height === 'number' ? `${height}px` : height;
+  if (width) style.width = typeof width === "number" ? `${width}px` : width;
+  if (height)
+    style.height = typeof height === "number" ? `${height}px` : height;
 
   return (
     <div
       className={`
         skeleton-loader
-        ${animate ? 'skeleton-shimmer' : ''}
+        ${animate ? "skeleton-shimmer" : ""}
         ${variantClasses[variant]}
         ${className}
       `}
@@ -46,7 +47,7 @@ export function Skeleton({
 }
 
 // Skeleton Card - for list items, delivery cards, etc.
-export function SkeletonCard({ className = '' }: { className?: string }) {
+export function SkeletonCard({ className = "" }: { className?: string }) {
   return (
     <div className={`border rounded-lg p-6 space-y-4 ${className}`}>
       <div className="flex items-center justify-between">
@@ -69,7 +70,7 @@ export function SkeletonCard({ className = '' }: { className?: string }) {
 export function SkeletonTable({
   rows = 5,
   columns = 4,
-  className = '',
+  className = "",
 }: {
   rows?: number;
   columns?: number;
@@ -81,7 +82,11 @@ export function SkeletonTable({
       <div className="bg-muted p-4 border-b">
         <div className="flex gap-4">
           {Array.from({ length: columns }).map((_, i) => (
-            <Skeleton key={`header-${i}`} width={`${100 / columns}%`} height={20} />
+            <Skeleton
+              key={`header-${i}`}
+              width={`${100 / columns}%`}
+              height={20}
+            />
           ))}
         </div>
       </div>
@@ -108,7 +113,7 @@ export function SkeletonTable({
 // Skeleton Form - for forms
 export function SkeletonForm({
   fields = 4,
-  className = '',
+  className = "",
 }: {
   fields?: number;
   className?: string;
@@ -133,7 +138,7 @@ export function SkeletonForm({
 export function SkeletonStats({
   count = 4,
   columns,
-  className = '',
+  className = "",
 }: {
   count?: number;
   columns?: 2 | 3 | 4 | 5 | 6;
@@ -142,11 +147,11 @@ export function SkeletonStats({
   // Match StatGrid's responsive column layout
   const cols = columns || (count <= 6 ? (count as 2 | 3 | 4 | 5 | 6) : 4);
   const colsMap = {
-    2: 'sm:grid-cols-2',
-    3: 'sm:grid-cols-3',
-    4: 'sm:grid-cols-2 lg:grid-cols-4',
-    5: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
-    6: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+    2: "sm:grid-cols-2",
+    3: "sm:grid-cols-3",
+    4: "sm:grid-cols-2 lg:grid-cols-4",
+    5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
+    6: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6",
   };
 
   return (
@@ -165,7 +170,7 @@ export function SkeletonStats({
 // Skeleton Text - for paragraphs
 export function SkeletonText({
   lines = 3,
-  className = '',
+  className = "",
 }: {
   lines?: number;
   className?: string;
@@ -175,7 +180,7 @@ export function SkeletonText({
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={`line-${i}`}
-          width={i === lines - 1 ? '60%' : '100%'}
+          width={i === lines - 1 ? "60%" : "100%"}
           height={16}
         />
       ))}
@@ -186,7 +191,7 @@ export function SkeletonText({
 // Skeleton List - for list items
 export function SkeletonList({
   items = 5,
-  className = '',
+  className = "",
 }: {
   items?: number;
   className?: string;
@@ -194,7 +199,10 @@ export function SkeletonList({
   return (
     <div className={`space-y-3 ${className}`}>
       {Array.from({ length: items }).map((_, i) => (
-        <div key={`item-${i}`} className="flex items-center gap-4 p-4 border rounded-lg">
+        <div
+          key={`item-${i}`}
+          className="flex items-center gap-4 p-4 border rounded-lg"
+        >
           <Skeleton variant="circular" width={48} height={48} />
           <div className="flex-1 space-y-2">
             <Skeleton width="40%" height={16} />
@@ -208,7 +216,7 @@ export function SkeletonList({
 }
 
 // Skeleton Page - full page skeleton
-export function SkeletonPage({ className = '' }: { className?: string }) {
+export function SkeletonPage({ className = "" }: { className?: string }) {
   return (
     <div className={`space-y-8 ${className}`}>
       {/* Header */}
@@ -228,7 +236,7 @@ export function SkeletonPage({ className = '' }: { className?: string }) {
 }
 
 // Skeleton Detail - for detail pages with two-column layout
-export function SkeletonDetail({ className = '' }: { className?: string }) {
+export function SkeletonDetail({ className = "" }: { className?: string }) {
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header */}
@@ -302,7 +310,10 @@ export function SkeletonDetail({ className = '' }: { className?: string }) {
             </div>
             <div className="space-y-3">
               {Array.from({ length: 2 }).map((_, i) => (
-                <div key={`notification-${i}`} className="border rounded-lg p-4">
+                <div
+                  key={`notification-${i}`}
+                  className="border rounded-lg p-4"
+                >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Skeleton width="50%" height={16} />
@@ -322,7 +333,13 @@ export function SkeletonDetail({ className = '' }: { className?: string }) {
 }
 
 // Skeleton Workflow - for workflow execution list
-export function SkeletonWorkflow({ items = 3, className = '' }: { items?: number; className?: string }) {
+export function SkeletonWorkflow({
+  items = 3,
+  className = "",
+}: {
+  items?: number;
+  className?: string;
+}) {
   return (
     <div className={`border rounded-lg ${className}`}>
       <div className="p-4 sm:p-6">

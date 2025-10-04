@@ -3,18 +3,21 @@
  * PDF Step 1: Fallback traffic data source
  */
 
-import { env } from '../../config/EnvValidator';
-import { Result, success, failure } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
-import { logger, getErrorMessage  } from '@/core/base/utils/Logger';
+import { getErrorMessage, logger } from "@/core/base/utils/Logger";
+import { InfrastructureError } from "../../../core/base/errors/BaseError";
+import { failure, type Result, success } from "../../../core/base/utils/Result";
+import type {
+  RouteInput,
+  TrafficData,
+} from "../../../types/shared/traffic.types";
+import { env } from "../../config/EnvValidator";
 
 export class MapboxClient {
-  private baseUrl = 'https://api.mapbox.com';
+  private baseUrl = "https://api.mapbox.com";
   private accessToken: string;
 
   constructor() {
-    this.accessToken = env.MAPBOX_ACCESS_TOKEN || '';
+    this.accessToken = env.MAPBOX_ACCESS_TOKEN || "";
   }
 
   /**
@@ -25,11 +28,12 @@ export class MapboxClient {
     try {
       // Check if API token is configured
       if (!this.accessToken) {
-        logger.info('⚠️ Mapbox access token not configured, skipping...');
-        return failure(new InfrastructureError(
-          'Mapbox access token not configured',
-          { route }
-        ));
+        logger.info("⚠️ Mapbox access token not configured, skipping...");
+        return failure(
+          new InfrastructureError("Mapbox access token not configured", {
+            route,
+          }),
+        );
       }
 
       logger.info(`🗺️ Fetching Mapbox traffic data (fallback)...`);
@@ -46,14 +50,13 @@ export class MapboxClient {
         const destCoords = await this.geocode(route.destination);
 
         if (!originCoords.success || !destCoords.success) {
-          return failure(new InfrastructureError(
-            'Failed to geocode addresses for Mapbox',
-            {
+          return failure(
+            new InfrastructureError("Failed to geocode addresses for Mapbox", {
               route,
               originError: !originCoords.success ? originCoords.error : null,
-              destError: !destCoords.success ? destCoords.error : null
-            }
-          ));
+              destError: !destCoords.success ? destCoords.error : null,
+            }),
+          );
         }
 
         origin = `${originCoords.value.lng},${originCoords.value.lat}`;
@@ -61,22 +64,22 @@ export class MapboxClient {
       }
 
       // Get directions with current traffic
-      const url = `${this.baseUrl}/directions/v5/mapbox/driving-traffic/${origin};${destination}` +
+      const url =
+        `${this.baseUrl}/directions/v5/mapbox/driving-traffic/${origin};${destination}` +
         `?access_token=${this.accessToken}&geometries=geojson&overview=full`;
 
       const response = await fetch(url);
       const data = await response.json();
 
       if (!response.ok || !data.routes?.length) {
-        return failure(new InfrastructureError(
-          'No route found from Mapbox',
-          {
+        return failure(
+          new InfrastructureError("No route found from Mapbox", {
             origin: route.origin,
             destination: route.destination,
             error: data.message || data.error,
-            code: data.code
-          }
-        ));
+            code: data.code,
+          }),
+        );
       }
 
       const routeData = data.routes[0];
@@ -84,7 +87,8 @@ export class MapboxClient {
       const distance = routeData.distance; // Distance in meters
 
       // Get route without traffic for comparison
-      const normalUrl = `${this.baseUrl}/directions/v5/mapbox/driving/${origin};${destination}` +
+      const normalUrl =
+        `${this.baseUrl}/directions/v5/mapbox/driving/${origin};${destination}` +
         `?access_token=${this.accessToken}`;
 
       const normalResponse = await fetch(normalUrl);
@@ -95,17 +99,18 @@ export class MapboxClient {
       const delayMinutes = Math.round(delaySeconds / 60);
 
       // Determine traffic condition
-      const delayPercentage = normalDuration > 0 ? (delaySeconds / normalDuration) * 100 : 0;
-      let trafficCondition: TrafficData['trafficCondition'];
+      const delayPercentage =
+        normalDuration > 0 ? (delaySeconds / normalDuration) * 100 : 0;
+      let trafficCondition: TrafficData["trafficCondition"];
 
       if (delayPercentage < 10) {
-        trafficCondition = 'light';
+        trafficCondition = "light";
       } else if (delayPercentage < 25) {
-        trafficCondition = 'moderate';
+        trafficCondition = "moderate";
       } else if (delayPercentage < 50) {
-        trafficCondition = 'heavy';
+        trafficCondition = "heavy";
       } else {
-        trafficCondition = 'severe';
+        trafficCondition = "severe";
       }
 
       const trafficData: TrafficData = {
@@ -114,10 +119,10 @@ export class MapboxClient {
         estimatedDuration: duration,
         normalDuration,
         fetchedAt: new Date(),
-        provider: 'mapbox',
+        provider: "mapbox",
         distance: {
           value: distance,
-          unit: 'meters',
+          unit: "meters",
         },
       };
 
@@ -133,39 +138,48 @@ export class MapboxClient {
 
       return success(trafficData);
     } catch (error: unknown) {
-      logger.error('❌ Mapbox API error:', getErrorMessage(error));
-      return failure(new InfrastructureError(
-        'Failed to fetch traffic data from Mapbox',
-        { error: getErrorMessage(error), route }
-      ));
+      logger.error("❌ Mapbox API error:", getErrorMessage(error));
+      return failure(
+        new InfrastructureError("Failed to fetch traffic data from Mapbox", {
+          error: getErrorMessage(error),
+          route,
+        }),
+      );
     }
   }
 
   /**
    * Geocode address to coordinates using Mapbox
    */
-  private async geocode(address: string): Promise<Result<{ lat: number; lng: number }>> {
+  private async geocode(
+    address: string,
+  ): Promise<Result<{ lat: number; lng: number }>> {
     try {
-      const url = `${this.baseUrl}/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json` +
+      const url =
+        `${this.baseUrl}/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json` +
         `?access_token=${this.accessToken}&limit=1`;
 
       const response = await fetch(url);
       const data = await response.json();
 
       if (!response.ok || !data.features?.length) {
-        return failure(new InfrastructureError(
-          'Failed to geocode address',
-          { address, error: data.message }
-        ));
+        return failure(
+          new InfrastructureError("Failed to geocode address", {
+            address,
+            error: data.message,
+          }),
+        );
       }
 
       const [lng, lat] = data.features[0].center;
       return success({ lat, lng });
     } catch (error: unknown) {
-      return failure(new InfrastructureError(
-        'Geocoding failed',
-        { address, error: getErrorMessage(error) }
-      ));
+      return failure(
+        new InfrastructureError("Geocoding failed", {
+          address,
+          error: getErrorMessage(error),
+        }),
+      );
     }
   }
 }

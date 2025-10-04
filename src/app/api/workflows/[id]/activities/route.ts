@@ -3,14 +3,14 @@
  * GET /api/workflows/[id]/activities - Get activities for a workflow
  */
 
-import { createParamApiHandler } from '@/core/infrastructure/http';
-import { Result } from '@/core/base/utils/Result';
-import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
-import { logger, hasMessage, hasName } from '@/core/base/utils/Logger';
-import { NotFoundError } from '@/core/base/errors/BaseError';
-import { validateParams } from '@/core/utils/validation';
-import { workflowIdParamSchema } from '@/core/schemas/workflow';
-import { setAuditContext } from '@/app/api/middleware/auditContext';
+import { setAuditContext } from "@/app/api/middleware/auditContext";
+import { NotFoundError } from "@/core/base/errors/BaseError";
+import { hasMessage, hasName, logger } from "@/core/base/utils/Logger";
+import { Result } from "@/core/base/utils/Result";
+import { createParamApiHandler } from "@/core/infrastructure/http";
+import { workflowIdParamSchema } from "@/core/schemas/workflow";
+import { validateParams } from "@/core/utils/validation";
+import { getTemporalClient } from "@/infrastructure/temporal/TemporalClient";
 
 /**
  * GET /api/workflows/[id]/activities
@@ -36,7 +36,9 @@ export const GET = createParamApiHandler(async (request, { params }) => {
     // Note: Temporal's fetchHistory() returns IHistory which requires special handling
     // For now, return basic workflow info without detailed activity breakdown
     // Full activity history would require using Temporal's history API directly
-    logger.info(`📊 Workflow ${workflowId} exists with status: ${description.status.name}`);
+    logger.info(
+      `📊 Workflow ${workflowId} exists with status: ${description.status.name}`,
+    );
 
     return Result.ok({
       workflowId,
@@ -45,12 +47,17 @@ export const GET = createParamApiHandler(async (request, { params }) => {
       closeTime: description.closeTime,
       // Activity details would require more complex history parsing
       activities: [],
-      message: 'Detailed activity tracking not yet implemented - use Temporal UI for full history',
+      message:
+        "Detailed activity tracking not yet implemented - use Temporal UI for full history",
     });
-
   } catch (error: unknown) {
-    if (hasMessage(error) && error.message.includes('not found') || hasName(error) && error.name === 'WorkflowNotFoundError') {
-      return Result.fail(new NotFoundError(`Workflow ${workflowId} not found in Temporal`));
+    if (
+      (hasMessage(error) && error.message.includes("not found")) ||
+      (hasName(error) && error.name === "WorkflowNotFoundError")
+    ) {
+      return Result.fail(
+        new NotFoundError(`Workflow ${workflowId} not found in Temporal`),
+      );
     }
 
     logger.error(`❌ Failed to fetch workflow info for ${workflowId}:`, error);

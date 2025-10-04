@@ -3,25 +3,29 @@
  * PDF Step 4: SMS notification delivery
  */
 
-import { Twilio } from 'twilio';
-import { env } from '../../config/EnvValidator';
-import { Result, success, failure } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
-import { logger, getErrorMessage, hasCode } from '@/core/base/utils/Logger';
+import { Twilio } from "twilio";
+import { getErrorMessage, hasCode, logger } from "@/core/base/utils/Logger";
+import { InfrastructureError } from "../../../core/base/errors/BaseError";
+import { failure, type Result, success } from "../../../core/base/utils/Result";
+import { env } from "../../config/EnvValidator";
+import type {
+  NotificationAdapter,
+  NotificationInput,
+  NotificationResult,
+} from "./NotificationAdapter.interface";
 
 export class TwilioAdapter implements NotificationAdapter {
-  public readonly providerName = 'Twilio';
+  public readonly providerName = "Twilio";
   public readonly priority = 2; // SMS has lower priority than email
-  public readonly channel = 'sms' as const;
+  public readonly channel = "sms" as const;
 
   private client: Twilio | null = null;
   private fromPhone: string;
 
   constructor() {
-    const accountSid = env.TWILIO_ACCOUNT_SID || '';
-    const authToken = env.TWILIO_AUTH_TOKEN || '';
-    this.fromPhone = env.TWILIO_FROM_PHONE || '';
+    const accountSid = env.TWILIO_ACCOUNT_SID || "";
+    const authToken = env.TWILIO_AUTH_TOKEN || "";
+    this.fromPhone = env.TWILIO_FROM_PHONE || "";
 
     if (accountSid && authToken) {
       this.client = new Twilio(accountSid, authToken);
@@ -34,11 +38,12 @@ export class TwilioAdapter implements NotificationAdapter {
 
   async send(input: NotificationInput): Promise<Result<NotificationResult>> {
     if (!this.isAvailable()) {
-      logger.info('⚠️ Twilio credentials not configured');
-      return failure(new InfrastructureError(
-        'Twilio credentials not configured',
-        { provider: 'twilio' }
-      ));
+      logger.info("⚠️ Twilio credentials not configured");
+      return failure(
+        new InfrastructureError("Twilio credentials not configured", {
+          provider: "twilio",
+        }),
+      );
     }
 
     try {
@@ -63,31 +68,30 @@ export class TwilioAdapter implements NotificationAdapter {
         channel: this.channel,
       });
     } catch (error: unknown) {
-      logger.error('❌ [Twilio] Error:', getErrorMessage(error));
+      logger.error("❌ [Twilio] Error:", getErrorMessage(error));
 
-      return failure(new InfrastructureError(
-        'Failed to send SMS via Twilio',
-        {
+      return failure(
+        new InfrastructureError("Failed to send SMS via Twilio", {
           error: getErrorMessage(error),
           code: hasCode(error) ? error.code : undefined,
-          recipient: input.to
-        }
-      ));
+          recipient: input.to,
+        }),
+      );
     }
   }
 
   private formatSMSMessage(message: string, deliveryId: string): string {
     // For SMS, keep it short and concise
-    const lines = message.split('\n').filter(line => line.trim());
+    const lines = message.split("\n").filter((line) => line.trim());
 
     // Extract key information
-    const shortMessage = `Delivery ${deliveryId} Update: ${lines.slice(0, 2).join(' ')}`;
+    const shortMessage = `Delivery ${deliveryId} Update: ${lines.slice(0, 2).join(" ")}`;
 
     // Limit to 160 characters for single SMS
     if (shortMessage.length <= 160) {
       return shortMessage;
     }
 
-    return shortMessage.substring(0, 157) + '...';
+    return shortMessage.substring(0, 157) + "...";
   }
 }

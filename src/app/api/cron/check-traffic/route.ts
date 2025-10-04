@@ -6,24 +6,27 @@
  * or any other scheduling service to monitor real-time traffic conditions.
  */
 
-import { NextRequest } from 'next/server';
-import { TrafficService } from '@/infrastructure/adapters/traffic/TrafficService';
-import { getDatabaseService } from '@/infrastructure/database';
-import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
-import { DelayNotificationWorkflow } from '@/workflows/workflows';
-import { env } from '@/infrastructure/config/EnvValidator';
-import { logger, getErrorMessage } from '@/core/base/utils/Logger';
-import { getCurrentISOTimestamp, subtractHours } from '@/core/utils/dateUtils';
-import { capitalizeFirstLetter } from '@/core/utils/stringUtils';
-import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
-import { Result } from '@/core/base/utils/Result';
-import { UnauthorizedError, InfrastructureError } from '@/core/base/errors/BaseError';
-import type { TrafficCondition } from '@/core/types';
-import { createApiHandler } from '@/core/infrastructure/http';
+import type { NextRequest } from "next/server";
+import {
+  InfrastructureError,
+  UnauthorizedError,
+} from "@/core/base/errors/BaseError";
+import { getErrorMessage, logger } from "@/core/base/utils/Logger";
+import { Result } from "@/core/base/utils/Result";
+import { createApiHandler } from "@/core/infrastructure/http";
+import type { TrafficCondition } from "@/core/types";
+import { getCurrentISOTimestamp, subtractHours } from "@/core/utils/dateUtils";
+import { capitalizeFirstLetter } from "@/core/utils/stringUtils";
+import { createWorkflowId, WorkflowType } from "@/core/utils/workflowUtils";
+import { TrafficService } from "@/infrastructure/adapters/traffic/TrafficService";
+import { env } from "@/infrastructure/config/EnvValidator";
+import { getDatabaseService } from "@/infrastructure/database";
+import { getTemporalClient } from "@/infrastructure/temporal/TemporalClient";
+import { DelayNotificationWorkflow } from "@/workflows/workflows";
 
 // Prevent response caching
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 interface TrafficCheckResult {
   routesChecked: number;
@@ -35,14 +38,16 @@ interface TrafficCheckResult {
 
 export const GET = createApiHandler(async (request: NextRequest) => {
   // Verify authorization (cron secret or API key)
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get("authorization");
   const cronSecret = env.CRON_SECRET;
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return Result.fail(new UnauthorizedError('Invalid or missing authorization token'));
+    return Result.fail(
+      new UnauthorizedError("Invalid or missing authorization token"),
+    );
   }
 
-  logger.info('🚦 [Traffic Monitor] Starting traffic check cycle...');
+  logger.info("🚦 [Traffic Monitor] Starting traffic check cycle...");
 
   const result: TrafficCheckResult = {
     routesChecked: 0,
@@ -60,14 +65,19 @@ export const GET = createApiHandler(async (request: NextRequest) => {
     const routesResult = await db.listRoutes(1000, 0);
 
     if (!routesResult.success) {
-      throw new InfrastructureError(`Failed to fetch routes: ${routesResult.error.message}`, { error: routesResult.error });
+      throw new InfrastructureError(
+        `Failed to fetch routes: ${routesResult.error.message}`,
+        { error: routesResult.error },
+      );
     }
 
     const routes = routesResult.value;
 
     if (!routes || !Array.isArray(routes)) {
-      logger.error('❌ [Debug] Invalid routes structure:', routesResult);
-      throw new InfrastructureError('Invalid routes data structure', { routesResult });
+      logger.error("❌ [Debug] Invalid routes structure:", routesResult);
+      throw new InfrastructureError("Invalid routes data structure", {
+        routesResult,
+      });
     }
 
     logger.info(`📍 [Traffic Monitor] Found ${routes.length} routes to check`);
@@ -88,7 +98,9 @@ export const GET = createApiHandler(async (request: NextRequest) => {
           route.destination_coords.x == null ||
           route.destination_coords.y == null
         ) {
-          logger.info(`⏭️  [Traffic Monitor] Skipping route ${route.id} - missing coordinates`);
+          logger.info(
+            `⏭️  [Traffic Monitor] Skipping route ${route.id} - missing coordinates`,
+          );
           continue;
         }
 
@@ -101,8 +113,13 @@ export const GET = createApiHandler(async (request: NextRequest) => {
         });
 
         if (!trafficResult.success) {
-          logger.error(`❌ [Traffic Monitor] Failed to fetch traffic for route ${route.id}:`, trafficResult.error.message);
-          result.errors.push(`Route ${route.id}: ${trafficResult.error.message}`);
+          logger.error(
+            `❌ [Traffic Monitor] Failed to fetch traffic for route ${route.id}:`,
+            trafficResult.error.message,
+          );
+          result.errors.push(
+            `Route ${route.id}: ${trafficResult.error.message}`,
+          );
           continue;
         }
 
@@ -115,17 +132,25 @@ export const GET = createApiHandler(async (request: NextRequest) => {
         });
 
         // Generate incident details based on traffic condition
-        const severity = trafficData.delayMinutes > 60 ? 'severe' :
-                        trafficData.delayMinutes > 30 ? 'major' :
-                        trafficData.delayMinutes > 15 ? 'moderate' : 'minor';
+        const severity =
+          trafficData.delayMinutes > 60
+            ? "severe"
+            : trafficData.delayMinutes > 30
+              ? "major"
+              : trafficData.delayMinutes > 15
+                ? "moderate"
+                : "minor";
 
-        const incidentType = trafficData.delayMinutes > 45 ? 'accident' as const :
-                            trafficData.delayMinutes > 20 ? 'congestion' as const :
-                            'congestion' as const;
+        const incidentType =
+          trafficData.delayMinutes > 45
+            ? ("accident" as const)
+            : trafficData.delayMinutes > 20
+              ? ("congestion" as const)
+              : ("congestion" as const);
 
         const description = `${capitalizeFirstLetter(trafficData.trafficCondition)} traffic conditions causing ${trafficData.delayMinutes} minute delay`;
 
-        const affectedArea = `Route from ${route.origin_address.split(',')[0]} to ${route.destination_address.split(',')[0]}`;
+        const affectedArea = `Route from ${route.origin_address.split(",")[0]} to ${route.destination_address.split(",")[0]}`;
 
         // Calculate incident location (midpoint of route)
         // Only set if coordinates are valid (not null)
@@ -161,10 +186,17 @@ export const GET = createApiHandler(async (request: NextRequest) => {
         const updateRouteResult = await db.updateRoute(route.id, updateData);
 
         if (!updateRouteResult.success) {
-          logger.error(`❌ [Traffic Monitor] Failed to update route ${route.id}:`, updateRouteResult.error);
-          result.errors.push(`Failed to update route ${route.id}: ${updateRouteResult.error.message}`);
+          logger.error(
+            `❌ [Traffic Monitor] Failed to update route ${route.id}:`,
+            updateRouteResult.error,
+          );
+          result.errors.push(
+            `Failed to update route ${route.id}: ${updateRouteResult.error.message}`,
+          );
         } else {
-          logger.info(`✅ [Traffic Monitor] Updated route ${route.id} with traffic: ${trafficData.trafficCondition.toUpperCase()} (${trafficData.delayMinutes}min delay)`);
+          logger.info(
+            `✅ [Traffic Monitor] Updated route ${route.id} with traffic: ${trafficData.trafficCondition.toUpperCase()} (${trafficData.delayMinutes}min delay)`,
+          );
         }
 
         // 5. Save traffic snapshot to database (historical log)
@@ -181,35 +213,44 @@ export const GET = createApiHandler(async (request: NextRequest) => {
         });
 
         if (!snapshotResult.success) {
-          logger.error(`❌ [Traffic Monitor] Failed to save snapshot for route ${route.id}:`, snapshotResult.error);
-          result.errors.push(`Failed to save snapshot for route ${route.id}: ${snapshotResult.error.message}`);
+          logger.error(
+            `❌ [Traffic Monitor] Failed to save snapshot for route ${route.id}:`,
+            snapshotResult.error,
+          );
+          result.errors.push(
+            `Failed to save snapshot for route ${route.id}: ${snapshotResult.error.message}`,
+          );
           continue;
         }
 
         result.snapshotsSaved++;
-
       } catch (routeError: unknown) {
-        logger.error(`❌ [Traffic Monitor] Error processing route ${route.id}:`, getErrorMessage(routeError));
+        logger.error(
+          `❌ [Traffic Monitor] Error processing route ${route.id}:`,
+          getErrorMessage(routeError),
+        );
         result.errors.push(`Route ${route.id}: ${getErrorMessage(routeError)}`);
       }
     }
 
-    logger.info('✅ [Traffic Monitor] Traffic check cycle completed', result);
+    logger.info("✅ [Traffic Monitor] Traffic check cycle completed", result);
 
     return Result.ok({
       success: true,
       timestamp: getCurrentISOTimestamp(),
       result,
     });
-
   } catch (error: unknown) {
-    logger.error('❌ [Traffic Monitor] Fatal error:', error);
+    logger.error("❌ [Traffic Monitor] Fatal error:", error);
 
     return Result.fail(
-      new InfrastructureError(`Traffic monitoring failed: ${getErrorMessage(error)}`, {
-        cause: error,
-        context: { partialResult: result },
-      })
+      new InfrastructureError(
+        `Traffic monitoring failed: ${getErrorMessage(error)}`,
+        {
+          cause: error,
+          context: { partialResult: result },
+        },
+      ),
     );
   }
 });

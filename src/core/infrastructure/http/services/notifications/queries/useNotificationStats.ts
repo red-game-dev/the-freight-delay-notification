@@ -3,11 +3,11 @@
  * React Query hook for fetching notification statistics
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { getNotificationStats } from './getNotificationStats';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { getNotificationStats } from "./getNotificationStats";
 
 export function useNotificationStats() {
   return useQuery({

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import type { ReactNode } from "react";
 import "./globals.css";
 import { Providers } from "@/providers";
 
@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Freight Delay Notification System",
-  description: "Real-time freight delay notification system with Temporal workflow orchestration",
+  description:
+    "Real-time freight delay notification system with Temporal workflow orchestration",
 };
 
 export default function RootLayout({

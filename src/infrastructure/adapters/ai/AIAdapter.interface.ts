@@ -3,7 +3,7 @@
  * Defines the contract for all AI message generation providers
  */
 
-import { Result } from '../../../core/base/utils/Result';
+import type { Result } from "../../../core/base/utils/Result";
 
 export interface MessageGenerationInput {
   deliveryId: string;
@@ -44,5 +44,7 @@ export interface AIAdapter {
   /**
    * Generate delay notification message
    */
-  generateMessage(input: MessageGenerationInput): Promise<Result<GeneratedMessage>>;
+  generateMessage(
+    input: MessageGenerationInput,
+  ): Promise<Result<GeneratedMessage>>;
 }

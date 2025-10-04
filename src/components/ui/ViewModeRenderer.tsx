@@ -4,12 +4,12 @@
  * Eliminates repetitive view-switching code across list components
  */
 
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { usePageViewMode } from './ViewModeSwitcher';
-import { Pagination } from './Pagination';
-import { cn } from '@/core/base/utils/cn';
+import type { ReactNode } from "react";
+import { cn } from "@/core/base/utils/cn";
+import { Pagination } from "./Pagination";
+import { usePageViewMode } from "./ViewModeSwitcher";
 
 export interface PaginationInfo {
   page: number;
@@ -89,9 +89,9 @@ export function ViewModeRenderer<T>({
   // Render content based on view mode
   const renderContent = () => {
     switch (viewMode) {
-      case 'grid':
+      case "grid":
         return renderGrid(items);
-      case 'compact':
+      case "compact":
         return renderCompact(items);
       default:
         return renderList(items);
@@ -99,15 +99,17 @@ export function ViewModeRenderer<T>({
   };
 
   return (
-    <div className={cn(
-      viewMode === 'grid' ? 'space-y-4' : 'rounded-lg border bg-card shadow-sm',
-      className
-    )}>
+    <div
+      className={cn(
+        viewMode === "grid"
+          ? "space-y-4"
+          : "rounded-lg border bg-card shadow-sm",
+        className,
+      )}
+    >
       {/* List header (only shown in list view) */}
-      {viewMode === 'list' && listHeader && (
-        <div className="p-4 sm:p-6">
-          {listHeader}
-        </div>
+      {viewMode === "list" && listHeader && (
+        <div className="p-4 sm:p-6">{listHeader}</div>
       )}
 
       {/* Content */}
@@ -115,9 +117,9 @@ export function ViewModeRenderer<T>({
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && onPageChange && (
-        <div className={cn(
-          viewMode === 'grid' ? 'mt-6' : 'p-4 sm:p-6 border-t'
-        )}>
+        <div
+          className={cn(viewMode === "grid" ? "mt-6" : "p-4 sm:p-6 border-t")}
+        >
           <Pagination
             currentPage={pagination.page}
             totalPages={pagination.totalPages}

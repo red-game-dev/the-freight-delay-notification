@@ -4,12 +4,12 @@
  * Supports multi-region, redundancy, and gradual migration scenarios
  */
 
-import { logger, getErrorMessage } from '../../core/base/utils/Logger';
-import { Result, success, failure } from '../../core/base/utils/Result';
-import { InfrastructureError } from '../../core/base/errors/BaseError';
-import type { DatabaseAdapter } from './adapters/DatabaseAdapter.interface';
-import { SupabaseDatabaseAdapter } from './adapters/SupabaseDatabaseAdapter';
-import { MockDatabaseAdapter } from './adapters/MockDatabaseAdapter';
+import { InfrastructureError } from "../../core/base/errors/BaseError";
+import { getErrorMessage, logger } from "../../core/base/utils/Logger";
+import { failure, type Result, success } from "../../core/base/utils/Result";
+import type { DatabaseAdapter } from "./adapters/DatabaseAdapter.interface";
+import { MockDatabaseAdapter } from "./adapters/MockDatabaseAdapter";
+import { SupabaseDatabaseAdapter } from "./adapters/SupabaseDatabaseAdapter";
 
 /**
  * Database Service
@@ -25,11 +25,15 @@ export class DatabaseService {
     if (forceAdapters) {
       this.adapters = forceAdapters;
       this.primaryAdapter = forceAdapters[0];
-      logger.info(`DatabaseService initialized with ${forceAdapters.length} forced adapters`);
+      logger.info(
+        `DatabaseService initialized with ${forceAdapters.length} forced adapters`,
+      );
     } else {
       this.adapters = this.initializeAdapters();
       this.primaryAdapter = this.adapters[0];
-      logger.info(`DatabaseService initialized with ${this.adapters.length} adapters: ${this.adapters.map(a => a.name).join(', ')}`);
+      logger.info(
+        `DatabaseService initialized with ${this.adapters.length} adapters: ${this.adapters.map((a) => a.name).join(", ")}`,
+      );
       logger.info(`Primary adapter: ${this.primaryAdapter.name}`);
     }
   }
@@ -45,9 +49,9 @@ export class DatabaseService {
     const supabaseAdapter = new SupabaseDatabaseAdapter();
     if (supabaseAdapter.isAvailable()) {
       adapters.push(supabaseAdapter);
-      logger.info('✅ Supabase Database Adapter available');
+      logger.info("✅ Supabase Database Adapter available");
     } else {
-      logger.warn('⚠️  Supabase Database Adapter not configured');
+      logger.warn("⚠️  Supabase Database Adapter not configured");
     }
 
     // Add more adapters here as needed
@@ -58,7 +62,7 @@ export class DatabaseService {
 
     // Always add Mock as final fallback
     if (adapters.length === 0) {
-      logger.warn('No database adapters configured, using Mock adapter');
+      logger.warn("No database adapters configured, using Mock adapter");
     }
     adapters.push(new MockDatabaseAdapter(true)); // Seed with mock data
 
@@ -106,20 +110,25 @@ export class DatabaseService {
    */
   private async writeToAll<T>(
     operation: string,
-    fn: (adapter: DatabaseAdapter) => Promise<Result<T>>
+    fn: (adapter: DatabaseAdapter) => Promise<Result<T>>,
   ): Promise<Result<T>> {
     const results = await Promise.allSettled(
       this.adapters.map(async (adapter) => ({
         adapter: adapter.name,
         result: await fn(adapter),
-      }))
+      })),
     );
 
     // Get primary result (first adapter)
     const primaryResult = results[0];
-    if (primaryResult.status === 'rejected') {
-      logger.error(`${operation} failed on primary adapter:`, primaryResult.reason);
-      return failure(new InfrastructureError(`${operation} failed on primary adapter`));
+    if (primaryResult.status === "rejected") {
+      logger.error(
+        `${operation} failed on primary adapter:`,
+        primaryResult.reason,
+      );
+      return failure(
+        new InfrastructureError(`${operation} failed on primary adapter`),
+      );
     }
 
     const primaryData = primaryResult.value.result;
@@ -127,11 +136,14 @@ export class DatabaseService {
     // Log secondary adapter results
     for (let i = 1; i < results.length; i++) {
       const result = results[i];
-      if (result.status === 'fulfilled') {
+      if (result.status === "fulfilled") {
         if (result.value.result.success) {
           logger.info(`${operation} succeeded on ${result.value.adapter}`);
         } else {
-          logger.error(`${operation} failed on ${result.value.adapter}:`, result.value.result.error.message);
+          logger.error(
+            `${operation} failed on ${result.value.adapter}:`,
+            result.value.result.error.message,
+          );
         }
       } else {
         logger.error(`${operation} failed on adapter ${i}:`, result.reason);
@@ -146,222 +158,320 @@ export class DatabaseService {
    */
   private async readWithFallback<T>(
     operation: string,
-    fn: (adapter: DatabaseAdapter) => Promise<Result<T>>
+    fn: (adapter: DatabaseAdapter) => Promise<Result<T>>,
   ): Promise<Result<T>> {
     for (const adapter of this.adapters) {
       try {
         const result = await fn(adapter);
         if (result.success) {
           if (adapter !== this.primaryAdapter) {
-            logger.warn(`${operation} succeeded on fallback adapter: ${adapter.name}`);
+            logger.warn(
+              `${operation} succeeded on fallback adapter: ${adapter.name}`,
+            );
           }
           return result;
         }
-        logger.warn(`${operation} failed on ${adapter.name}, trying next adapter`);
+        logger.warn(
+          `${operation} failed on ${adapter.name}, trying next adapter`,
+        );
       } catch (error: unknown) {
-        logger.error(`${operation} error on ${adapter.name}:`, getErrorMessage(error));
+        logger.error(
+          `${operation} error on ${adapter.name}:`,
+          getErrorMessage(error),
+        );
       }
     }
 
-    return failure(new InfrastructureError(`${operation} failed on all adapters`));
+    return failure(
+      new InfrastructureError(`${operation} failed on all adapters`),
+    );
   }
 
   // ===== Customer Operations =====
 
   async getCustomerById(id: string) {
-    return this.readWithFallback('getCustomerById', (adapter) => adapter.getCustomerById(id));
+    return this.readWithFallback("getCustomerById", (adapter) =>
+      adapter.getCustomerById(id),
+    );
   }
 
   async getCustomerByEmail(email: string) {
-    return this.readWithFallback('getCustomerByEmail', (adapter) => adapter.getCustomerByEmail(email));
+    return this.readWithFallback("getCustomerByEmail", (adapter) =>
+      adapter.getCustomerByEmail(email),
+    );
   }
 
-  async createCustomer(input: Parameters<DatabaseAdapter['createCustomer']>[0]) {
-    return this.writeToAll('createCustomer', (adapter) => adapter.createCustomer(input));
+  async createCustomer(
+    input: Parameters<DatabaseAdapter["createCustomer"]>[0],
+  ) {
+    return this.writeToAll("createCustomer", (adapter) =>
+      adapter.createCustomer(input),
+    );
   }
 
-  async updateCustomer(id: string, input: Parameters<DatabaseAdapter['updateCustomer']>[1]) {
-    return this.writeToAll('updateCustomer', (adapter) => adapter.updateCustomer(id, input));
+  async updateCustomer(
+    id: string,
+    input: Parameters<DatabaseAdapter["updateCustomer"]>[1],
+  ) {
+    return this.writeToAll("updateCustomer", (adapter) =>
+      adapter.updateCustomer(id, input),
+    );
   }
 
   async listCustomers(limit?: number, offset?: number) {
-    return this.readWithFallback('listCustomers', (adapter) => adapter.listCustomers(limit, offset));
+    return this.readWithFallback("listCustomers", (adapter) =>
+      adapter.listCustomers(limit, offset),
+    );
   }
 
   // ===== Route Operations =====
 
   async getRouteById(id: string) {
-    return this.readWithFallback('getRouteById', (adapter) => adapter.getRouteById(id));
+    return this.readWithFallback("getRouteById", (adapter) =>
+      adapter.getRouteById(id),
+    );
   }
 
-  async createRoute(input: Parameters<DatabaseAdapter['createRoute']>[0]) {
-    return this.writeToAll('createRoute', (adapter) => adapter.createRoute(input));
+  async createRoute(input: Parameters<DatabaseAdapter["createRoute"]>[0]) {
+    return this.writeToAll("createRoute", (adapter) =>
+      adapter.createRoute(input),
+    );
   }
 
-  async updateRoute(id: string, input: Parameters<DatabaseAdapter['updateRoute']>[1]) {
-    return this.writeToAll('updateRoute', (adapter) => adapter.updateRoute(id, input));
+  async updateRoute(
+    id: string,
+    input: Parameters<DatabaseAdapter["updateRoute"]>[1],
+  ) {
+    return this.writeToAll("updateRoute", (adapter) =>
+      adapter.updateRoute(id, input),
+    );
   }
 
   async listRoutes(limit?: number, offset?: number) {
-    return this.readWithFallback('listRoutes', (adapter) => adapter.listRoutes(limit, offset));
+    return this.readWithFallback("listRoutes", (adapter) =>
+      adapter.listRoutes(limit, offset),
+    );
   }
 
   // ===== Delivery Operations =====
 
   async getDeliveryById(id: string) {
-    return this.readWithFallback('getDeliveryById', (adapter) => adapter.getDeliveryById(id));
-  }
-
-  async getDeliveryByTrackingNumber(trackingNumber: string) {
-    return this.readWithFallback('getDeliveryByTrackingNumber', (adapter) =>
-      adapter.getDeliveryByTrackingNumber(trackingNumber)
+    return this.readWithFallback("getDeliveryById", (adapter) =>
+      adapter.getDeliveryById(id),
     );
   }
 
-  async createDelivery(input: Parameters<DatabaseAdapter['createDelivery']>[0]) {
-    return this.writeToAll('createDelivery', (adapter) => adapter.createDelivery(input));
+  async getDeliveryByTrackingNumber(trackingNumber: string) {
+    return this.readWithFallback("getDeliveryByTrackingNumber", (adapter) =>
+      adapter.getDeliveryByTrackingNumber(trackingNumber),
+    );
   }
 
-  async updateDelivery(id: string, input: Parameters<DatabaseAdapter['updateDelivery']>[1]) {
-    return this.writeToAll('updateDelivery', (adapter) => adapter.updateDelivery(id, input));
+  async createDelivery(
+    input: Parameters<DatabaseAdapter["createDelivery"]>[0],
+  ) {
+    return this.writeToAll("createDelivery", (adapter) =>
+      adapter.createDelivery(input),
+    );
+  }
+
+  async updateDelivery(
+    id: string,
+    input: Parameters<DatabaseAdapter["updateDelivery"]>[1],
+  ) {
+    return this.writeToAll("updateDelivery", (adapter) =>
+      adapter.updateDelivery(id, input),
+    );
   }
 
   async listDeliveries(limit?: number, offset?: number) {
-    return this.readWithFallback('listDeliveries', (adapter) => adapter.listDeliveries(limit, offset));
+    return this.readWithFallback("listDeliveries", (adapter) =>
+      adapter.listDeliveries(limit, offset),
+    );
   }
 
   async listDeliveriesByCustomer(customerId: string, limit?: number) {
-    return this.readWithFallback('listDeliveriesByCustomer', (adapter) =>
-      adapter.listDeliveriesByCustomer(customerId, limit)
+    return this.readWithFallback("listDeliveriesByCustomer", (adapter) =>
+      adapter.listDeliveriesByCustomer(customerId, limit),
     );
   }
 
   async listDeliveriesByStatus(status: string, limit?: number) {
-    return this.readWithFallback('listDeliveriesByStatus', (adapter) =>
-      adapter.listDeliveriesByStatus(status, limit)
+    return this.readWithFallback("listDeliveriesByStatus", (adapter) =>
+      adapter.listDeliveriesByStatus(status, limit),
     );
   }
 
   // ===== Notification Operations =====
 
   async getNotificationById(id: string) {
-    return this.readWithFallback('getNotificationById', (adapter) => adapter.getNotificationById(id));
+    return this.readWithFallback("getNotificationById", (adapter) =>
+      adapter.getNotificationById(id),
+    );
   }
 
-  async createNotification(input: Parameters<DatabaseAdapter['createNotification']>[0]) {
-    return this.writeToAll('createNotification', (adapter) => adapter.createNotification(input));
+  async createNotification(
+    input: Parameters<DatabaseAdapter["createNotification"]>[0],
+  ) {
+    return this.writeToAll("createNotification", (adapter) =>
+      adapter.createNotification(input),
+    );
   }
 
-  async updateNotification(id: string, input: Parameters<DatabaseAdapter['updateNotification']>[1]) {
-    return this.writeToAll('updateNotification', (adapter) => adapter.updateNotification(id, input));
+  async updateNotification(
+    id: string,
+    input: Parameters<DatabaseAdapter["updateNotification"]>[1],
+  ) {
+    return this.writeToAll("updateNotification", (adapter) =>
+      adapter.updateNotification(id, input),
+    );
   }
 
   async listNotifications(limit?: number, offset?: number) {
-    return this.readWithFallback('listNotifications', (adapter) =>
-      adapter.listNotifications(limit, offset)
+    return this.readWithFallback("listNotifications", (adapter) =>
+      adapter.listNotifications(limit, offset),
     );
   }
 
   async listNotificationsByDelivery(deliveryId: string) {
-    return this.readWithFallback('listNotificationsByDelivery', (adapter) =>
-      adapter.listNotificationsByDelivery(deliveryId)
+    return this.readWithFallback("listNotificationsByDelivery", (adapter) =>
+      adapter.listNotificationsByDelivery(deliveryId),
     );
   }
 
   async listNotificationsByCustomer(customerId: string, limit?: number) {
-    return this.readWithFallback('listNotificationsByCustomer', (adapter) =>
-      adapter.listNotificationsByCustomer(customerId, limit)
+    return this.readWithFallback("listNotificationsByCustomer", (adapter) =>
+      adapter.listNotificationsByCustomer(customerId, limit),
     );
   }
 
   // ===== Traffic Snapshot Operations =====
 
-  async createTrafficSnapshot(input: Parameters<DatabaseAdapter['createTrafficSnapshot']>[0]) {
-    return this.writeToAll('createTrafficSnapshot', (adapter) => adapter.createTrafficSnapshot(input));
+  async createTrafficSnapshot(
+    input: Parameters<DatabaseAdapter["createTrafficSnapshot"]>[0],
+  ) {
+    return this.writeToAll("createTrafficSnapshot", (adapter) =>
+      adapter.createTrafficSnapshot(input),
+    );
   }
 
   async listTrafficSnapshots(limit?: number, offset?: number) {
-    return this.readWithFallback('listTrafficSnapshots', (adapter) =>
-      adapter.listTrafficSnapshots(limit, offset)
+    return this.readWithFallback("listTrafficSnapshots", (adapter) =>
+      adapter.listTrafficSnapshots(limit, offset),
     );
   }
 
   async listTrafficSnapshotsByRoute(routeId: string, limit?: number) {
-    return this.readWithFallback('listTrafficSnapshotsByRoute', (adapter) =>
-      adapter.listTrafficSnapshotsByRoute(routeId, limit)
+    return this.readWithFallback("listTrafficSnapshotsByRoute", (adapter) =>
+      adapter.listTrafficSnapshotsByRoute(routeId, limit),
     );
   }
 
   // ===== Workflow Execution Operations =====
 
   async getWorkflowExecutionById(id: string) {
-    return this.readWithFallback('getWorkflowExecutionById', (adapter) =>
-      adapter.getWorkflowExecutionById(id)
+    return this.readWithFallback("getWorkflowExecutionById", (adapter) =>
+      adapter.getWorkflowExecutionById(id),
     );
   }
 
   async getWorkflowExecutionByWorkflowId(workflowId: string) {
-    return this.readWithFallback('getWorkflowExecutionByWorkflowId', (adapter) =>
-      adapter.getWorkflowExecutionByWorkflowId(workflowId)
+    return this.readWithFallback(
+      "getWorkflowExecutionByWorkflowId",
+      (adapter) => adapter.getWorkflowExecutionByWorkflowId(workflowId),
     );
   }
 
-  async getWorkflowExecutionByWorkflowIdAndRunId(workflowId: string, runId: string) {
-    return this.readWithFallback('getWorkflowExecutionByWorkflowIdAndRunId', (adapter) =>
-      adapter.getWorkflowExecutionByWorkflowIdAndRunId(workflowId, runId)
+  async getWorkflowExecutionByWorkflowIdAndRunId(
+    workflowId: string,
+    runId: string,
+  ) {
+    return this.readWithFallback(
+      "getWorkflowExecutionByWorkflowIdAndRunId",
+      (adapter) =>
+        adapter.getWorkflowExecutionByWorkflowIdAndRunId(workflowId, runId),
     );
   }
 
-  async createWorkflowExecution(input: Parameters<DatabaseAdapter['createWorkflowExecution']>[0]) {
-    return this.writeToAll('createWorkflowExecution', (adapter) => adapter.createWorkflowExecution(input));
+  async createWorkflowExecution(
+    input: Parameters<DatabaseAdapter["createWorkflowExecution"]>[0],
+  ) {
+    return this.writeToAll("createWorkflowExecution", (adapter) =>
+      adapter.createWorkflowExecution(input),
+    );
   }
 
-  async updateWorkflowExecution(id: string, input: Parameters<DatabaseAdapter['updateWorkflowExecution']>[1]) {
-    return this.writeToAll('updateWorkflowExecution', (adapter) => adapter.updateWorkflowExecution(id, input));
+  async updateWorkflowExecution(
+    id: string,
+    input: Parameters<DatabaseAdapter["updateWorkflowExecution"]>[1],
+  ) {
+    return this.writeToAll("updateWorkflowExecution", (adapter) =>
+      adapter.updateWorkflowExecution(id, input),
+    );
   }
 
   async listWorkflowExecutions(limit?: number, offset?: number) {
-    return this.readWithFallback('listWorkflowExecutions', (adapter) =>
-      adapter.listWorkflowExecutions(limit, offset)
+    return this.readWithFallback("listWorkflowExecutions", (adapter) =>
+      adapter.listWorkflowExecutions(limit, offset),
     );
   }
 
   async listWorkflowExecutionsByDelivery(deliveryId: string) {
-    return this.readWithFallback('listWorkflowExecutionsByDelivery', (adapter) =>
-      adapter.listWorkflowExecutionsByDelivery(deliveryId)
+    return this.readWithFallback(
+      "listWorkflowExecutionsByDelivery",
+      (adapter) => adapter.listWorkflowExecutionsByDelivery(deliveryId),
     );
   }
 
   // ===== Threshold Operations =====
 
   async getThresholdById(id: string) {
-    return this.readWithFallback('getThresholdById', (adapter) => adapter.getThresholdById(id));
+    return this.readWithFallback("getThresholdById", (adapter) =>
+      adapter.getThresholdById(id),
+    );
   }
 
   async getDefaultThreshold() {
-    return this.readWithFallback('getDefaultThreshold', (adapter) => adapter.getDefaultThreshold());
+    return this.readWithFallback("getDefaultThreshold", (adapter) =>
+      adapter.getDefaultThreshold(),
+    );
   }
 
-  async createThreshold(input: Parameters<DatabaseAdapter['createThreshold']>[0]) {
-    return this.writeToAll('createThreshold', (adapter) => adapter.createThreshold(input));
+  async createThreshold(
+    input: Parameters<DatabaseAdapter["createThreshold"]>[0],
+  ) {
+    return this.writeToAll("createThreshold", (adapter) =>
+      adapter.createThreshold(input),
+    );
   }
 
-  async updateThreshold(id: string, input: Parameters<DatabaseAdapter['updateThreshold']>[1]) {
-    return this.writeToAll('updateThreshold', (adapter) => adapter.updateThreshold(id, input));
+  async updateThreshold(
+    id: string,
+    input: Parameters<DatabaseAdapter["updateThreshold"]>[1],
+  ) {
+    return this.writeToAll("updateThreshold", (adapter) =>
+      adapter.updateThreshold(id, input),
+    );
   }
 
   async deleteThreshold(id: string) {
-    return this.writeToAll('deleteThreshold', (adapter) => adapter.deleteThreshold(id));
+    return this.writeToAll("deleteThreshold", (adapter) =>
+      adapter.deleteThreshold(id),
+    );
   }
 
   async listThresholds(limit?: number, offset?: number) {
-    return this.readWithFallback('listThresholds', (adapter) => adapter.listThresholds(limit, offset));
+    return this.readWithFallback("listThresholds", (adapter) =>
+      adapter.listThresholds(limit, offset),
+    );
   }
 
   // ===== Transaction Safety Functions =====
 
   async incrementChecksPerformed(deliveryId: string) {
-    return this.writeToAll('incrementChecksPerformed', (adapter) => adapter.incrementChecksPerformed(deliveryId));
+    return this.writeToAll("incrementChecksPerformed", (adapter) =>
+      adapter.incrementChecksPerformed(deliveryId),
+    );
   }
 
   // ===== Audit Context Functions =====
@@ -378,7 +488,9 @@ let databaseServiceInstance: DatabaseService | null = null;
 /**
  * Get singleton database service instance
  */
-export function getDatabaseService(forceAdapters?: DatabaseAdapter[]): DatabaseService {
+export function getDatabaseService(
+  forceAdapters?: DatabaseAdapter[],
+): DatabaseService {
   if (!databaseServiceInstance || forceAdapters) {
     databaseServiceInstance = new DatabaseService(forceAdapters);
   }

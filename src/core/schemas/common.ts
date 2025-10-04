@@ -3,7 +3,7 @@
  * Shared Zod schemas used across the application
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Coordinates schema
@@ -28,7 +28,10 @@ export const emailSchema = z.string().email().toLowerCase().trim();
 /**
  * Phone schema (basic validation)
  */
-export const phoneSchema = z.string().regex(/^\+?[1-9]\d{1,14}$/).optional();
+export const phoneSchema = z
+  .string()
+  .regex(/^\+?[1-9]\d{1,14}$/)
+  .optional();
 
 /**
  * ISO 8601 date string schema
@@ -48,4 +51,7 @@ export const paginationParamsSchema = z.object({
  */
 export const queryParamString = z.string().optional();
 export const queryParamNumber = z.coerce.number().optional();
-export const queryParamBoolean = z.enum(['true', 'false']).transform(val => val === 'true').optional();
+export const queryParamBoolean = z
+  .enum(["true", "false"])
+  .transform((val) => val === "true")
+  .optional();

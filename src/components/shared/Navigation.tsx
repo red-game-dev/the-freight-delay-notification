@@ -2,23 +2,32 @@
  * Main Navigation Component
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Package, Menu, Home, TruckIcon, Activity, Bell, Workflow, BookOpen } from 'lucide-react';
-import { ThemeToggle } from '../ThemeToggle';
-import { Drawer } from '../ui/Drawer';
-import { Button } from '../ui/Button';
+import {
+  Activity,
+  Bell,
+  BookOpen,
+  Home,
+  Menu,
+  Package,
+  TruckIcon,
+  Workflow,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { ThemeToggle } from "../ThemeToggle";
+import { Button } from "../ui/Button";
+import { Drawer } from "../ui/Drawer";
 
 const navigation = [
-  { name: 'Home', href: '/', icon: Home },
-  { name: 'Deliveries', href: '/deliveries', icon: TruckIcon },
-  { name: 'Monitoring', href: '/monitoring', icon: Activity },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Workflows', href: '/workflows', icon: Workflow },
-  { name: 'How to Use', href: '/how-to-use', icon: BookOpen },
+  { name: "Home", href: "/", icon: Home },
+  { name: "Deliveries", href: "/deliveries", icon: TruckIcon },
+  { name: "Monitoring", href: "/monitoring", icon: Activity },
+  { name: "Notifications", href: "/notifications", icon: Bell },
+  { name: "Workflows", href: "/workflows", icon: Workflow },
+  { name: "How to Use", href: "/how-to-use", icon: BookOpen },
 ];
 
 export function Navigation() {
@@ -80,8 +89,8 @@ export function Navigation() {
                 onClick={() => setIsDrawerOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
                 }`}
               >
                 <Icon className="h-5 w-5" />

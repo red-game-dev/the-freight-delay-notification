@@ -3,47 +3,73 @@
  * These are the actual implementations of the 4-step process from the PDF
  */
 
+import {
+  InfrastructureError,
+  ValidationError,
+} from "@/core/base/errors/BaseError";
+import { getErrorMessage, logger } from "@/core/base/utils/Logger";
+import { CheckDelayThresholdUseCase } from "@/core/engine/delivery/CheckDelayThreshold";
+import type {
+  Coordinates,
+  DeliveryStatus,
+  NotificationChannel,
+  NotificationStatus,
+  TrafficCondition,
+  WorkflowStatus,
+} from "@/core/types";
+import { getCurrentISOTimestamp } from "@/core/utils/dateUtils";
+import {
+  capitalizeFirstLetter,
+  extractFirstPart,
+} from "@/core/utils/stringUtils";
+import { AIService } from "@/infrastructure/adapters/ai/AIService";
+import { NotificationService } from "@/infrastructure/adapters/notifications/NotificationService";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
+import { TrafficService } from "../infrastructure/adapters/traffic/TrafficService";
 import type {
   CheckTrafficInput,
-  TrafficCheckResult,
-  EvaluateDelayInput,
   DelayEvaluationResult,
+  EvaluateDelayInput,
   GenerateMessageInput,
   MessageGenerationResult,
-  SendNotificationInput,
   NotificationResult,
-} from './types';
-import { TrafficService } from '../infrastructure/adapters/traffic/TrafficService';
-import { NotificationService } from '@/infrastructure/adapters/notifications/NotificationService';
-import { AIService } from '@/infrastructure/adapters/ai/AIService';
-import { CheckDelayThresholdUseCase } from '@/core/engine/delivery/CheckDelayThreshold';
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { logger, getErrorMessage } from '@/core/base/utils/Logger';
-import { ValidationError, InfrastructureError } from '@/core/base/errors/BaseError';
-import type { TrafficCondition, DeliveryStatus, NotificationChannel, NotificationStatus, WorkflowStatus, Coordinates } from '@/core/types';
-import { getCurrentISOTimestamp } from '@/core/utils/dateUtils';
-import { capitalizeFirstLetter, extractFirstPart } from '@/core/utils/stringUtils';
+  SendNotificationInput,
+  TrafficCheckResult,
+} from "./types";
 
 // Step 1: Check Traffic Conditions
-export async function checkTrafficConditions(input: CheckTrafficInput): Promise<TrafficCheckResult> {
+export async function checkTrafficConditions(
+  input: CheckTrafficInput,
+): Promise<TrafficCheckResult> {
   // Defensive check for missing data
   if (!input || !input.origin || !input.destination) {
-    logger.error('[Step 1] ERROR: Missing origin or destination data:', JSON.stringify(input, null, 2));
-    throw new ValidationError('Invalid input: origin and destination are required', { input });
+    logger.error(
+      "[Step 1] ERROR: Missing origin or destination data:",
+      JSON.stringify(input, null, 2),
+    );
+    throw new ValidationError(
+      "Invalid input: origin and destination are required",
+      { input },
+    );
   }
 
   if (!input.origin.address || !input.destination.address) {
-    logger.error('[Step 1] ERROR: Missing addresses:', {
+    logger.error("[Step 1] ERROR: Missing addresses:", {
       originAddress: input.origin?.address,
-      destinationAddress: input.destination?.address
+      destinationAddress: input.destination?.address,
     });
-    throw new ValidationError('Invalid input: origin.address and destination.address are required', {
-      originAddress: input.origin?.address,
-      destinationAddress: input.destination?.address
-    });
+    throw new ValidationError(
+      "Invalid input: origin.address and destination.address are required",
+      {
+        originAddress: input.origin?.address,
+        destinationAddress: input.destination?.address,
+      },
+    );
   }
 
-  logger.info(`[Step 1] Checking traffic from ${input.origin.address} to ${input.destination.address}`);
+  logger.info(
+    `[Step 1] Checking traffic from ${input.origin.address} to ${input.destination.address}`,
+  );
 
   // Use TrafficService which handles all adapters and fallback
   const trafficService = new TrafficService();
@@ -53,7 +79,9 @@ export async function checkTrafficConditions(input: CheckTrafficInput): Promise<
     destination: input.destination.address,
     originCoords: input.origin.coordinates,
     destinationCoords: input.destination.coordinates,
-    departureTime: input.departureTime ? new Date(input.departureTime) : undefined,
+    departureTime: input.departureTime
+      ? new Date(input.departureTime)
+      : undefined,
   });
 
   if (result.success) {
@@ -64,29 +92,41 @@ export async function checkTrafficConditions(input: CheckTrafficInput): Promise<
       trafficCondition: data.trafficCondition,
       estimatedDurationMinutes: Math.round(data.estimatedDuration / 60),
       normalDurationMinutes: Math.round(data.normalDuration / 60),
-      distance: data.distance || { value: 0, unit: 'km' },
+      distance: data.distance || { value: 0, unit: "km" },
       timestamp: data.fetchedAt.toISOString(),
     };
   }
 
   // This shouldn't happen with MockTrafficAdapter as last resort
-  throw new InfrastructureError(`Traffic data fetch failed: ${result.error.message}`, { error: result.error });
+  throw new InfrastructureError(
+    `Traffic data fetch failed: ${result.error.message}`,
+    { error: result.error },
+  );
 }
 
 // Step 2: Evaluate Delay Against Threshold (using domain layer)
-export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEvaluationResult> {
-  logger.info(`[Step 2] Evaluating delay of ${input.delayMinutes} minutes against threshold of ${input.thresholdMinutes} minutes`);
+export async function evaluateDelay(
+  input: EvaluateDelayInput,
+): Promise<DelayEvaluationResult> {
+  logger.info(
+    `[Step 2] Evaluating delay of ${input.delayMinutes} minutes against threshold of ${input.thresholdMinutes} minutes`,
+  );
 
   // Use CheckDelayThresholdUseCase from domain layer
   const useCase = new CheckDelayThresholdUseCase();
 
   const trafficData = {
-    provider: 'google' as const,
+    provider: "google" as const,
     delayMinutes: input.delayMinutes,
-    trafficCondition: input.delayMinutes > 60 ? 'severe' as const :
-                      input.delayMinutes > 30 ? 'heavy' as const :
-                      input.delayMinutes > 10 ? 'moderate' as const : 'light' as const,
-    estimatedDuration: 3600 + (input.delayMinutes * 60),
+    trafficCondition:
+      input.delayMinutes > 60
+        ? ("severe" as const)
+        : input.delayMinutes > 30
+          ? ("heavy" as const)
+          : input.delayMinutes > 10
+            ? ("moderate" as const)
+            : ("light" as const),
+    estimatedDuration: 3600 + input.delayMinutes * 60,
     normalDuration: 3600,
     fetchedAt: new Date(),
   };
@@ -94,19 +134,22 @@ export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEva
   const result = useCase.execute(trafficData, input.thresholdMinutes);
 
   if (!result.success) {
-    throw new InfrastructureError(`Threshold check failed: ${result.error.message}`, { error: result.error });
+    throw new InfrastructureError(
+      `Threshold check failed: ${result.error.message}`,
+      { error: result.error },
+    );
   }
 
   const thresholdResult = result.value;
 
   // Map severity levels to workflow format
-  let severity: DelayEvaluationResult['severity'] = 'on_time';
+  let severity: DelayEvaluationResult["severity"] = "on_time";
   if (input.delayMinutes > input.thresholdMinutes * 2) {
-    severity = 'severe';
+    severity = "severe";
   } else if (input.delayMinutes > input.thresholdMinutes) {
-    severity = 'moderate';
+    severity = "moderate";
   } else if (input.delayMinutes > 10) {
-    severity = 'minor';
+    severity = "minor";
   }
 
   return {
@@ -119,8 +162,12 @@ export async function evaluateDelay(input: EvaluateDelayInput): Promise<DelayEva
 }
 
 // Step 3: Generate AI Message
-export async function generateAIMessage(input: GenerateMessageInput): Promise<MessageGenerationResult> {
-  logger.info(`[Step 3] Generating AI message for delivery ${input.deliveryId}`);
+export async function generateAIMessage(
+  input: GenerateMessageInput,
+): Promise<MessageGenerationResult> {
+  logger.info(
+    `[Step 3] Generating AI message for delivery ${input.deliveryId}`,
+  );
 
   const aiService = new AIService();
 
@@ -139,27 +186,36 @@ export async function generateAIMessage(input: GenerateMessageInput): Promise<Me
   if (result.success) {
     return {
       message: result.value.message,
-      subject: result.value.subject || `Delivery Update: ${input.delayMinutes}-minute delay`,
+      subject:
+        result.value.subject ||
+        `Delivery Update: ${input.delayMinutes}-minute delay`,
       model: result.value.model,
       tokens: result.value.tokens,
       generatedAt: result.value.generatedAt.toISOString(),
-      fallbackUsed: result.value.model === 'mock-template' || result.value.model === 'fallback-template',
+      fallbackUsed:
+        result.value.model === "mock-template" ||
+        result.value.model === "fallback-template",
     };
   }
 
   // This shouldn't happen with MockAIAdapter as last resort
-  throw new InfrastructureError(`AI message generation failed: ${result.error.message}`, { error: result.error });
+  throw new InfrastructureError(
+    `AI message generation failed: ${result.error.message}`,
+    { error: result.error },
+  );
 }
 
 // Step 4: Send Notification
-export async function sendNotification(input: SendNotificationInput): Promise<NotificationResult> {
+export async function sendNotification(
+  input: SendNotificationInput,
+): Promise<NotificationResult> {
   logger.info(`[Step 4] Sending notification for delivery ${input.deliveryId}`);
 
   const notificationService = new NotificationService();
 
   const result: NotificationResult = {
     sent: false,
-    channel: 'none',
+    channel: "none",
     timestamp: getCurrentISOTimestamp(),
   };
 
@@ -167,8 +223,8 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
   const notificationInput = {
     deliveryId: input.deliveryId,
     message: input.message,
-    subject: input.subject || 'Delivery Update',
-    to: '', // Will be set per channel
+    subject: input.subject || "Delivery Update",
+    to: "", // Will be set per channel
   };
 
   let emailSent = false;
@@ -178,13 +234,16 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
   if (input.recipientEmail) {
     const emailResult = await notificationService.send(
       { ...notificationInput, to: input.recipientEmail },
-      'email'
+      "email",
     );
 
     if (emailResult.success) {
       emailSent = true;
       // Map provider to expected workflow type
-      const provider = emailResult.value.channel === 'email' ? 'sendgrid' as const : 'fallback' as const;
+      const provider =
+        emailResult.value.channel === "email"
+          ? ("sendgrid" as const)
+          : ("fallback" as const);
       result.emailResult = {
         success: true,
         messageId: emailResult.value.messageId,
@@ -194,7 +253,7 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
       result.emailResult = {
         success: false,
         error: emailResult.error.message,
-        provider: 'fallback',
+        provider: "fallback",
       };
     }
   }
@@ -203,13 +262,16 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
   if (input.recipientPhone) {
     const smsResult = await notificationService.send(
       { ...notificationInput, to: input.recipientPhone },
-      'sms'
+      "sms",
     );
 
     if (smsResult.success) {
       smsSent = true;
       // Map provider to expected workflow type
-      const provider = smsResult.value.channel === 'sms' ? 'twilio' as const : 'fallback' as const;
+      const provider =
+        smsResult.value.channel === "sms"
+          ? ("twilio" as const)
+          : ("fallback" as const);
       result.smsResult = {
         success: true,
         messageId: smsResult.value.messageId,
@@ -219,25 +281,25 @@ export async function sendNotification(input: SendNotificationInput): Promise<No
       result.smsResult = {
         success: false,
         error: smsResult.error.message,
-        provider: 'fallback',
+        provider: "fallback",
       };
     }
   }
 
   // Determine channel and overall success
   if (emailSent && smsSent) {
-    result.channel = 'both';
+    result.channel = "both";
     result.sent = true;
   } else if (emailSent) {
-    result.channel = 'email';
+    result.channel = "email";
     result.sent = true;
   } else if (smsSent) {
-    result.channel = 'sms';
+    result.channel = "sms";
     result.sent = true;
   } else {
-    result.channel = 'none';
+    result.channel = "none";
     result.sent = false;
-    logger.info('⚠️ No notifications sent - all channels failed');
+    logger.info("⚠️ No notifications sent - all channels failed");
   }
 
   return result;
@@ -253,8 +315,11 @@ export async function saveTrafficSnapshot(input: {
   trafficCondition: TrafficCondition;
   delayMinutes: number;
   durationSeconds: number;
-  origin?: { address: string; coordinates?: Pick<Coordinates, 'lat' | 'lng'> };
-  destination?: { address: string; coordinates?: Pick<Coordinates, 'lat' | 'lng'> };
+  origin?: { address: string; coordinates?: Pick<Coordinates, "lat" | "lng"> };
+  destination?: {
+    address: string;
+    coordinates?: Pick<Coordinates, "lat" | "lng">;
+  };
 }): Promise<{ success: boolean; id: string }> {
   logger.info(`[Database] Saving traffic snapshot for route ${input.routeId}`);
 
@@ -262,19 +327,28 @@ export async function saveTrafficSnapshot(input: {
     const db = getDatabaseService();
 
     // Generate incident details based on traffic condition
-    const severity = input.delayMinutes > 60 ? 'severe' :
-                     input.delayMinutes > 30 ? 'major' :
-                     input.delayMinutes > 15 ? 'moderate' : 'minor';
+    const severity =
+      input.delayMinutes > 60
+        ? "severe"
+        : input.delayMinutes > 30
+          ? "major"
+          : input.delayMinutes > 15
+            ? "moderate"
+            : "minor";
 
-    const incidentType = input.delayMinutes > 45 ? 'accident' :
-                         input.delayMinutes > 20 ? 'congestion' :
-                         'congestion';
+    const incidentType =
+      input.delayMinutes > 45
+        ? "accident"
+        : input.delayMinutes > 20
+          ? "congestion"
+          : "congestion";
 
     const description = `${capitalizeFirstLetter(input.trafficCondition)} traffic conditions causing ${input.delayMinutes} minute delay`;
 
-    const affectedArea = input.origin && input.destination
-      ? `Route from ${extractFirstPart(input.origin.address)} to ${extractFirstPart(input.destination.address)}`
-      : 'Route segment';
+    const affectedArea =
+      input.origin && input.destination
+        ? `Route from ${extractFirstPart(input.origin.address)} to ${extractFirstPart(input.destination.address)}`
+        : "Route segment";
 
     // Calculate incident location (midpoint of route if coordinates available)
     let incidentLocation: { x: number; y: number } | undefined;
@@ -285,8 +359,12 @@ export async function saveTrafficSnapshot(input: {
       input.destination?.coordinates?.lng !== undefined
     ) {
       incidentLocation = {
-        x: (input.origin.coordinates.lat + input.destination.coordinates.lat) / 2,
-        y: (input.origin.coordinates.lng + input.destination.coordinates.lng) / 2,
+        x:
+          (input.origin.coordinates.lat + input.destination.coordinates.lat) /
+          2,
+        y:
+          (input.origin.coordinates.lng + input.destination.coordinates.lng) /
+          2,
       };
     }
 
@@ -306,12 +384,14 @@ export async function saveTrafficSnapshot(input: {
       logger.info(`✅ Traffic snapshot saved: ${result.value.id}`);
       return { success: true, id: result.value.id };
     } else {
-      logger.error(`❌ Failed to save traffic snapshot: ${result.error.message}`);
-      return { success: false, id: '' };
+      logger.error(
+        `❌ Failed to save traffic snapshot: ${result.error.message}`,
+      );
+      return { success: false, id: "" };
     }
   } catch (error: unknown) {
     logger.error(`❌ Error saving traffic snapshot: ${getErrorMessage(error)}`);
-    return { success: false, id: '' };
+    return { success: false, id: "" };
   }
 }
 
@@ -324,12 +404,14 @@ export async function saveNotification(input: {
   channel: NotificationChannel;
   recipient: string;
   message: string;
-  status: Exclude<NotificationStatus, 'pending' | 'skipped'>;
+  status: Exclude<NotificationStatus, "pending" | "skipped">;
   messageId?: string;
   error?: string;
   delayMinutes?: number;
 }): Promise<{ success: boolean; id: string }> {
-  logger.info(`[Database] Saving notification for delivery ${input.deliveryId}`);
+  logger.info(
+    `[Database] Saving notification for delivery ${input.deliveryId}`,
+  );
 
   try {
     const db = getDatabaseService();
@@ -350,11 +432,11 @@ export async function saveNotification(input: {
       return { success: true, id: result.value.id };
     } else {
       logger.error(`❌ Failed to save notification: ${result.error.message}`);
-      return { success: false, id: '' };
+      return { success: false, id: "" };
     }
   } catch (error: unknown) {
     logger.error(`❌ Error saving notification: ${getErrorMessage(error)}`);
-    return { success: false, id: '' };
+    return { success: false, id: "" };
   }
 }
 
@@ -365,7 +447,9 @@ export async function updateDeliveryStatusInDb(input: {
   deliveryId: string;
   status: DeliveryStatus;
 }): Promise<{ success: boolean }> {
-  logger.info(`[Database] Updating delivery ${input.deliveryId} status to ${input.status}`);
+  logger.info(
+    `[Database] Updating delivery ${input.deliveryId} status to ${input.status}`,
+  );
 
   try {
     const db = getDatabaseService();
@@ -377,11 +461,15 @@ export async function updateDeliveryStatusInDb(input: {
       logger.info(`✅ Delivery status updated to: ${input.status}`);
       return { success: true };
     } else {
-      logger.error(`❌ Failed to update delivery status: ${result.error.message}`);
+      logger.error(
+        `❌ Failed to update delivery status: ${result.error.message}`,
+      );
       return { success: false };
     }
   } catch (error: unknown) {
-    logger.error(`❌ Error updating delivery status: ${getErrorMessage(error)}`);
+    logger.error(
+      `❌ Error updating delivery status: ${getErrorMessage(error)}`,
+    );
     return { success: false };
   }
 }
@@ -393,38 +481,57 @@ export async function saveWorkflowExecution(input: {
   workflowId: string;
   runId: string;
   deliveryId: string;
-  status: Exclude<WorkflowStatus, 'cancelled' | 'timed_out'>;
+  status: Exclude<WorkflowStatus, "cancelled" | "timed_out">;
   steps?: unknown;
   error?: string;
 }): Promise<{ success: boolean; id: string }> {
-  logger.info(`[Database] Saving workflow execution ${input.workflowId} (run: ${input.runId}) with status: ${input.status}`);
+  logger.info(
+    `[Database] Saving workflow execution ${input.workflowId} (run: ${input.runId}) with status: ${input.status}`,
+  );
 
   try {
     const db = getDatabaseService();
 
     // Check if workflow execution already exists by BOTH workflow_id AND run_id
     // This ensures we update the correct execution when using ALLOW_DUPLICATE policy
-    const existingResult = await db.getWorkflowExecutionByWorkflowIdAndRunId(input.workflowId, input.runId);
+    const existingResult = await db.getWorkflowExecutionByWorkflowIdAndRunId(
+      input.workflowId,
+      input.runId,
+    );
 
     if (existingResult.success && existingResult.value) {
       // Update existing record
-      logger.info(`[Database] Updating existing workflow execution: ${existingResult.value.id} (workflow_id: ${input.workflowId}, run_id: ${input.runId})`);
-      const updateResult = await db.updateWorkflowExecution(existingResult.value.id, {
-        status: input.status,
-        completed_at: input.status === 'completed' || input.status === 'failed' ? new Date() : undefined,
-        error_message: input.error || undefined,
-      });
+      logger.info(
+        `[Database] Updating existing workflow execution: ${existingResult.value.id} (workflow_id: ${input.workflowId}, run_id: ${input.runId})`,
+      );
+      const updateResult = await db.updateWorkflowExecution(
+        existingResult.value.id,
+        {
+          status: input.status,
+          completed_at:
+            input.status === "completed" || input.status === "failed"
+              ? new Date()
+              : undefined,
+          error_message: input.error || undefined,
+        },
+      );
 
       if (updateResult.success) {
-        logger.info(`✅ Workflow execution updated: ${updateResult.value.id} -> status: ${input.status}`);
+        logger.info(
+          `✅ Workflow execution updated: ${updateResult.value.id} -> status: ${input.status}`,
+        );
         return { success: true, id: updateResult.value.id };
       } else {
-        logger.error(`❌ Failed to update workflow execution: ${updateResult.error.message}`);
-        return { success: false, id: '' };
+        logger.error(
+          `❌ Failed to update workflow execution: ${updateResult.error.message}`,
+        );
+        return { success: false, id: "" };
       }
     } else {
       // Create new record (should only happen if workflow wasn't saved at start time)
-      logger.info(`[Database] Creating new workflow execution (workflow_id: ${input.workflowId}, run_id: ${input.runId})`);
+      logger.info(
+        `[Database] Creating new workflow execution (workflow_id: ${input.workflowId}, run_id: ${input.runId})`,
+      );
       const createResult = await db.createWorkflowExecution({
         workflow_id: input.workflowId,
         run_id: input.runId,
@@ -436,13 +543,17 @@ export async function saveWorkflowExecution(input: {
         logger.info(`✅ Workflow execution created: ${createResult.value.id}`);
         return { success: true, id: createResult.value.id };
       } else {
-        logger.error(`❌ Failed to create workflow execution: ${createResult.error.message}`);
-        return { success: false, id: '' };
+        logger.error(
+          `❌ Failed to create workflow execution: ${createResult.error.message}`,
+        );
+        return { success: false, id: "" };
       }
     }
   } catch (error: unknown) {
-    logger.error(`❌ Error saving workflow execution: ${getErrorMessage(error)}`);
-    return { success: false, id: '' };
+    logger.error(
+      `❌ Error saving workflow execution: ${getErrorMessage(error)}`,
+    );
+    return { success: false, id: "" };
   }
 }
 
@@ -471,7 +582,10 @@ export async function saveRouteEntity(input: {
       origin_address: input.originAddress,
       origin_coords: { x: input.originCoords.lat, y: input.originCoords.lng },
       destination_address: input.destinationAddress,
-      destination_coords: { x: input.destinationCoords.lat, y: input.destinationCoords.lng },
+      destination_coords: {
+        x: input.destinationCoords.lat,
+        y: input.destinationCoords.lng,
+      },
       distance_meters: input.distanceMeters,
       normal_duration_seconds: input.normalDurationSeconds,
       current_duration_seconds: input.currentDurationSeconds,
@@ -480,7 +594,10 @@ export async function saveRouteEntity(input: {
 
     if (!updateResult.success) {
       logger.error(`Failed to update route: ${updateResult.error.message}`);
-      throw new InfrastructureError(`Failed to update route: ${updateResult.error.message}`, { error: updateResult.error });
+      throw new InfrastructureError(
+        `Failed to update route: ${updateResult.error.message}`,
+        { error: updateResult.error },
+      );
     }
 
     logger.info(`✅ Route updated: ${input.routeId}`);
@@ -492,7 +609,10 @@ export async function saveRouteEntity(input: {
     origin_address: input.originAddress,
     origin_coords: { x: input.originCoords.lat, y: input.originCoords.lng },
     destination_address: input.destinationAddress,
-    destination_coords: { x: input.destinationCoords.lat, y: input.destinationCoords.lng },
+    destination_coords: {
+      x: input.destinationCoords.lat,
+      y: input.destinationCoords.lng,
+    },
     distance_meters: input.distanceMeters,
     normal_duration_seconds: input.normalDurationSeconds,
     current_duration_seconds: input.currentDurationSeconds,
@@ -501,7 +621,10 @@ export async function saveRouteEntity(input: {
 
   if (!createResult.success) {
     logger.error(`Failed to create route: ${createResult.error.message}`);
-    throw new InfrastructureError(`Failed to create route: ${createResult.error.message}`, { error: createResult.error });
+    throw new InfrastructureError(
+      `Failed to create route: ${createResult.error.message}`,
+      { error: createResult.error },
+    );
   }
 
   logger.info(`✅ Route created: ${createResult.value.id}`);
@@ -536,7 +659,10 @@ export async function saveDeliveryEntity(input: {
 
     if (!updateResult.success) {
       logger.error(`Failed to update delivery: ${updateResult.error.message}`);
-      throw new InfrastructureError(`Failed to update delivery: ${updateResult.error.message}`, { error: updateResult.error });
+      throw new InfrastructureError(
+        `Failed to update delivery: ${updateResult.error.message}`,
+        { error: updateResult.error },
+      );
     }
 
     logger.info(`✅ Delivery updated: ${input.deliveryId}`);
@@ -555,7 +681,10 @@ export async function saveDeliveryEntity(input: {
 
   if (!createResult.success) {
     logger.error(`Failed to create delivery: ${createResult.error.message}`);
-    throw new InfrastructureError(`Failed to create delivery: ${createResult.error.message}`, { error: createResult.error });
+    throw new InfrastructureError(
+      `Failed to create delivery: ${createResult.error.message}`,
+      { error: createResult.error },
+    );
   }
 
   logger.info(`✅ Delivery created: ${createResult.value.id}`);
@@ -564,9 +693,11 @@ export async function saveDeliveryEntity(input: {
 
 export async function updateDeliveryStatus(input: {
   deliveryId: string;
-  status: Extract<DeliveryStatus, 'delayed' | 'delivered' | 'in_transit'>;
+  status: Extract<DeliveryStatus, "delayed" | "delivered" | "in_transit">;
 }): Promise<{ success: boolean }> {
-  logger.info(`[Database] Updating delivery ${input.deliveryId} status to: ${input.status}`);
+  logger.info(
+    `[Database] Updating delivery ${input.deliveryId} status to: ${input.status}`,
+  );
 
   // Note: Repository update would go here
   // For now, just log the action
@@ -605,14 +736,16 @@ export async function getDeliveryDetails(input: {
         success: true,
         delivery: {
           status: delivery.status,
-          scheduledDelivery: typeof delivery.scheduled_delivery === 'string'
-            ? delivery.scheduled_delivery
-            : delivery.scheduled_delivery.toISOString(),
+          scheduledDelivery:
+            typeof delivery.scheduled_delivery === "string"
+              ? delivery.scheduled_delivery
+              : delivery.scheduled_delivery.toISOString(),
           checksPerformed: delivery.checks_performed ?? 0,
           maxChecks: delivery.max_checks ?? 10,
           enableRecurringChecks: delivery.enable_recurring_checks ?? false,
           minDelayChangeThreshold: delivery.min_delay_change_threshold ?? 15,
-          minHoursBetweenNotifications: delivery.min_hours_between_notifications ?? 1.0,
+          minHoursBetweenNotifications:
+            delivery.min_hours_between_notifications ?? 1.0,
           metadata: delivery.metadata,
         },
       };
@@ -633,7 +766,9 @@ export async function getDeliveryDetails(input: {
 export async function incrementChecksPerformed(input: {
   deliveryId: string;
 }): Promise<{ success: boolean; checksPerformed: number }> {
-  logger.info(`[Database] Incrementing checks_performed for delivery ${input.deliveryId}`);
+  logger.info(
+    `[Database] Incrementing checks_performed for delivery ${input.deliveryId}`,
+  );
 
   try {
     const db = getDatabaseService();
@@ -647,11 +782,15 @@ export async function incrementChecksPerformed(input: {
       logger.info(`✅ Checks performed updated: ${newCount}`);
       return { success: true, checksPerformed: newCount };
     } else {
-      logger.error(`❌ Failed to increment checks_performed: ${result.error.message}`);
+      logger.error(
+        `❌ Failed to increment checks_performed: ${result.error.message}`,
+      );
       return { success: false, checksPerformed: 0 };
     }
   } catch (error: unknown) {
-    logger.error(`❌ Error incrementing checks_performed: ${getErrorMessage(error)}`);
+    logger.error(
+      `❌ Error incrementing checks_performed: ${getErrorMessage(error)}`,
+    );
     return { success: false, checksPerformed: 0 };
   }
 }
@@ -667,26 +806,39 @@ export async function getLastNotification(input: {
     delayMinutes: number;
     sentAt: Date;
     channel: string;
-  } | null
+  } | null;
 }> {
-  logger.info(`[Database] Fetching last notification for delivery ${input.deliveryId}`);
+  logger.info(
+    `[Database] Fetching last notification for delivery ${input.deliveryId}`,
+  );
 
   try {
     const db = getDatabaseService();
-    const notificationsResult = await db.listNotificationsByDelivery(input.deliveryId);
+    const notificationsResult = await db.listNotificationsByDelivery(
+      input.deliveryId,
+    );
 
-    if (!notificationsResult.success || !notificationsResult.value || notificationsResult.value.length === 0) {
-      logger.info(`📭 No previous notifications found for delivery ${input.deliveryId}`);
+    if (
+      !notificationsResult.success ||
+      !notificationsResult.value ||
+      notificationsResult.value.length === 0
+    ) {
+      logger.info(
+        `📭 No previous notifications found for delivery ${input.deliveryId}`,
+      );
       return { success: true, notification: null };
     }
 
     // Get most recent notification (sorted by created_at desc)
     const notifications = notificationsResult.value;
-    const lastNotification = notifications.sort((a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    const lastNotification = notifications.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     )[0];
 
-    logger.info(`📬 Last notification found: ${lastNotification.delay_minutes} min delay at ${lastNotification.sent_at || lastNotification.created_at}`);
+    logger.info(
+      `📬 Last notification found: ${lastNotification.delay_minutes} min delay at ${lastNotification.sent_at || lastNotification.created_at}`,
+    );
 
     return {
       success: true,
@@ -697,7 +849,9 @@ export async function getLastNotification(input: {
       },
     };
   } catch (error: unknown) {
-    logger.error(`❌ Error fetching last notification: ${getErrorMessage(error)}`);
+    logger.error(
+      `❌ Error fetching last notification: ${getErrorMessage(error)}`,
+    );
     return { success: false, notification: null };
   }
 }

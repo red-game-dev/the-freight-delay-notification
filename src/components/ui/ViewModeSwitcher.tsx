@@ -4,12 +4,12 @@
  * Persists preference using uiStore
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { LayoutList, LayoutGrid, List } from 'lucide-react';
-import { cn } from '@/core/base/utils/cn';
-import { useViewMode } from '@/stores';
+import { LayoutGrid, LayoutList, List } from "lucide-react";
+import { useEffect, useState } from "react";
+import { cn } from "@/core/base/utils/cn";
+import { useViewMode } from "@/stores";
 
 export interface ViewModeSwitcherProps {
   pageKey: string;
@@ -17,12 +17,16 @@ export interface ViewModeSwitcherProps {
   showLabels?: boolean;
 }
 
-export type ViewMode = 'list' | 'grid' | 'compact';
+export type ViewMode = "list" | "grid" | "compact";
 
-const modes: Array<{ value: ViewMode; icon: typeof LayoutList; label: string }> = [
-  { value: 'list', icon: LayoutList, label: 'List' },
-  { value: 'grid', icon: LayoutGrid, label: 'Grid' },
-  { value: 'compact', icon: List, label: 'Compact' },
+const modes: Array<{
+  value: ViewMode;
+  icon: typeof LayoutList;
+  label: string;
+}> = [
+  { value: "list", icon: LayoutList, label: "List" },
+  { value: "grid", icon: LayoutGrid, label: "Grid" },
+  { value: "compact", icon: List, label: "Compact" },
 ];
 
 export function ViewModeSwitcher({
@@ -30,11 +34,12 @@ export function ViewModeSwitcher({
   className,
   showLabels = false,
 }: ViewModeSwitcherProps) {
-  const { viewMode: storeViewMode, setViewMode: storeSetViewMode } = useViewMode(pageKey);
+  const { viewMode: storeViewMode, setViewMode: storeSetViewMode } =
+    useViewMode(pageKey);
 
   // Use local state to prevent hydration mismatch
   // Initialize with default 'list' on both server and client
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Sync with store after hydration
@@ -51,8 +56,8 @@ export function ViewModeSwitcher({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1',
-        className
+        "inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1",
+        className,
       )}
       role="group"
       aria-label="View mode"
@@ -62,10 +67,10 @@ export function ViewModeSwitcher({
           key={value}
           onClick={() => handleSetViewMode(value)}
           className={cn(
-            'inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+            "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
             viewMode === value
-              ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50",
           )}
           aria-label={`${label} view`}
           aria-pressed={viewMode === value}
@@ -86,7 +91,7 @@ export function ViewModeSwitcher({
  */
 export function usePageViewMode(pageKey: string): ViewMode {
   const { viewMode: storeViewMode } = useViewMode(pageKey);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   useEffect(() => {
     setViewMode(storeViewMode as ViewMode);

@@ -4,21 +4,23 @@
  * Prevents multiple script loads when multiple map components are used
  */
 
-'use client';
+"use client";
 
-import { createContext, useContext, type ReactNode } from 'react';
-import { useLoadScript, type Libraries } from '@react-google-maps/api';
-import { clientEnv } from '@/infrastructure/config/ClientEnv';
+import { type Libraries, useLoadScript } from "@react-google-maps/api";
+import { createContext, type ReactNode, useContext } from "react";
+import { clientEnv } from "@/infrastructure/config/ClientEnv";
 
 interface GoogleMapsContextValue {
   isLoaded: boolean;
   loadError: Error | undefined;
 }
 
-const GoogleMapsContext = createContext<GoogleMapsContextValue | undefined>(undefined);
+const GoogleMapsContext = createContext<GoogleMapsContextValue | undefined>(
+  undefined,
+);
 
 // Define libraries array outside component to prevent unnecessary re-renders
-const libraries: Libraries = ['places'];
+const libraries: Libraries = ["places"];
 
 interface GoogleMapsProviderProps {
   children: ReactNode;
@@ -26,7 +28,7 @@ interface GoogleMapsProviderProps {
 
 export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: clientEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    googleMapsApiKey: clientEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
 
@@ -44,7 +46,7 @@ export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
 export function useGoogleMaps() {
   const context = useContext(GoogleMapsContext);
   if (context === undefined) {
-    throw new Error('useGoogleMaps must be used within GoogleMapsProvider');
+    throw new Error("useGoogleMaps must be used within GoogleMapsProvider");
   }
   return context;
 }

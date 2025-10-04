@@ -8,7 +8,7 @@
  * Learn more: https://docs.temporal.io/workers#worker-versioning
  */
 
-import { execSync } from 'node:child_process';
+import { execSync } from "node:child_process";
 
 export interface BuildInfo {
   buildId: string;
@@ -27,25 +27,31 @@ export interface BuildInfo {
  */
 export function getBuildId(): string {
   try {
-    const gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
-    const gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const gitHash = execSync("git rev-parse --short HEAD", {
+      encoding: "utf-8",
+    }).trim();
+    const gitBranch = execSync("git rev-parse --abbrev-ref HEAD", {
+      encoding: "utf-8",
+    }).trim();
+    const timestamp = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
     // Check if working directory is dirty (uncommitted changes)
     let isDirty = false;
     try {
-      const status = execSync('git status --porcelain', { encoding: 'utf-8' }).trim();
+      const status = execSync("git status --porcelain", {
+        encoding: "utf-8",
+      }).trim();
       isDirty = status.length > 0;
     } catch {
       // Ignore errors checking dirty status
     }
 
-    const dirtySuffix = isDirty ? '-dirty' : '';
+    const dirtySuffix = isDirty ? "-dirty" : "";
 
     return `${gitBranch}-${gitHash}-${timestamp}${dirtySuffix}`;
   } catch (error) {
     // Fallback for non-git environments (CI/CD, Docker, etc.)
-    console.warn('⚠️  Git not available, using timestamp-based build ID');
+    console.warn("⚠️  Git not available, using timestamp-based build ID");
     return `build-${Date.now()}`;
   }
 }
@@ -55,13 +61,19 @@ export function getBuildId(): string {
  */
 export function getBuildInfo(): BuildInfo {
   try {
-    const gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
-    const gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+    const gitHash = execSync("git rev-parse --short HEAD", {
+      encoding: "utf-8",
+    }).trim();
+    const gitBranch = execSync("git rev-parse --abbrev-ref HEAD", {
+      encoding: "utf-8",
+    }).trim();
     const timestamp = new Date().toISOString();
 
     let isDirty = false;
     try {
-      const status = execSync('git status --porcelain', { encoding: 'utf-8' }).trim();
+      const status = execSync("git status --porcelain", {
+        encoding: "utf-8",
+      }).trim();
       isDirty = status.length > 0;
     } catch {
       // Ignore
@@ -79,8 +91,8 @@ export function getBuildInfo(): BuildInfo {
   } catch (error) {
     return {
       buildId: `build-${Date.now()}`,
-      gitHash: 'unknown',
-      gitBranch: 'unknown',
+      gitHash: "unknown",
+      gitBranch: "unknown",
       timestamp: new Date().toISOString(),
       isDirty: false,
     };
@@ -92,8 +104,12 @@ export function getBuildInfo(): BuildInfo {
  */
 export function getPreviousBuildId(): string | undefined {
   try {
-    const prevHash = execSync('git rev-parse --short HEAD~1', { encoding: 'utf-8' }).trim();
-    const gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+    const prevHash = execSync("git rev-parse --short HEAD~1", {
+      encoding: "utf-8",
+    }).trim();
+    const gitBranch = execSync("git rev-parse --abbrev-ref HEAD", {
+      encoding: "utf-8",
+    }).trim();
 
     // Note: Timestamp won't match exactly, but hash is the key identifier
     return `${gitBranch}-${prevHash}`;

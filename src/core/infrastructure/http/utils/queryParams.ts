@@ -3,14 +3,14 @@
  * Helpers for extracting query parameters from requests
  */
 
-import { NextRequest } from 'next/server';
+import type { NextRequest } from "next/server";
 
 /**
  * Get single query parameter from URL
  */
 export function getQueryParam(
   request: NextRequest,
-  param: string
+  param: string,
 ): string | null {
   const { searchParams } = new URL(request.url);
   return searchParams.get(param);
@@ -22,7 +22,7 @@ export function getQueryParam(
  */
 export function getQueryParams(
   request: NextRequest,
-  params: string[]
+  params: string[],
 ): Record<string, string | null> {
   const { searchParams } = new URL(request.url);
   return params.reduce(
@@ -30,14 +30,16 @@ export function getQueryParams(
       acc[param] = searchParams.get(param);
       return acc;
     },
-    {} as Record<string, string | null>
+    {} as Record<string, string | null>,
   );
 }
 
 /**
  * Get all query parameters as object
  */
-export function getAllQueryParams(request: NextRequest): Record<string, string> {
+export function getAllQueryParams(
+  request: NextRequest,
+): Record<string, string> {
   const { searchParams } = new URL(request.url);
   const params: Record<string, string> = {};
 

@@ -3,11 +3,11 @@
  * GET /api/deliveries/stats - Get delivery statistics
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler } from '@/core/infrastructure/http';
-import { Result } from '@/core/base/utils/Result';
-import type { Delivery } from '@/infrastructure/database/types/database.types';
-import { setAuditContext } from '@/app/api/middleware/auditContext';
+import { setAuditContext } from "@/app/api/middleware/auditContext";
+import { Result } from "@/core/base/utils/Result";
+import { createApiHandler } from "@/core/infrastructure/http";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
+import type { Delivery } from "@/infrastructure/database/types/database.types";
 
 /**
  * GET /api/deliveries/stats
@@ -18,15 +18,15 @@ export const GET = createApiHandler(async (request) => {
   const db = getDatabaseService();
 
   // Get all deliveries and transform to stats using Result.map
-  return Result.map(
-    await db.listDeliveries(1000, 0),
-    (deliveries) => ({
-      total: deliveries.length,
-      in_transit: deliveries.filter((d: Delivery) => d.status === 'in_transit').length,
-      delayed: deliveries.filter((d: Delivery) => d.status === 'delayed').length,
-      delivered: deliveries.filter((d: Delivery) => d.status === 'delivered').length,
-      pending: deliveries.filter((d: Delivery) => d.status === 'pending').length,
-      cancelled: deliveries.filter((d: Delivery) => d.status === 'cancelled').length,
-    })
-  );
+  return Result.map(await db.listDeliveries(1000, 0), (deliveries) => ({
+    total: deliveries.length,
+    in_transit: deliveries.filter((d: Delivery) => d.status === "in_transit")
+      .length,
+    delayed: deliveries.filter((d: Delivery) => d.status === "delayed").length,
+    delivered: deliveries.filter((d: Delivery) => d.status === "delivered")
+      .length,
+    pending: deliveries.filter((d: Delivery) => d.status === "pending").length,
+    cancelled: deliveries.filter((d: Delivery) => d.status === "cancelled")
+      .length,
+  }));
 });

@@ -3,7 +3,12 @@
  * Following Temporal TypeScript SDK best practices
  */
 
-import type { TrafficCondition, NotificationChannel, WorkflowStep, Coordinates } from '@/core/types';
+import type {
+  Coordinates,
+  NotificationChannel,
+  TrafficCondition,
+  WorkflowStep,
+} from "@/core/types";
 
 // ===== Workflow Input Types =====
 // Using single object parameter as per Temporal best practices
@@ -17,17 +22,18 @@ export interface DelayNotificationWorkflowInput {
   customerPhone?: string;
   origin: {
     address: string;
-    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
+    coordinates?: Pick<Coordinates, "lat" | "lng">;
   };
   destination: {
     address: string;
-    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
+    coordinates?: Pick<Coordinates, "lat" | "lng">;
   };
   scheduledTime: string; // ISO 8601 string
   thresholdMinutes?: number; // Default 30 minutes as per PDF
 }
 
-export interface RecurringCheckWorkflowInput extends DelayNotificationWorkflowInput {
+export interface RecurringCheckWorkflowInput
+  extends DelayNotificationWorkflowInput {
   checkIntervalMinutes: number; // How often to check (15, 30, 60, 120, 180)
   maxChecks: number; // Maximum number of checks (1-100, or -1 for infinite)
   cutoffHours?: number; // Hours after scheduled delivery to stop checking (for infinite checks, default 72)
@@ -39,17 +45,17 @@ export interface RecurringCheckWorkflowInput extends DelayNotificationWorkflowIn
 export interface CheckTrafficInput {
   origin: {
     address: string;
-    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
+    coordinates?: Pick<Coordinates, "lat" | "lng">;
   };
   destination: {
     address: string;
-    coordinates?: Pick<Coordinates, 'lat' | 'lng'>;
+    coordinates?: Pick<Coordinates, "lat" | "lng">;
   };
   departureTime?: string; // ISO 8601 string
 }
 
 export interface TrafficCheckResult {
-  provider: 'google' | 'mapbox'; // Track which API was used
+  provider: "google" | "mapbox"; // Track which API was used
   delayMinutes: number;
   trafficCondition: TrafficCondition;
   estimatedDurationMinutes: number;
@@ -73,7 +79,7 @@ export interface DelayEvaluationResult {
   exceedsThreshold: boolean;
   delayMinutes: number;
   thresholdMinutes: number;
-  severity: 'on_time' | 'minor' | 'moderate' | 'severe';
+  severity: "on_time" | "minor" | "moderate" | "severe";
   requiresNotification: boolean;
 }
 
@@ -106,23 +112,23 @@ export interface SendNotificationInput {
   message: string;
   subject?: string;
   deliveryId: string;
-  priority: 'low' | 'normal' | 'high';
+  priority: "low" | "normal" | "high";
 }
 
 export interface NotificationResult {
   sent: boolean;
-  channel: NotificationChannel | 'both' | 'none';
+  channel: NotificationChannel | "both" | "none";
   emailResult?: {
     success: boolean;
     messageId?: string;
     error?: string;
-    provider: 'sendgrid' | 'fallback';
+    provider: "sendgrid" | "fallback";
   };
   smsResult?: {
     success: boolean;
     messageId?: string;
     error?: string;
-    provider: 'twilio' | 'fallback';
+    provider: "twilio" | "fallback";
   };
   timestamp: string;
 }
@@ -166,10 +172,10 @@ export class TrafficCheckError extends Error {
   constructor(
     message: string,
     public readonly provider: string,
-    public readonly retryable: boolean = true
+    public readonly retryable: boolean = true,
   ) {
     super(message);
-    this.name = 'TrafficCheckError';
+    this.name = "TrafficCheckError";
   }
 }
 
@@ -177,10 +183,10 @@ export class MessageGenerationError extends Error {
   constructor(
     message: string,
     public readonly model: string,
-    public readonly retryable: boolean = true
+    public readonly retryable: boolean = true,
   ) {
     super(message);
-    this.name = 'MessageGenerationError';
+    this.name = "MessageGenerationError";
   }
 }
 
@@ -188,50 +194,53 @@ export class NotificationDeliveryError extends Error {
   constructor(
     message: string,
     public readonly channel: string,
-    public readonly retryable: boolean = true
+    public readonly retryable: boolean = true,
   ) {
     super(message);
-    this.name = 'NotificationDeliveryError';
+    this.name = "NotificationDeliveryError";
   }
 }
 
 // ===== Retry Policy Configuration =====
 export const RETRY_POLICIES = {
   trafficCheck: {
-    initialInterval: '5s',
+    initialInterval: "5s",
     backoffCoefficient: 2,
     maximumAttempts: 3,
-    maximumInterval: '30s',
-    nonRetryableErrorTypes: ['RateLimitError', 'InvalidCredentialsError'],
+    maximumInterval: "30s",
+    nonRetryableErrorTypes: ["RateLimitError", "InvalidCredentialsError"],
   },
   aiGeneration: {
-    initialInterval: '2s',
+    initialInterval: "2s",
     backoffCoefficient: 2,
     maximumAttempts: 3,
-    maximumInterval: '20s',
-    nonRetryableErrorTypes: ['InvalidAPIKeyError', 'ContentPolicyViolation'],
+    maximumInterval: "20s",
+    nonRetryableErrorTypes: ["InvalidAPIKeyError", "ContentPolicyViolation"],
   },
   notification: {
-    initialInterval: '3s',
+    initialInterval: "3s",
     backoffCoefficient: 2,
     maximumAttempts: 5,
-    maximumInterval: '60s',
-    nonRetryableErrorTypes: ['InvalidRecipientError', 'BlacklistedRecipientError'],
+    maximumInterval: "60s",
+    nonRetryableErrorTypes: [
+      "InvalidRecipientError",
+      "BlacklistedRecipientError",
+    ],
   },
 };
 
 // ===== Activity Timeout Configuration =====
 export const ACTIVITY_TIMEOUTS = {
   trafficCheck: {
-    startToCloseTimeout: '30s',
-    heartbeatTimeout: '10s',
+    startToCloseTimeout: "30s",
+    heartbeatTimeout: "10s",
   },
   aiGeneration: {
-    startToCloseTimeout: '60s',
-    heartbeatTimeout: '20s',
+    startToCloseTimeout: "60s",
+    heartbeatTimeout: "20s",
   },
   notification: {
-    startToCloseTimeout: '45s',
-    heartbeatTimeout: '15s',
+    startToCloseTimeout: "45s",
+    heartbeatTimeout: "15s",
   },
 };

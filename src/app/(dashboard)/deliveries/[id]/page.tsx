@@ -3,50 +3,57 @@
  * View full delivery information with manual workflow trigger
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import {
   ArrowLeft,
+  Clock,
   Edit,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
   PlayCircle,
   Trash2,
-  MapPin,
-  Clock,
   User,
-  Mail,
-  Phone,
-  FileText,
   XCircle,
-} from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
-import { Alert } from '@/components/ui/Alert';
-import { InfoBox } from '@/components/ui/InfoBox';
-import { Modal, ModalFooter } from '@/components/ui/Modal';
-import { Toggle } from '@/components/ui/Toggle';
-import { CompactTimeline } from '@/components/ui/Timeline';
-import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { useDelivery, useDeleteDelivery } from '@/core/infrastructure/http/services/deliveries';
-import { useStartWorkflow, useCancelWorkflow, useWorkflowPolling } from '@/core/infrastructure/http/services/workflows';
-import { WorkflowStatusPolling } from '@/components/features/workflows/WorkflowStatusPolling';
-import { DeliveryMap } from '@/components/features/deliveries/DeliveryMap';
-import { DeliveryWorkflowsList } from '@/components/features/deliveries/DeliveryWorkflowsList';
-import { DeliveryNotificationsList } from '@/components/features/deliveries/DeliveryNotificationsList';
-import { createWorkflowId, WorkflowType } from '@/core/utils/workflowUtils';
+} from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { DeliveryMap } from "@/components/features/deliveries/DeliveryMap";
+import { DeliveryNotificationsList } from "@/components/features/deliveries/DeliveryNotificationsList";
+import { DeliveryWorkflowsList } from "@/components/features/deliveries/DeliveryWorkflowsList";
+import { WorkflowStatusPolling } from "@/components/features/workflows/WorkflowStatusPolling";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { InfoBox } from "@/components/ui/InfoBox";
+import { Modal, ModalFooter } from "@/components/ui/Modal";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { SkeletonDetail } from "@/components/ui/Skeleton";
+import { CompactTimeline } from "@/components/ui/Timeline";
+import { Toggle } from "@/components/ui/Toggle";
+import {
+  useDeleteDelivery,
+  useDelivery,
+} from "@/core/infrastructure/http/services/deliveries";
+import {
+  useCancelWorkflow,
+  useStartWorkflow,
+  useWorkflowPolling,
+} from "@/core/infrastructure/http/services/workflows";
+import { createWorkflowId, WorkflowType } from "@/core/utils/workflowUtils";
 
 const statusConfig = {
-  pending: { label: 'Pending', variant: 'default' as const },
-  in_transit: { label: 'In Transit', variant: 'info' as const },
-  delayed: { label: 'Delayed', variant: 'warning' as const },
-  delivered: { label: 'Delivered', variant: 'success' as const },
-  cancelled: { label: 'Cancelled', variant: 'error' as const },
-  failed: { label: 'Failed', variant: 'error' as const },
+  pending: { label: "Pending", variant: "default" as const },
+  in_transit: { label: "In Transit", variant: "info" as const },
+  delayed: { label: "Delayed", variant: "warning" as const },
+  delivered: { label: "Delivered", variant: "success" as const },
+  cancelled: { label: "Cancelled", variant: "error" as const },
+  failed: { label: "Failed", variant: "error" as const },
 };
 
 export default function DeliveryDetailPage() {
@@ -65,9 +72,11 @@ export default function DeliveryDetailPage() {
 
   const workflowId = delivery
     ? createWorkflowId(
-        delivery.enable_recurring_checks ? WorkflowType.RECURRING_CHECK : WorkflowType.DELAY_NOTIFICATION,
+        delivery.enable_recurring_checks
+          ? WorkflowType.RECURRING_CHECK
+          : WorkflowType.DELAY_NOTIFICATION,
         delivery.id,
-        false
+        false,
       )
     : null;
 
@@ -81,7 +90,8 @@ export default function DeliveryDetailPage() {
   } = useWorkflowPolling({ workflowId });
 
   // Compute button states
-  const isRecurringAndRunning = delivery?.enable_recurring_checks && isWorkflowRunning;
+  const isRecurringAndRunning =
+    delivery?.enable_recurring_checks && isWorkflowRunning;
 
   const handleStartWorkflow = async () => {
     if (!delivery) return;
@@ -89,7 +99,7 @@ export default function DeliveryDetailPage() {
       notifyWorkflowStarted();
       await startWorkflow.mutateAsync(delivery.id);
     } catch (error) {
-      console.error('Failed to start workflow:', error);
+      console.error("Failed to start workflow:", error);
       resetWorkflowStarted();
     }
   };
@@ -106,7 +116,7 @@ export default function DeliveryDetailPage() {
       setShowCancelWorkflowModal(false);
       setForceCancel(false);
     } catch (error) {
-      console.error('Failed to cancel recurring workflow:', error);
+      console.error("Failed to cancel recurring workflow:", error);
     }
   };
 
@@ -116,9 +126,9 @@ export default function DeliveryDetailPage() {
     try {
       await deleteDelivery.mutateAsync(delivery.id);
       setShowDeleteModal(false);
-      router.push('/deliveries');
+      router.push("/deliveries");
     } catch (error) {
-      console.error('Failed to delete delivery:', error);
+      console.error("Failed to delete delivery:", error);
     }
   };
 
@@ -129,11 +139,17 @@ export default function DeliveryDetailPage() {
   if (error || !delivery) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} leftIcon={<ArrowLeft className="h-4 w-4" />}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          leftIcon={<ArrowLeft className="h-4 w-4" />}
+        >
           Back
         </Button>
         <Alert variant="error">
-          Failed to load delivery. {error instanceof Error ? error.message : 'Please try again.'}
+          Failed to load delivery.{" "}
+          {error instanceof Error ? error.message : "Please try again."}
         </Alert>
       </div>
     );
@@ -169,7 +185,11 @@ export default function DeliveryDetailPage() {
 
         <div className="flex items-center gap-2">
           <Link href={`/deliveries/${delivery.id}/edit`}>
-            <Button variant="outline" size="sm" leftIcon={<Edit className="h-4 w-4" />}>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Edit className="h-4 w-4" />}
+            >
               Edit
             </Button>
           </Link>
@@ -236,7 +256,9 @@ export default function DeliveryDetailPage() {
                 <div className="flex items-start gap-2 mb-1">
                   <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Scheduled Delivery</p>
+                    <p className="text-sm text-muted-foreground">
+                      Scheduled Delivery
+                    </p>
                     <p className="font-medium">
                       {new Date(delivery.scheduled_delivery).toLocaleString()}
                     </p>
@@ -304,8 +326,15 @@ export default function DeliveryDetailPage() {
       {/* Interactive Map */}
       <Card>
         <div className="p-6">
-          <SectionHeader title="Route Map" description="Delivery route visualization" className="mb-4" />
-          <DeliveryMap origin={delivery.origin} destination={delivery.destination} />
+          <SectionHeader
+            title="Route Map"
+            description="Delivery route visualization"
+            className="mb-4"
+          />
+          <DeliveryMap
+            origin={delivery.origin}
+            destination={delivery.destination}
+          />
         </div>
       </Card>
 
@@ -318,13 +347,14 @@ export default function DeliveryDetailPage() {
           showActivities={true}
           trackingNumber={delivery.tracking_number}
           settings={{
-            type: delivery.enable_recurring_checks ? 'recurring' : 'one-time',
+            type: delivery.enable_recurring_checks ? "recurring" : "one-time",
             check_interval_minutes: delivery.check_interval_minutes,
             max_checks: delivery.max_checks,
             checks_performed: delivery.checks_performed,
             delay_threshold_minutes: delivery.delay_threshold_minutes,
             min_delay_change_threshold: delivery.min_delay_change_threshold,
-            min_hours_between_notifications: delivery.min_hours_between_notifications,
+            min_hours_between_notifications:
+              delivery.min_hours_between_notifications,
             scheduled_delivery: delivery.scheduled_delivery,
             last_check_time: delivery.updated_at, // For accurate next run calculation
           }}
@@ -346,11 +376,14 @@ export default function DeliveryDetailPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-700 dark:text-gray-300">
-            Are you sure you want to delete this delivery? This action cannot be undone.
+            Are you sure you want to delete this delivery? This action cannot be
+            undone.
           </p>
           <InfoBox variant="warning">
             <p>
-              <strong>Warning:</strong> Deleting this delivery will permanently remove all associated data including workflow history and notifications.
+              <strong>Warning:</strong> Deleting this delivery will permanently
+              remove all associated data including workflow history and
+              notifications.
             </p>
           </InfoBox>
         </div>
@@ -385,12 +418,15 @@ export default function DeliveryDetailPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-700 dark:text-gray-300">
-            Are you sure you want to stop recurring traffic checks for this delivery?
+            Are you sure you want to stop recurring traffic checks for this
+            delivery?
           </p>
 
           <InfoBox variant="info">
             <p>
-              <strong>Note:</strong> The workflow will stop monitoring traffic conditions. You can manually check traffic using the "Check Traffic & Notify" button.
+              <strong>Note:</strong> The workflow will stop monitoring traffic
+              conditions. You can manually check traffic using the "Check
+              Traffic & Notify" button.
             </p>
           </InfoBox>
 
@@ -401,7 +437,9 @@ export default function DeliveryDetailPage() {
               label="Force Cancel (Terminate)"
             />
             <p className="text-xs text-muted-foreground mt-2 ml-[calc(2.75rem)]">
-              Enable this if the workflow is stuck or has errors. This will immediately terminate the workflow without waiting for graceful shutdown.
+              Enable this if the workflow is stuck or has errors. This will
+              immediately terminate the workflow without waiting for graceful
+              shutdown.
             </p>
           </div>
         </div>
@@ -417,12 +455,12 @@ export default function DeliveryDetailPage() {
             Cancel
           </Button>
           <Button
-            variant={forceCancel ? 'error' : 'default'}
+            variant={forceCancel ? "error" : "default"}
             onClick={handleCancelWorkflow}
             loading={cancelWorkflow.isPending}
             leftIcon={<XCircle className="h-4 w-4" />}
           >
-            {forceCancel ? 'Force Terminate' : 'Stop Recurring Checks'}
+            {forceCancel ? "Force Terminate" : "Stop Recurring Checks"}
           </Button>
         </ModalFooter>
       </Modal>

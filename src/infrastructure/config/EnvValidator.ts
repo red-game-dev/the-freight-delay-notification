@@ -7,17 +7,17 @@
  * @see src/infrastructure/config/ClientEnv.ts for client-side env vars
  */
 
-import { logger } from '@/core/base/utils/Logger';
-import { ValidationError } from '@/core/base/errors/BaseError';
-import { z } from 'zod';
+import { z } from "zod";
+import { ValidationError } from "@/core/base/errors/BaseError";
+import { logger } from "@/core/base/utils/Logger";
 
 const envSchema = z.object({
   // Temporal Configuration
-  TEMPORAL_ADDRESS: z.string().default('localhost:7233'),
-  TEMPORAL_NAMESPACE: z.string().default('default'),
-  TEMPORAL_TASK_QUEUE: z.string().default('freight-delay-notifications'),
+  TEMPORAL_ADDRESS: z.string().default("localhost:7233"),
+  TEMPORAL_NAMESPACE: z.string().default("default"),
+  TEMPORAL_TASK_QUEUE: z.string().default("freight-delay-notifications"),
   TEMPORAL_API_KEY: z.string().optional(), // For Temporal Cloud authentication
-  TEMPORAL_WORKER_VERSIONING: z.string().optional().default('false'), // Enable worker versioning for zero-downtime deployments
+  TEMPORAL_WORKER_VERSIONING: z.string().optional().default("false"), // Enable worker versioning for zero-downtime deployments
   TEMPORAL_WORKER_BUILD_ID: z.string().optional(), // Override auto-detected build ID (for CI/CD)
 
   // Database Configuration
@@ -40,40 +40,57 @@ const envSchema = z.object({
   TWILIO_FROM_PHONE: z.string().optional(),
 
   // Application Configuration
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('3000'),
-  NEXT_PUBLIC_API_URL: z.string().default(''),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
+  PORT: z.string().default("3000"),
+  NEXT_PUBLIC_API_URL: z.string().default(""),
 
   // Feature Flags
-  ENABLE_SMS: z.string().transform((val) => val === 'true').default('false'),
-  ENABLE_EMAIL: z.string().transform((val) => val === 'true').default('true'),
+  ENABLE_SMS: z
+    .string()
+    .transform((val) => val === "true")
+    .default("false"),
+  ENABLE_EMAIL: z
+    .string()
+    .transform((val) => val === "true")
+    .default("true"),
 
   // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 minutes
-  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
+  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default("900000"), // 15 minutes
+  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default("100"),
 
   // Thresholds
-  DEFAULT_DELAY_THRESHOLD_MINUTES: z.string().transform(Number).default('30'),
+  DEFAULT_DELAY_THRESHOLD_MINUTES: z.string().transform(Number).default("30"),
 
   // Workflow Configuration
-  WORKFLOW_CUTOFF_HOURS: z.string().transform(Number).default('72'), // 3 days default
+  WORKFLOW_CUTOFF_HOURS: z.string().transform(Number).default("72"), // 3 days default
 
   // Cron Configuration
   CRON_SECRET: z.string().optional(),
-  CRON_INTERVAL_SECONDS: z.string().transform(Number).default('600'), // 10 minutes default, 10 seconds for testing
+  CRON_INTERVAL_SECONDS: z.string().transform(Number).default("600"), // 10 minutes default, 10 seconds for testing
 
   // Testing Configuration
   TEST_EMAIL: z.string().optional(),
   TEST_PHONE: z.string().optional(),
   TEST_NAME: z.string().optional(),
   // Force use MockTrafficAdapter for testing
-  FORCE_TRAFFIC_MOCK_ADAPTER: z.string().transform((val) => val === 'true').default('false'),
+  FORCE_TRAFFIC_MOCK_ADAPTER: z
+    .string()
+    .transform((val) => val === "true")
+    .default("false"),
   // Force traffic scenario: 'light' (0min), 'moderate' (20min), 'heavy' (45min), 'severe' (90min), or specific number in minutes
   FORCE_TRAFFIC_SCENARIO: z.string().optional(),
   // Force use MockAIAdapter for testing (skips OpenAI)
-  FORCE_AI_MOCK_ADAPTER: z.string().transform((val) => val === 'true').default('false'),
+  FORCE_AI_MOCK_ADAPTER: z
+    .string()
+    .transform((val) => val === "true")
+    .default("false"),
   // Force use MockNotificationAdapter for testing (skips SendGrid/Twilio)
-  FORCE_NOTIFICATION_MOCK_ADAPTER: z.string().transform((val) => val === 'true').default('false'),
+  FORCE_NOTIFICATION_MOCK_ADAPTER: z
+    .string()
+    .transform((val) => val === "true")
+    .default("false"),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -90,10 +107,15 @@ function validateEnv(): EnvConfig {
     return cachedEnv;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map(e => e.path.join('.')).join(', ');
-      logger.error('❌ Environment validation failed:', missingVars);
-      logger.error('Please check your .env file and ensure all required variables are set.');
-      throw new ValidationError(`Missing or invalid environment variables: ${missingVars}`, { errors: error.errors });
+      const missingVars = error.errors.map((e) => e.path.join(".")).join(", ");
+      logger.error("❌ Environment validation failed:", missingVars);
+      logger.error(
+        "Please check your .env file and ensure all required variables are set.",
+      );
+      throw new ValidationError(
+        `Missing or invalid environment variables: ${missingVars}`,
+        { errors: error.errors },
+      );
     }
     throw error;
   }
@@ -104,5 +126,5 @@ export const env = new Proxy({} as EnvConfig, {
   get(_target, prop) {
     const validated = validateEnv();
     return validated[prop as keyof EnvConfig];
-  }
+  },
 });

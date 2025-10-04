@@ -3,27 +3,31 @@
  * PDF Step 4: Email notification delivery
  */
 
-import sgMail from '@sendgrid/mail';
-import { env } from '../../config/EnvValidator';
-import { Result, success, failure } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
-import { EmailBlacklistChecker } from '../../../core/shared/constants/email-blacklist';
-import { logger, getErrorMessage, hasCode } from '@/core/base/utils/Logger';
+import sgMail from "@sendgrid/mail";
+import { getErrorMessage, hasCode, logger } from "@/core/base/utils/Logger";
+import { InfrastructureError } from "../../../core/base/errors/BaseError";
+import { failure, type Result, success } from "../../../core/base/utils/Result";
+import { EmailBlacklistChecker } from "../../../core/shared/constants/email-blacklist";
+import { env } from "../../config/EnvValidator";
+import type {
+  NotificationAdapter,
+  NotificationInput,
+  NotificationResult,
+} from "./NotificationAdapter.interface";
 
 export class SendGridAdapter implements NotificationAdapter {
-  public readonly providerName = 'SendGrid';
+  public readonly providerName = "SendGrid";
   public readonly priority = 1; // Email has higher priority than SMS
-  public readonly channel = 'email' as const;
+  public readonly channel = "email" as const;
 
   private apiKey: string;
   private fromEmail: string;
   private fromName: string;
 
   constructor() {
-    this.apiKey = env.SENDGRID_API_KEY || '';
-    this.fromEmail = env.SENDGRID_FROM_EMAIL || 'noreply@example.com';
-    this.fromName = env.SENDGRID_FROM_NAME || 'Freight Notifications';
+    this.apiKey = env.SENDGRID_API_KEY || "";
+    this.fromEmail = env.SENDGRID_FROM_EMAIL || "noreply@example.com";
+    this.fromName = env.SENDGRID_FROM_NAME || "Freight Notifications";
 
     if (this.apiKey) {
       sgMail.setApiKey(this.apiKey);
@@ -36,10 +40,11 @@ export class SendGridAdapter implements NotificationAdapter {
 
   async send(input: NotificationInput): Promise<Result<NotificationResult>> {
     if (!this.isAvailable()) {
-      return failure(new InfrastructureError(
-        `${this.providerName} API key not configured`,
-        { provider: this.providerName }
-      ));
+      return failure(
+        new InfrastructureError(`${this.providerName} API key not configured`, {
+          provider: this.providerName,
+        }),
+      );
     }
 
     // Check email blacklist
@@ -48,14 +53,13 @@ export class SendGridAdapter implements NotificationAdapter {
       logger.info(`⚠️ [${this.providerName}] Email blocked: ${input.to}`);
       logger.info(`   Reason: ${reason}`);
 
-      return failure(new InfrastructureError(
-        `Email address is blacklisted: ${reason}`,
-        {
+      return failure(
+        new InfrastructureError(`Email address is blacklisted: ${reason}`, {
           provider: this.providerName,
           email: input.to,
-          reason
-        }
-      ));
+          reason,
+        }),
+      );
     }
 
     try {
@@ -67,7 +71,7 @@ export class SendGridAdapter implements NotificationAdapter {
           email: this.fromEmail,
           name: this.fromName,
         },
-        subject: input.subject || 'Delivery Update',
+        subject: input.subject || "Delivery Update",
         text: input.message,
         html: this.formatHtmlEmail(input.message, input.deliveryId),
       };
@@ -78,26 +82,31 @@ export class SendGridAdapter implements NotificationAdapter {
 
       return success({
         success: true,
-        messageId: response.headers['x-message-id'] as string,
+        messageId: response.headers["x-message-id"] as string,
         channel: this.channel,
       });
     } catch (error: unknown) {
       logger.error(`❌ [${this.providerName}] Error:`, getErrorMessage(error));
 
-      return failure(new InfrastructureError(
-        `Failed to send email via ${this.providerName}`,
-        {
-          error: getErrorMessage(error),
-          code: hasCode(error) ? error.code : undefined,
-          recipient: input.to
-        }
-      ));
+      return failure(
+        new InfrastructureError(
+          `Failed to send email via ${this.providerName}`,
+          {
+            error: getErrorMessage(error),
+            code: hasCode(error) ? error.code : undefined,
+            recipient: input.to,
+          },
+        ),
+      );
     }
   }
 
   private formatHtmlEmail(message: string, deliveryId: string): string {
     // Convert plain text to simple HTML
-    const paragraphs = message.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    const paragraphs = message
+      .split("\n\n")
+      .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+      .join("");
 
     return `
 <!DOCTYPE html>

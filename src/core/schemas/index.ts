@@ -4,12 +4,11 @@
  */
 
 // Common schemas
-export * from './common';
-
+export * from "./common";
+export * from "./customer";
 // Entity schemas
-export * from './delivery';
-export * from './workflow';
-export * from './notification';
-export * from './traffic';
-export * from './threshold';
-export * from './customer';
+export * from "./delivery";
+export * from "./notification";
+export * from "./threshold";
+export * from "./traffic";
+export * from "./workflow";

@@ -4,19 +4,33 @@
  * Shows routes with traffic overlays and incident markers
  */
 
-'use client';
+"use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { GoogleMap, DirectionsRenderer, Marker, InfoWindow, TrafficLayer, Polyline } from '@react-google-maps/api';
-import { Alert } from '@/components/ui/Alert';
-import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { Select } from '@/components/ui/Select';
-import { Loader2 } from 'lucide-react';
-import { useGoogleMaps } from '@/providers/GoogleMapsProvider';
-import { clientEnv } from '@/infrastructure/config/ClientEnv';
-import type { TrafficConditionFilter, TrafficCondition } from '@/core/types/traffic';
-import { getTrafficColor, getSeverityColor, compareTrafficSeverity } from '@/core/utils/trafficUtils';
+import {
+  DirectionsRenderer,
+  GoogleMap,
+  InfoWindow,
+  Marker,
+  Polyline,
+  TrafficLayer,
+} from "@react-google-maps/api";
+import { Loader2 } from "lucide-react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Select } from "@/components/ui/Select";
+import type {
+  TrafficCondition,
+  TrafficConditionFilter,
+} from "@/core/types/traffic";
+import {
+  compareTrafficSeverity,
+  getSeverityColor,
+  getTrafficColor,
+} from "@/core/utils/trafficUtils";
+import { clientEnv } from "@/infrastructure/config/ClientEnv";
+import { useGoogleMaps } from "@/providers/GoogleMapsProvider";
 
 interface Route {
   id: string;
@@ -47,22 +61,31 @@ interface TrafficMapProps {
 }
 
 const mapContainerStyle = {
-  width: '100%',
-  height: '500px',
+  width: "100%",
+  height: "500px",
 };
 
 const defaultCenter = {
   lat: 40.7128,
-  lng: -74.0060,
+  lng: -74.006,
 };
 
-export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: TrafficMapProps) {
+export function TrafficMap({
+  routes,
+  trafficSnapshots,
+  selectedRouteId,
+}: TrafficMapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [directions, setDirections] = useState<google.maps.DirectionsResult[]>([]);
+  const [directions, setDirections] = useState<google.maps.DirectionsResult[]>(
+    [],
+  );
   const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
   const [showTrafficLayer, setShowTrafficLayer] = useState(true);
-  const [selectedRoute, setSelectedRoute] = useState<string | null>(selectedRouteId || null);
-  const [trafficFilter, setTrafficFilter] = useState<TrafficConditionFilter>('all');
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(
+    selectedRouteId || null,
+  );
+  const [trafficFilter, setTrafficFilter] =
+    useState<TrafficConditionFilter>("all");
 
   const { isLoaded, loadError } = useGoogleMaps();
 
@@ -75,13 +98,19 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
     let totalLng = 0;
     let count = 0;
 
-    routes.forEach(route => {
-      if (typeof route.origin_coords?.x === 'number' && typeof route.origin_coords?.y === 'number') {
+    routes.forEach((route) => {
+      if (
+        typeof route.origin_coords?.x === "number" &&
+        typeof route.origin_coords?.y === "number"
+      ) {
         totalLat += route.origin_coords.x;
         totalLng += route.origin_coords.y;
         count++;
       }
-      if (typeof route.destination_coords?.x === 'number' && typeof route.destination_coords?.y === 'number') {
+      if (
+        typeof route.destination_coords?.x === "number" &&
+        typeof route.destination_coords?.y === "number"
+      ) {
         totalLat += route.destination_coords.x;
         totalLng += route.destination_coords.y;
         count++;
@@ -102,12 +131,24 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
 
     const bounds = new google.maps.LatLngBounds();
 
-    routes.forEach(route => {
-      if (typeof route.origin_coords?.x === 'number' && typeof route.origin_coords?.y === 'number') {
-        bounds.extend({ lat: route.origin_coords.x, lng: route.origin_coords.y });
+    routes.forEach((route) => {
+      if (
+        typeof route.origin_coords?.x === "number" &&
+        typeof route.origin_coords?.y === "number"
+      ) {
+        bounds.extend({
+          lat: route.origin_coords.x,
+          lng: route.origin_coords.y,
+        });
       }
-      if (typeof route.destination_coords?.x === 'number' && typeof route.destination_coords?.y === 'number') {
-        bounds.extend({ lat: route.destination_coords.x, lng: route.destination_coords.y });
+      if (
+        typeof route.destination_coords?.x === "number" &&
+        typeof route.destination_coords?.y === "number"
+      ) {
+        bounds.extend({
+          lat: route.destination_coords.x,
+          lng: route.destination_coords.y,
+        });
       }
     });
 
@@ -123,35 +164,37 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
     }
 
     const directionsService = new google.maps.DirectionsService();
-    const route = routes.find(r => r.id === selectedRoute);
+    const route = routes.find((r) => r.id === selectedRoute);
 
     if (!route) return;
 
     const loadDirections = async () => {
       try {
-        const result = await new Promise<google.maps.DirectionsResult>((resolve, reject) => {
-          directionsService.route(
-            {
-              origin: route.origin_address,
-              destination: route.destination_address,
-              travelMode: google.maps.TravelMode.DRIVING,
-              drivingOptions: {
-                departureTime: new Date(),
-                trafficModel: google.maps.TrafficModel.BEST_GUESS,
+        const result = await new Promise<google.maps.DirectionsResult>(
+          (resolve, reject) => {
+            directionsService.route(
+              {
+                origin: route.origin_address,
+                destination: route.destination_address,
+                travelMode: google.maps.TravelMode.DRIVING,
+                drivingOptions: {
+                  departureTime: new Date(),
+                  trafficModel: google.maps.TrafficModel.BEST_GUESS,
+                },
               },
-            },
-            (result, status) => {
-              if (status === google.maps.DirectionsStatus.OK && result) {
-                resolve(result);
-              } else {
-                reject(new Error(`Directions failed: ${status}`));
-              }
-            }
-          );
-        });
+              (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK && result) {
+                  resolve(result);
+                } else {
+                  reject(new Error(`Directions failed: ${status}`));
+                }
+              },
+            );
+          },
+        );
         setDirections([result]);
       } catch (error) {
-        console.error('Failed to load route directions:', error);
+        console.error("Failed to load route directions:", error);
         setDirections([]);
       }
     };
@@ -162,23 +205,23 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   // Get incident markers for the map
   const incidentMarkers = useMemo(() => {
     return trafficSnapshots
-      .filter(snapshot => {
+      .filter((snapshot) => {
         // Validate incident_location exists and has valid coordinates
         if (!snapshot.incident_location) return false;
 
         const hasValidLat =
-          typeof snapshot.incident_location.x === 'number' &&
+          typeof snapshot.incident_location.x === "number" &&
           isFinite(snapshot.incident_location.x) &&
           snapshot.incident_location.x !== 0;
 
         const hasValidLng =
-          typeof snapshot.incident_location.y === 'number' &&
+          typeof snapshot.incident_location.y === "number" &&
           isFinite(snapshot.incident_location.y) &&
           snapshot.incident_location.y !== 0;
 
         return hasValidLat && hasValidLng;
       })
-      .map(snapshot => ({
+      .map((snapshot) => ({
         id: snapshot.id,
         position: {
           lat: snapshot.incident_location!.x,
@@ -190,28 +233,31 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
 
   // Create polylines for ALL routes (simple origin → destination lines)
   const routePolylines = useMemo(() => {
-    console.log('🗺️ [TrafficMap] Raw routes sample:', routes[0]);
-    console.log('🗺️ [TrafficMap] Raw traffic snapshots sample:', trafficSnapshots[0]);
+    console.log("🗺️ [TrafficMap] Raw routes sample:", routes[0]);
+    console.log(
+      "🗺️ [TrafficMap] Raw traffic snapshots sample:",
+      trafficSnapshots[0],
+    );
 
     const allRoutes = routes
-      .filter(route => {
+      .filter((route) => {
         // Validate coordinates exist and are valid numbers
         const hasValidOrigin =
           route.origin_coords &&
-          typeof route.origin_coords.x === 'number' &&
-          typeof route.origin_coords.y === 'number' &&
+          typeof route.origin_coords.x === "number" &&
+          typeof route.origin_coords.y === "number" &&
           isFinite(route.origin_coords.x) &&
           isFinite(route.origin_coords.y);
 
         const hasValidDestination =
           route.destination_coords &&
-          typeof route.destination_coords.x === 'number' &&
-          typeof route.destination_coords.y === 'number' &&
+          typeof route.destination_coords.x === "number" &&
+          typeof route.destination_coords.y === "number" &&
           isFinite(route.destination_coords.x) &&
           isFinite(route.destination_coords.y);
 
         if (!hasValidOrigin || !hasValidDestination) {
-          console.log('🗺️ [TrafficMap] Invalid route:', {
+          console.log("🗺️ [TrafficMap] Invalid route:", {
             id: route.id,
             origin_coords: route.origin_coords,
             destination_coords: route.destination_coords,
@@ -220,21 +266,27 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
 
         return hasValidOrigin && hasValidDestination;
       })
-      .map(route => {
+      .map((route) => {
         // Use route's current traffic condition (updated by cron job)
         // Fallback to latest snapshot if route doesn't have traffic_condition yet
         const latestSnapshot = trafficSnapshots
-          .filter(s => s.route_id === route.id)
+          .filter((s) => s.route_id === route.id)
           .sort((a, b) => b.id.localeCompare(a.id))[0];
 
-        const trafficCondition = route.traffic_condition || latestSnapshot?.traffic_condition || 'light';
+        const trafficCondition =
+          route.traffic_condition ||
+          latestSnapshot?.traffic_condition ||
+          "light";
         const color = getTrafficColor(trafficCondition);
 
         return {
           id: route.id,
           path: [
             { lat: route.origin_coords.x, lng: route.origin_coords.y },
-            { lat: route.destination_coords.x, lng: route.destination_coords.y },
+            {
+              lat: route.destination_coords.x,
+              lng: route.destination_coords.y,
+            },
           ],
           color,
           route,
@@ -244,20 +296,26 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
       });
 
     // Debug logging
-    console.log('🗺️ [TrafficMap] Filter:', trafficFilter);
-    console.log('🗺️ [TrafficMap] Total routes:', allRoutes.length);
-    console.log('🗺️ [TrafficMap] Traffic conditions:', allRoutes.map(r => r.trafficCondition));
+    console.log("🗺️ [TrafficMap] Filter:", trafficFilter);
+    console.log("🗺️ [TrafficMap] Total routes:", allRoutes.length);
+    console.log(
+      "🗺️ [TrafficMap] Traffic conditions:",
+      allRoutes.map((r) => r.trafficCondition),
+    );
 
     // Filter by traffic condition
-    const filtered = trafficFilter === 'all'
-      ? allRoutes
-      : allRoutes.filter(polyline => polyline.trafficCondition === trafficFilter);
+    const filtered =
+      trafficFilter === "all"
+        ? allRoutes
+        : allRoutes.filter(
+            (polyline) => polyline.trafficCondition === trafficFilter,
+          );
 
-    console.log('🗺️ [TrafficMap] After filter:', filtered.length, 'routes');
+    console.log("🗺️ [TrafficMap] After filter:", filtered.length, "routes");
 
     // Sort by severity using utility
     return filtered.sort((a, b) =>
-      compareTrafficSeverity(a.trafficCondition, b.trafficCondition)
+      compareTrafficSeverity(a.trafficCondition, b.trafficCondition),
     );
   }, [routes, trafficSnapshots, trafficFilter]);
 
@@ -272,7 +330,7 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
   // Debug: Count routes by traffic condition (MUST be before early returns!)
   const trafficCounts = useMemo(() => {
     const counts = { light: 0, moderate: 0, heavy: 0, severe: 0 };
-    routePolylines.forEach(r => {
+    routePolylines.forEach((r) => {
       const condition = r.trafficCondition as keyof typeof counts;
       if (counts[condition] !== undefined) {
         counts[condition]++;
@@ -334,7 +392,9 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
         <div className="text-xs pt-2 border-t space-y-2">
           <div className="flex items-center justify-between">
             <p className="font-semibold">
-              {selectedRoute ? 'Route Details' : `${routePolylines.length} of ${routes.length} Routes`}
+              {selectedRoute
+                ? "Route Details"
+                : `${routePolylines.length} of ${routes.length} Routes`}
             </p>
           </div>
 
@@ -342,15 +402,17 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
             <Select
               label="Filter by Traffic:"
               value={trafficFilter}
-              onChange={(e) => setTrafficFilter(e.target.value as TrafficConditionFilter)}
+              onChange={(e) =>
+                setTrafficFilter(e.target.value as TrafficConditionFilter)
+              }
               size="sm"
               fullWidth
               options={[
-                { value: 'all', label: `All Traffic (${routes.length})` },
-                { value: 'severe', label: '🔴 Severe Only' },
-                { value: 'heavy', label: '🟠 Heavy Only' },
-                { value: 'moderate', label: '🟡 Moderate Only' },
-                { value: 'light', label: '🟢 Light Only' },
+                { value: "all", label: `All Traffic (${routes.length})` },
+                { value: "severe", label: "🔴 Severe Only" },
+                { value: "heavy", label: "🟠 Heavy Only" },
+                { value: "moderate", label: "🟡 Moderate Only" },
+                { value: "light", label: "🟢 Light Only" },
               ]}
             />
           )}
@@ -367,36 +429,36 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
           <p className="font-semibold mb-2">Traffic Conditions:</p>
           <div className="grid grid-cols-2 gap-2">
             <Button
-              variant={trafficFilter === 'light' ? 'primary' : 'outline'}
+              variant={trafficFilter === "light" ? "primary" : "outline"}
               size="sm"
-              onClick={() => setTrafficFilter('light')}
+              onClick={() => setTrafficFilter("light")}
               className="justify-start text-xs h-auto py-1.5"
             >
               <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
               Light
             </Button>
             <Button
-              variant={trafficFilter === 'moderate' ? 'primary' : 'outline'}
+              variant={trafficFilter === "moderate" ? "primary" : "outline"}
               size="sm"
-              onClick={() => setTrafficFilter('moderate')}
+              onClick={() => setTrafficFilter("moderate")}
               className="justify-start text-xs h-auto py-1.5"
             >
               <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
               Moderate
             </Button>
             <Button
-              variant={trafficFilter === 'heavy' ? 'primary' : 'outline'}
+              variant={trafficFilter === "heavy" ? "primary" : "outline"}
               size="sm"
-              onClick={() => setTrafficFilter('heavy')}
+              onClick={() => setTrafficFilter("heavy")}
               className="justify-start text-xs h-auto py-1.5"
             >
               <div className="w-3 h-3 bg-orange-500 rounded mr-2"></div>
               Heavy
             </Button>
             <Button
-              variant={trafficFilter === 'severe' ? 'primary' : 'outline'}
+              variant={trafficFilter === "severe" ? "primary" : "outline"}
               size="sm"
-              onClick={() => setTrafficFilter('severe')}
+              onClick={() => setTrafficFilter("severe")}
               className="justify-start text-xs h-auto py-1.5"
             >
               <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
@@ -404,9 +466,9 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
             </Button>
           </div>
           <Button
-            variant={trafficFilter === 'all' ? 'primary' : 'outline'}
+            variant={trafficFilter === "all" ? "primary" : "outline"}
             size="sm"
-            onClick={() => setTrafficFilter('all')}
+            onClick={() => setTrafficFilter("all")}
             className="mt-2 w-full text-xs"
           >
             Show All Traffic
@@ -427,11 +489,12 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
           zoomControl: true,
         }}
       >
-          {/* Google's real-time traffic layer overlay */}
-          {showTrafficLayer && <TrafficLayer />}
+        {/* Google's real-time traffic layer overlay */}
+        {showTrafficLayer && <TrafficLayer />}
 
-          {/* Simple polylines for ALL routes (no API quota usage) */}
-          {!selectedRoute && routePolylines.map(({ id, path, color }) => (
+        {/* Simple polylines for ALL routes (no API quota usage) */}
+        {!selectedRoute &&
+          routePolylines.map(({ id, path, color }) => (
             <Polyline
               key={id}
               path={path}
@@ -445,15 +508,16 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
             />
           ))}
 
-          {/* Detailed directions for selected route only (uses Directions API) */}
-          {selectedRoute && directions.map((direction, index) => (
+        {/* Detailed directions for selected route only (uses Directions API) */}
+        {selectedRoute &&
+          directions.map((direction, index) => (
             <DirectionsRenderer
               key={index}
               directions={direction}
               options={{
                 suppressMarkers: false,
                 polylineOptions: {
-                  strokeColor: '#2563eb',
+                  strokeColor: "#2563eb",
                   strokeWeight: 5,
                   strokeOpacity: 0.8,
                 },
@@ -470,9 +534,9 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
               icon={{
                 path: google.maps.SymbolPath.CIRCLE,
                 scale: 10,
-                fillColor: getSeverityColor(snapshot.severity || 'minor'),
+                fillColor: getSeverityColor(snapshot.severity || "minor"),
                 fillOpacity: 0.8,
-                strokeColor: '#ffffff',
+                strokeColor: "#ffffff",
                 strokeWeight: 2,
               }}
             />
@@ -483,7 +547,8 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
               >
                 <div className="p-2 max-w-xs">
                   <h3 className="font-semibold mb-1">
-                    {snapshot.incident_type?.replace('_', ' ').toUpperCase() || 'Traffic Incident'}
+                    {snapshot.incident_type?.replace("_", " ").toUpperCase() ||
+                      "Traffic Incident"}
                   </h3>
                   {snapshot.description && (
                     <p className="text-sm mb-2">{snapshot.description}</p>
@@ -497,7 +562,10 @@ export function TrafficMap({ routes, trafficSnapshots, selectedRouteId }: Traffi
                     Delay: +{snapshot.delay_minutes} min
                   </p>
                   {snapshot.severity && (
-                    <p className="text-xs font-semibold mt-1" style={{ color: getSeverityColor(snapshot.severity) }}>
+                    <p
+                      className="text-xs font-semibold mt-1"
+                      style={{ color: getSeverityColor(snapshot.severity) }}
+                    >
                       Severity: {snapshot.severity.toUpperCase()}
                     </p>
                   )}

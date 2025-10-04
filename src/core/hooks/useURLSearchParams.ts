@@ -3,8 +3,8 @@
  * Reusable hooks for managing URL-based state (pagination, filters, etc.)
  */
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Generic hook for managing URL search parameters
@@ -15,11 +15,14 @@ export function useURLParams() {
   const searchParams = useSearchParams();
 
   const updateParams = useCallback(
-    (updates: Record<string, string | null>, options?: { scroll?: boolean }) => {
+    (
+      updates: Record<string, string | null>,
+      options?: { scroll?: boolean },
+    ) => {
       const params = new URLSearchParams(searchParams.toString());
 
       Object.entries(updates).forEach(([key, value]) => {
-        if (value === null || value === '') {
+        if (value === null || value === "") {
           params.delete(key);
         } else {
           params.set(key, value);
@@ -28,17 +31,20 @@ export function useURLParams() {
 
       const query = params.toString();
       // Use window.location.pathname to ensure we're updating the same page
-      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-      router.push(query ? `${pathname}?${query}` : pathname, { scroll: options?.scroll ?? false });
+      const pathname =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      router.push(query ? `${pathname}?${query}` : pathname, {
+        scroll: options?.scroll ?? false,
+      });
     },
-    [router, searchParams]
+    [router, searchParams],
   );
 
   const getParam = useCallback(
     (key: string, defaultValue?: string): string => {
-      return searchParams.get(key) || defaultValue || '';
+      return searchParams.get(key) || defaultValue || "";
     },
-    [searchParams]
+    [searchParams],
   );
 
   const getParamAsNumber = useCallback(
@@ -46,7 +52,7 @@ export function useURLParams() {
       const value = searchParams.get(key);
       return value ? parseInt(value, 10) : defaultValue;
     },
-    [searchParams]
+    [searchParams],
   );
 
   const deleteParam = useCallback(
@@ -54,18 +60,22 @@ export function useURLParams() {
       const params = new URLSearchParams(searchParams.toString());
       params.delete(key);
       const query = params.toString();
-      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-      router.push(query ? `${pathname}?${query}` : pathname, { scroll: options?.scroll ?? false });
+      const pathname =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      router.push(query ? `${pathname}?${query}` : pathname, {
+        scroll: options?.scroll ?? false,
+      });
     },
-    [router, searchParams]
+    [router, searchParams],
   );
 
   const clearAll = useCallback(
     (options?: { scroll?: boolean }) => {
-      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      const pathname =
+        typeof window !== "undefined" ? window.location.pathname : "";
       router.push(pathname, { scroll: options?.scroll ?? false });
     },
-    [router]
+    [router],
   );
 
   return {
@@ -89,7 +99,7 @@ export function useURLParams() {
  */
 export function useURLPagination(key?: string, defaultPage = 1) {
   const { getParamAsNumber, updateParams } = useURLParams();
-  const pageParamName = key ? `${key}Page` : 'page';
+  const pageParamName = key ? `${key}Page` : "page";
   const urlPage = getParamAsNumber(pageParamName, defaultPage);
 
   // Optimistic local state for immediate updates
@@ -120,7 +130,7 @@ export function useURLPagination(key?: string, defaultPage = 1) {
         updateParams({ [pageParamName]: newPage.toString() });
       }
     },
-    [defaultPage, updateParams, pageParamName]
+    [defaultPage, updateParams, pageParamName],
   );
 
   const resetPage = useCallback(() => {
@@ -144,7 +154,7 @@ export function useURLPagination(key?: string, defaultPage = 1) {
  */
 export function useURLFilter<T extends string>(
   paramName: string,
-  defaultValue: T
+  defaultValue: T,
 ) {
   const { getParam, updateParams } = useURLParams();
   const urlFilter = getParam(paramName, defaultValue) as T;
@@ -179,7 +189,7 @@ export function useURLFilter<T extends string>(
 
       updateParams(updates);
     },
-    [paramName, defaultValue, updateParams]
+    [paramName, defaultValue, updateParams],
   );
 
   const resetFilter = useCallback(() => {
@@ -204,7 +214,7 @@ export function useURLFilter<T extends string>(
  * });
  */
 export function useURLFilters<T extends Record<string, string>>(
-  defaultFilters: T
+  defaultFilters: T,
 ) {
   const { getParam, updateParams } = useURLParams();
 
@@ -225,14 +235,14 @@ export function useURLFilters<T extends Record<string, string>>(
 
       updateParams(updates);
     },
-    [defaultFilters, updateParams]
+    [defaultFilters, updateParams],
   );
 
   const resetFilter = useCallback(
     (key: keyof T) => {
       updateParams({ [key as string]: null });
     },
-    [updateParams]
+    [updateParams],
   );
 
   const clearFilters = useCallback(() => {
@@ -261,16 +271,20 @@ export function useURLPaginationWithFilter<T extends string>(
   filterName: string,
   defaultFilter: T,
   defaultPage = 1,
-  options?: { resetPageOnFilter?: boolean }
+  options?: { resetPageOnFilter?: boolean },
 ) {
   const pagination = useURLPagination(undefined, defaultPage);
-  const { filter, setFilter: setFilterBase, resetFilter } = useURLFilter(filterName, defaultFilter);
+  const {
+    filter,
+    setFilter: setFilterBase,
+    resetFilter,
+  } = useURLFilter(filterName, defaultFilter);
 
   const setFilter = useCallback(
     (newFilter: T) => {
       setFilterBase(newFilter, options?.resetPageOnFilter ?? false);
     },
-    [setFilterBase, options?.resetPageOnFilter]
+    [setFilterBase, options?.resetPageOnFilter],
   );
 
   return {

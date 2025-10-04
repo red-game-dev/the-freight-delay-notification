@@ -3,7 +3,7 @@
  * Represents geographic coordinates with validation
  */
 
-import { DomainError } from '../../../base/errors/BaseError';
+import { DomainError } from "../../../base/errors/BaseError";
 
 interface CoordinatesProps {
   lat: number;
@@ -20,18 +20,16 @@ export class Coordinates {
   static create(props: CoordinatesProps): Coordinates {
     // Validate latitude
     if (props.lat < -90 || props.lat > 90) {
-      throw new DomainError(
-        'Invalid latitude: must be between -90 and 90',
-        { latitude: props.lat }
-      );
+      throw new DomainError("Invalid latitude: must be between -90 and 90", {
+        latitude: props.lat,
+      });
     }
 
     // Validate longitude
     if (props.lng < -180 || props.lng > 180) {
-      throw new DomainError(
-        'Invalid longitude: must be between -180 and 180',
-        { longitude: props.lng }
-      );
+      throw new DomainError("Invalid longitude: must be between -180 and 180", {
+        longitude: props.lng,
+      });
     }
 
     return new Coordinates(props);
@@ -57,7 +55,9 @@ export class Coordinates {
    * Check equality with another Coordinates object
    */
   public equals(other: Coordinates): boolean {
-    return this.props.lat === other.props.lat && this.props.lng === other.props.lng;
+    return (
+      this.props.lat === other.props.lat && this.props.lng === other.props.lng
+    );
   }
 
   /**
@@ -82,11 +82,11 @@ export class Coordinates {
    */
   static fromPoint(point: string): Coordinates {
     // POINT format: "(lng,lat)" or "POINT(lng lat)"
-    const cleaned = point.replace(/POINT\(|\(|\)/gi, '');
+    const cleaned = point.replace(/POINT\(|\(|\)/gi, "");
     const parts = cleaned.split(/[,\s]+/).map(Number);
 
     if (parts.length !== 2 || parts.some(isNaN)) {
-      throw new DomainError('Invalid POINT format', { point });
+      throw new DomainError("Invalid POINT format", { point });
     }
 
     return Coordinates.create({ lng: parts[0], lat: parts[1] });

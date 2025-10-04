@@ -3,12 +3,16 @@
  * React Query mutation hook for deleting a threshold
  */
 
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { useNotificationStore, useErrorStore, createErrorFromException } from '@/stores';
-import { deleteThreshold } from './deleteThreshold';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createErrorFromException,
+  useErrorStore,
+  useNotificationStore,
+} from "@/stores";
+import { queryKeys } from "../../../queryKeys";
+import { deleteThreshold } from "./deleteThreshold";
 
 export function useDeleteThreshold() {
   const queryClient = useQueryClient();
@@ -17,12 +21,12 @@ export function useDeleteThreshold() {
     mutationFn: deleteThreshold,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.thresholds.all });
-      useNotificationStore.getState().success('Threshold deleted successfully');
+      useNotificationStore.getState().success("Threshold deleted successfully");
     },
     onError: (err: Error) => {
-      useErrorStore.getState().addError(
-        createErrorFromException(err, 'useDeleteThreshold')
-      );
+      useErrorStore
+        .getState()
+        .addError(createErrorFromException(err, "useDeleteThreshold"));
     },
   });
 }

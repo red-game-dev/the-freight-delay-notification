@@ -3,11 +3,18 @@
  * Creates standardized error response
  */
 
-import { NextResponse } from 'next/server';
-import { logger, getErrorMessage, hasMessage, hasCode, hasName, hasCause } from '@/core/base/utils/Logger';
-import { toHttpError } from '@/core/base/errors/HttpError';
-import type { ApiResponse, ApiHandlerOptions } from '../types';
-import { isDevelopment } from '@/core/base/utils/environment';
+import { NextResponse } from "next/server";
+import { toHttpError } from "@/core/base/errors/HttpError";
+import { isDevelopment } from "@/core/base/utils/environment";
+import {
+  getErrorMessage,
+  hasCause,
+  hasCode,
+  hasMessage,
+  hasName,
+  logger,
+} from "@/core/base/utils/Logger";
+import type { ApiHandlerOptions, ApiResponse } from "../types";
 
 /**
  * Create a standardized error response
@@ -15,7 +22,7 @@ import { isDevelopment } from '@/core/base/utils/environment';
  */
 export function createErrorResponse(
   error: Error,
-  options?: ApiHandlerOptions
+  options?: ApiHandlerOptions,
 ): NextResponse<ApiResponse> {
   // Convert to HttpError
   const httpError = toHttpError(error);

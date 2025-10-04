@@ -3,8 +3,11 @@
  * Defines the contract for all traffic data providers
  */
 
-import { Result } from '../../../core/base/utils/Result';
-import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
+import type { Result } from "../../../core/base/utils/Result";
+import type {
+  RouteInput,
+  TrafficData,
+} from "../../../types/shared/traffic.types";
 
 export interface TrafficAdapter {
   /**

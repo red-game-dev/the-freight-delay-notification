@@ -3,8 +3,8 @@
  * Shows a consistent empty state when no data is available
  */
 
-import { ReactNode } from 'react';
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 export interface EmptyStateProps {
   icon?: LucideIcon;
@@ -19,10 +19,12 @@ export function EmptyState({
   title,
   description,
   action,
-  className = '',
+  className = "",
 }: EmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center p-12 text-center ${className}`}>
+    <div
+      className={`flex flex-col items-center justify-center p-12 text-center ${className}`}
+    >
       {Icon && (
         <div className="mb-4 rounded-full bg-muted p-4">
           <Icon className="h-8 w-8 text-muted-foreground" />

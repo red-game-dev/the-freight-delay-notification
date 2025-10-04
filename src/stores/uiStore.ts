@@ -9,8 +9,8 @@
  * - Type-safe with TypeScript generics
  */
 
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
 // ============================================================================
 // UI State Interfaces
@@ -21,7 +21,7 @@ interface ExpandedItemsState {
 }
 
 interface ViewModeState {
-  [pageKey: string]: 'list' | 'grid' | 'compact';
+  [pageKey: string]: "list" | "grid" | "compact";
 }
 
 interface UIStore {
@@ -34,8 +34,8 @@ interface UIStore {
 
   // View mode preferences (list/grid/compact views)
   viewModes: ViewModeState;
-  setViewMode: (pageKey: string, mode: 'list' | 'grid' | 'compact') => void;
-  getViewMode: (pageKey: string) => 'list' | 'grid' | 'compact';
+  setViewMode: (pageKey: string, mode: "list" | "grid" | "compact") => void;
+  getViewMode: (pageKey: string) => "list" | "grid" | "compact";
 
   // Sidebar collapsed state
   sidebarCollapsed: boolean;
@@ -43,8 +43,8 @@ interface UIStore {
   setSidebarCollapsed: (collapsed: boolean) => void;
 
   // Theme preference (if not using next-themes)
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  theme: "light" | "dark" | "system";
+  setTheme: (theme: "light" | "dark" | "system") => void;
 
   // Clear all UI state
   clearAll: () => void;
@@ -62,7 +62,7 @@ export const useUIStore = create<UIStore>()(
         expandedItems: {},
         viewModes: {},
         sidebarCollapsed: false,
-        theme: 'system',
+        theme: "system",
 
         // Toggle expanded state for an item
         toggleExpanded: (pageKey, itemId) => {
@@ -134,7 +134,7 @@ export const useUIStore = create<UIStore>()(
 
         // Get view mode for a page (default: 'list')
         getViewMode: (pageKey) => {
-          return get().viewModes[pageKey] || 'list';
+          return get().viewModes[pageKey] || "list";
         },
 
         // Toggle sidebar collapsed state
@@ -160,19 +160,19 @@ export const useUIStore = create<UIStore>()(
             expandedItems: {},
             viewModes: {},
             sidebarCollapsed: false,
-            theme: 'system',
+            theme: "system",
           });
         },
       }),
       {
-        name: 'freight-delay-ui-store',
+        name: "freight-delay-ui-store",
         // Custom serialization for Sets
         partialize: (state) => ({
           expandedItems: Object.fromEntries(
             Object.entries(state.expandedItems).map(([key, set]) => [
               key,
               Array.from(set),
-            ])
+            ]),
           ),
           viewModes: state.viewModes,
           sidebarCollapsed: state.sidebarCollapsed,
@@ -183,18 +183,17 @@ export const useUIStore = create<UIStore>()(
           ...currentState,
           ...persistedState,
           expandedItems: Object.fromEntries(
-            Object.entries(persistedState.expandedItems || {}).map(([key, arr]) => [
-              key,
-              new Set(arr as string[]),
-            ])
+            Object.entries(persistedState.expandedItems || {}).map(
+              ([key, arr]) => [key, new Set(arr as string[])],
+            ),
           ),
         }),
-      }
+      },
     ),
     {
-      name: 'ui-store',
-    }
-  )
+      name: "ui-store",
+    },
+  ),
 );
 
 // ============================================================================
@@ -216,7 +215,8 @@ export function useExpandedItems(pageKey: string) {
   return {
     isExpanded: (itemId: string) => isExpanded(pageKey, itemId),
     toggle: (itemId: string) => toggleExpanded(pageKey, itemId),
-    set: (itemId: string, expanded: boolean) => setExpanded(pageKey, itemId, expanded),
+    set: (itemId: string, expanded: boolean) =>
+      setExpanded(pageKey, itemId, expanded),
     clear: () => clearExpanded(pageKey),
   };
 }
@@ -233,6 +233,7 @@ export function useViewMode(pageKey: string) {
 
   return {
     viewMode,
-    setViewMode: (mode: 'list' | 'grid' | 'compact') => setViewMode(pageKey, mode),
+    setViewMode: (mode: "list" | "grid" | "compact") =>
+      setViewMode(pageKey, mode),
   };
 }

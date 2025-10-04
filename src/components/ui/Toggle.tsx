@@ -3,9 +3,9 @@
  * Perfect for theme toggles, settings, feature flags
  */
 
-'use client';
+"use client";
 
-import { KeyboardEvent, ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from "react";
 
 export interface ToggleProps {
   /** Whether the toggle is checked */
@@ -13,7 +13,7 @@ export interface ToggleProps {
   /** Callback when toggle state changes */
   onChange: (checked: boolean) => void;
   /** Size variant */
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   /** Disabled state */
   disabled?: boolean;
   /** Label for the toggle */
@@ -30,35 +30,35 @@ export interface ToggleProps {
 
 const sizeConfig = {
   sm: {
-    track: 'w-9 h-5',
-    thumb: 'w-4 h-4',
-    translate: 'translate-x-4',
-    icon: 'w-3 h-3',
+    track: "w-9 h-5",
+    thumb: "w-4 h-4",
+    translate: "translate-x-4",
+    icon: "w-3 h-3",
   },
   md: {
-    track: 'w-11 h-6',
-    thumb: 'w-5 h-5',
-    translate: 'translate-x-5',
-    icon: 'w-3.5 h-3.5',
+    track: "w-11 h-6",
+    thumb: "w-5 h-5",
+    translate: "translate-x-5",
+    icon: "w-3.5 h-3.5",
   },
   lg: {
-    track: 'w-14 h-7',
-    thumb: 'w-6 h-6',
-    translate: 'translate-x-7',
-    icon: 'w-4 h-4',
+    track: "w-14 h-7",
+    thumb: "w-6 h-6",
+    translate: "translate-x-7",
+    icon: "w-4 h-4",
   },
 };
 
 export function Toggle({
   checked,
   onChange,
-  size = 'md',
+  size = "md",
   disabled = false,
   label,
   checkedIcon,
   uncheckedIcon,
   ariaLabel,
-  className = '',
+  className = "",
 }: ToggleProps) {
   const config = sizeConfig[size];
 
@@ -69,7 +69,7 @@ export function Toggle({
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === ' ' || e.key === 'Enter') {
+    if (e.key === " " || e.key === "Enter") {
       e.preventDefault();
       handleClick();
     }
@@ -92,13 +92,13 @@ export function Toggle({
           ${config.track}
           ${
             checked
-              ? 'bg-primary-600 dark:bg-primary-500'
-              : 'bg-gray-300 dark:bg-gray-700'
+              ? "bg-primary-600 dark:bg-primary-500"
+              : "bg-gray-300 dark:bg-gray-700"
           }
           ${
             disabled
-              ? 'opacity-50 cursor-not-allowed'
-              : 'cursor-pointer hover:bg-primary-700 dark:hover:bg-primary-600'
+              ? "opacity-50 cursor-not-allowed"
+              : "cursor-pointer hover:bg-primary-700 dark:hover:bg-primary-600"
           }
         `}
       >
@@ -107,7 +107,7 @@ export function Toggle({
             inline-flex items-center justify-center rounded-full
             bg-white shadow-lg transform transition-transform duration-200 ease-in-out
             ${config.thumb}
-            ${checked ? config.translate : 'translate-x-0.5'}
+            ${checked ? config.translate : "translate-x-0.5"}
           `}
         >
           {checked && checkedIcon && (
@@ -126,7 +126,7 @@ export function Toggle({
         <span
           className={`
             text-sm font-medium
-            ${disabled ? 'text-gray-400 dark:text-gray-600' : 'text-gray-900 dark:text-gray-100'}
+            ${disabled ? "text-gray-400 dark:text-gray-600" : "text-gray-900 dark:text-gray-100"}
           `}
         >
           {label}

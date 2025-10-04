@@ -3,13 +3,16 @@
  * React Query hook for fetching workflow status with polling support
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { getWorkflowStatus } from './getWorkflowStatus';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { getWorkflowStatus } from "./getWorkflowStatus";
 
-export function useWorkflowStatus(workflowId: string, options?: { refetchInterval?: number }) {
+export function useWorkflowStatus(
+  workflowId: string,
+  options?: { refetchInterval?: number },
+) {
   return useQuery({
     queryKey: queryKeys.workflows.detail(workflowId),
     queryFn: () => getWorkflowStatus(workflowId),

@@ -4,13 +4,16 @@
  * PATCH /api/customers/[id] - Update customer
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createParamApiHandler } from '@/core/infrastructure/http';
-import { Result } from '@/core/base/utils/Result';
-import { NotFoundError } from '@/core/base/errors/BaseError';
-import { validateBody } from '@/core/utils/validation';
-import { updateCustomerSchema } from '@/core/schemas/customer';
-import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
+import {
+  getCustomerEmailFromRequest,
+  setAuditContext,
+} from "@/app/api/middleware/auditContext";
+import { NotFoundError } from "@/core/base/errors/BaseError";
+import { Result } from "@/core/base/utils/Result";
+import { createParamApiHandler } from "@/core/infrastructure/http";
+import { updateCustomerSchema } from "@/core/schemas/customer";
+import { validateBody } from "@/core/utils/validation";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
 
 /**
  * GET /api/customers/[id]
@@ -32,7 +35,7 @@ export const GET = createParamApiHandler(async (request, { params }) => {
       name: customerResult.value.name,
       email: customerResult.value.email,
       phone: customerResult.value.phone,
-    }
+    },
   });
 });
 
@@ -67,6 +70,6 @@ export const PATCH = createParamApiHandler(async (request, { params }) => {
       name: updateResult.value.name,
       email: updateResult.value.email,
       phone: updateResult.value.phone,
-    }
+    },
   });
 });

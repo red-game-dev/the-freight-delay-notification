@@ -3,7 +3,7 @@
  * Type definitions for delivery-related operations
  */
 
-import type { DeliveryStatus } from '@/core/types';
+import type { DeliveryStatus } from "@/core/types";
 
 export interface Delivery {
   id: string;
@@ -49,7 +49,7 @@ export interface CreateDeliveryInput {
 }
 
 export interface UpdateDeliveryInput extends Partial<CreateDeliveryInput> {
-  status?: Delivery['status'];
+  status?: Delivery["status"];
 }
 
 export interface DeliveryStats {

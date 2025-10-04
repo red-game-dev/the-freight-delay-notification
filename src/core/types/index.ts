@@ -4,16 +4,22 @@
  */
 
 // Delivery types
-export type { DeliveryStatus } from './delivery';
-
+export type { DeliveryStatus } from "./delivery";
+// Geographic types
+export type { Coordinates } from "./geo";
 // Notification types
-export type { NotificationChannel, NotificationStatus } from './notification';
-
-// Workflow types
-export type { WorkflowStatus, WorkflowActivityStatus, WorkflowStep } from './workflow';
+export type { NotificationChannel, NotificationStatus } from "./notification";
 
 // Traffic types
-export type { TrafficCondition, TrafficConditionFilter, TrafficSeverity, TrafficIncidentType } from './traffic';
-
-// Geographic types
-export type { Coordinates } from './geo';
+export type {
+  TrafficCondition,
+  TrafficConditionFilter,
+  TrafficIncidentType,
+  TrafficSeverity,
+} from "./traffic";
+// Workflow types
+export type {
+  WorkflowActivityStatus,
+  WorkflowStatus,
+  WorkflowStep,
+} from "./workflow";

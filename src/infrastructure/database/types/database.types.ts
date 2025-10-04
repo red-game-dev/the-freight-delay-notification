@@ -3,18 +3,24 @@
  * TypeScript types matching the PostgreSQL database schema
  */
 
-import type { Coordinates, DeliveryStatus, NotificationChannel, NotificationStatus, TrafficCondition } from '@/core/types';
-
-// Re-export shared types from core/types
-export type {
+import type {
+  Coordinates,
   DeliveryStatus,
   NotificationChannel,
   NotificationStatus,
   TrafficCondition,
-  TrafficSeverity,
-  TrafficIncidentType,
+} from "@/core/types";
+
+// Re-export shared types from core/types
+export type {
   Coordinates,
-} from '@/core/types';
+  DeliveryStatus,
+  NotificationChannel,
+  NotificationStatus,
+  TrafficCondition,
+  TrafficIncidentType,
+  TrafficSeverity,
+} from "@/core/types";
 
 // Notification Preferences
 export interface NotificationPreferences {
@@ -200,7 +206,13 @@ export interface CreateTrafficSnapshotInput {
   description?: string;
   severity?: string;
   affected_area?: string;
-  incident_type?: 'accident' | 'construction' | 'road_closure' | 'weather' | 'congestion' | 'other';
+  incident_type?:
+    | "accident"
+    | "construction"
+    | "road_closure"
+    | "weather"
+    | "congestion"
+    | "other";
   incident_location?: { x: number; y: number };
 }
 

@@ -3,49 +3,66 @@
  * Shows all workflows associated with a delivery
  */
 
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Alert } from '@/components/ui/Alert';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { Pagination } from '@/components/ui/Pagination';
-import { Loader2 } from 'lucide-react';
-import { useWorkflows } from '@/core/infrastructure/http/services/workflows';
-import type { Workflow } from '@/core/infrastructure/http/services/workflows';
-import { getWorkflowStatusConfig } from '@/core/utils/workflowUtils';
-import { CountdownTimerInline } from '@/components/ui/CountdownTimer';
-import { calculateNextRunTime } from '@/core/utils/dateUtils';
-import { useURLPagination } from '@/core/hooks/useURLSearchParams';
+import { Loader2 } from "lucide-react";
+import * as React from "react";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { CountdownTimerInline } from "@/components/ui/CountdownTimer";
+import { Pagination } from "@/components/ui/Pagination";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { useURLPagination } from "@/core/hooks/useURLSearchParams";
+import type { Workflow } from "@/core/infrastructure/http/services/workflows";
+import { useWorkflows } from "@/core/infrastructure/http/services/workflows";
+import { calculateNextRunTime } from "@/core/utils/dateUtils";
+import { getWorkflowStatusConfig } from "@/core/utils/workflowUtils";
 
 interface DeliveryWorkflowsListProps {
   deliveryId: string;
 }
 
-export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps) {
-  const { page: runningPage, setPage: setRunningPage } = useURLPagination('runningWorkflows', 1);
-  const { page: otherPage, setPage: setOtherPage } = useURLPagination('workflows', 1);
+export function DeliveryWorkflowsList({
+  deliveryId,
+}: DeliveryWorkflowsListProps) {
+  const { page: runningPage, setPage: setRunningPage } = useURLPagination(
+    "runningWorkflows",
+    1,
+  );
+  const { page: otherPage, setPage: setOtherPage } = useURLPagination(
+    "workflows",
+    1,
+  );
 
-  const { data: runningResponse, isLoading: runningLoading, error: runningError } = useWorkflows({
+  const {
+    data: runningResponse,
+    isLoading: runningLoading,
+    error: runningError,
+  } = useWorkflows({
     delivery_id: deliveryId,
-    status: 'running',
+    status: "running",
     page: runningPage,
-    limit: 10
+    limit: 10,
   });
 
-  const { data: otherResponse, isLoading: otherLoading, error: otherError } = useWorkflows({
+  const {
+    data: otherResponse,
+    isLoading: otherLoading,
+    error: otherError,
+  } = useWorkflows({
     delivery_id: deliveryId,
-    statusNot: 'running',
+    statusNot: "running",
     page: otherPage,
-    limit: 10
+    limit: 10,
   });
 
   const runningWorkflows = runningResponse?.data || [];
   const otherWorkflows = otherResponse?.data || [];
   const isLoading = runningLoading || otherLoading;
   const error = runningError || otherError;
-  const hasNoWorkflows = !isLoading && runningWorkflows.length === 0 && otherWorkflows.length === 0;
+  const hasNoWorkflows =
+    !isLoading && runningWorkflows.length === 0 && otherWorkflows.length === 0;
 
   if (isLoading) {
     return (
@@ -66,7 +83,8 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
         <div className="p-6">
           <SectionHeader title="Workflows" className="mb-4" />
           <Alert variant="error">
-            Failed to load workflows. {error instanceof Error ? error.message : 'Please try again.'}
+            Failed to load workflows.{" "}
+            {error instanceof Error ? error.message : "Please try again."}
           </Alert>
         </div>
       </Card>
@@ -76,17 +94,19 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
   const renderWorkflow = (workflow: Workflow) => {
     const statusInfo = getWorkflowStatusConfig(workflow.status);
     const StatusIcon = statusInfo.icon;
-    const isRecurringRunning = workflow.settings?.type === 'recurring' && workflow.status === 'running';
+    const isRecurringRunning =
+      workflow.settings?.type === "recurring" && workflow.status === "running";
 
     // Calculate next run time for running recurring workflows
-    const nextRunTime = isRecurringRunning && workflow.settings?.check_interval_minutes
-      ? calculateNextRunTime(
-          workflow.started_at,
-          workflow.settings.check_interval_minutes,
-          workflow.settings.checks_performed || 0,
-          workflow.settings.last_check_time
-        )
-      : null;
+    const nextRunTime =
+      isRecurringRunning && workflow.settings?.check_interval_minutes
+        ? calculateNextRunTime(
+            workflow.started_at,
+            workflow.settings.check_interval_minutes,
+            workflow.settings.checks_performed || 0,
+            workflow.settings.last_check_time,
+          )
+        : null;
 
     return (
       <div
@@ -97,24 +117,35 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <StatusIcon className="h-4 w-4 flex-shrink-0" />
-              <p className="font-mono text-sm truncate">{workflow.workflow_id}</p>
+              <p className="font-mono text-sm truncate">
+                {workflow.workflow_id}
+              </p>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Started {new Date(workflow.started_at).toLocaleString()}</span>
+              <span>
+                Started {new Date(workflow.started_at).toLocaleString()}
+              </span>
               {workflow.completed_at && (
                 <>
                   <span>•</span>
-                  <span>Ended {new Date(workflow.completed_at).toLocaleString()}</span>
+                  <span>
+                    Ended {new Date(workflow.completed_at).toLocaleString()}
+                  </span>
                 </>
               )}
             </div>
             {workflow.settings && (
               <div className="mt-2 text-xs">
-                {workflow.settings.type === 'recurring' && (
+                {workflow.settings.type === "recurring" && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-muted-foreground">
-                      Recurring: {workflow.settings.checks_performed || 0}/{workflow.settings.max_checks === -1 ? '∞' : workflow.settings.max_checks} checks
-                      {workflow.settings.check_interval_minutes && ` • Every ${workflow.settings.check_interval_minutes}min`}
+                      Recurring: {workflow.settings.checks_performed || 0}/
+                      {workflow.settings.max_checks === -1
+                        ? "∞"
+                        : workflow.settings.max_checks}{" "}
+                      checks
+                      {workflow.settings.check_interval_minutes &&
+                        ` • Every ${workflow.settings.check_interval_minutes}min`}
                     </span>
                     {nextRunTime && (
                       <>
@@ -129,7 +160,9 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
                     )}
                   </div>
                 )}
-                {workflow.settings.type === 'one-time' && <span className="text-muted-foreground">One-time check</span>}
+                {workflow.settings.type === "one-time" && (
+                  <span className="text-muted-foreground">One-time check</span>
+                )}
               </div>
             )}
             {workflow.error && (
@@ -153,7 +186,9 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
           <SectionHeader title="Workflows" className="mb-4" />
           <div className="text-center py-8 text-muted-foreground">
             <p>No workflows found for this delivery.</p>
-            <p className="text-sm mt-1">Click "Check Traffic & Notify" to start a workflow.</p>
+            <p className="text-sm mt-1">
+              Click "Check Traffic & Notify" to start a workflow.
+            </p>
           </div>
         </div>
       </Card>
@@ -168,25 +203,26 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
           <div className="p-6">
             <SectionHeader
               title="Active Workflows"
-              description={`Currently running${runningResponse?.pagination ? ` (${runningResponse.pagination.total})` : ''}`}
+              description={`Currently running${runningResponse?.pagination ? ` (${runningResponse.pagination.total})` : ""}`}
               className="mb-4"
             />
             <div className="space-y-3">
               {runningWorkflows.map(renderWorkflow)}
             </div>
             {/* Pagination for running workflows */}
-            {runningResponse?.pagination && runningResponse.pagination.totalPages > 1 && (
-              <div className="mt-4">
-                <Pagination
-                  currentPage={runningResponse.pagination.page}
-                  totalPages={runningResponse.pagination.totalPages}
-                  totalItems={runningResponse.pagination.total}
-                  itemsPerPage={runningResponse.pagination.limit}
-                  onPageChange={setRunningPage}
-                  showItemsInfo={true}
-                />
-              </div>
-            )}
+            {runningResponse?.pagination &&
+              runningResponse.pagination.totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={runningResponse.pagination.page}
+                    totalPages={runningResponse.pagination.totalPages}
+                    totalItems={runningResponse.pagination.total}
+                    itemsPerPage={runningResponse.pagination.limit}
+                    onPageChange={setRunningPage}
+                    showItemsInfo={true}
+                  />
+                </div>
+              )}
           </div>
         </Card>
       )}
@@ -197,25 +233,26 @@ export function DeliveryWorkflowsList({ deliveryId }: DeliveryWorkflowsListProps
           <div className="p-6">
             <SectionHeader
               title="Completed & Historical Workflows"
-              description={`All non-running${otherResponse?.pagination ? ` (${otherResponse.pagination.total})` : ''}`}
+              description={`All non-running${otherResponse?.pagination ? ` (${otherResponse.pagination.total})` : ""}`}
               className="mb-4"
             />
             <div className="space-y-3">
               {otherWorkflows.map(renderWorkflow)}
             </div>
             {/* Pagination for other workflows */}
-            {otherResponse?.pagination && otherResponse.pagination.totalPages > 1 && (
-              <div className="mt-4">
-                <Pagination
-                  currentPage={otherResponse.pagination.page}
-                  totalPages={otherResponse.pagination.totalPages}
-                  totalItems={otherResponse.pagination.total}
-                  itemsPerPage={otherResponse.pagination.limit}
-                  onPageChange={setOtherPage}
-                  showItemsInfo={true}
-                />
-              </div>
-            )}
+            {otherResponse?.pagination &&
+              otherResponse.pagination.totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={otherResponse.pagination.page}
+                    totalPages={otherResponse.pagination.totalPages}
+                    totalItems={otherResponse.pagination.total}
+                    itemsPerPage={otherResponse.pagination.limit}
+                    onPageChange={setOtherPage}
+                    showItemsInfo={true}
+                  />
+                </div>
+              )}
           </div>
         </Card>
       )}

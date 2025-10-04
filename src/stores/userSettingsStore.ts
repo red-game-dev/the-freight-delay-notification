@@ -4,8 +4,8 @@
  * Settings are per-user based on their email/session
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface UserSettings {
   // Reference to DB customer (this browser's user)
@@ -63,7 +63,7 @@ export const useUserSettingsStore = create<UserSettingsStore>()(
       getCustomerId: () => get().settings?.customerId || null,
     }),
     {
-      name: 'freight-delay-user-settings', // localStorage key
+      name: "freight-delay-user-settings", // localStorage key
       version: 4,
       migrate: (persistedState: any, version: number) => {
         // Migrate from older versions to version 4
@@ -78,6 +78,6 @@ export const useUserSettingsStore = create<UserSettingsStore>()(
         }
         return persistedState;
       },
-    }
-  )
+    },
+  ),
 );

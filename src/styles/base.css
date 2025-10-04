@@ -17,11 +17,11 @@
   /* Light mode - Clean, professional */
   html {
     background-color: oklch(0.98 0.005 230);
-    color: oklch(0.20 0.010 230);
+    color: oklch(0.2 0.01 230);
     --drawer-bg: oklch(0.99 0.003 230);
-    --drawer-border: oklch(0.90 0.005 230);
+    --drawer-border: oklch(0.9 0.005 230);
     --modal-bg: oklch(0.99 0.003 230);
-    --modal-border: oklch(0.90 0.005 230);
+    --modal-border: oklch(0.9 0.005 230);
     --skeleton-base: oklch(0.92 0.005 230);
     --skeleton-shimmer: oklch(0.96 0.005 230);
   }
@@ -33,12 +33,12 @@
   [data-theme="dark"] {
     background-color: oklch(0.17 0.012 230); /* Softer than pure black, easier on eyes */
     color: oklch(0.92 0.008 230); /* Softer white, reduces eye strain */
-    --drawer-bg: oklch(0.20 0.015 230);
+    --drawer-bg: oklch(0.2 0.015 230);
     --drawer-border: oklch(0.28 0.018 230);
-    --modal-bg: oklch(0.20 0.015 230);
+    --modal-bg: oklch(0.2 0.015 230);
     --modal-border: oklch(0.28 0.018 230);
     --skeleton-base: oklch(0.24 0.012 230);
-    --skeleton-shimmer: oklch(0.30 0.015 230);
+    --skeleton-shimmer: oklch(0.3 0.015 230);
   }
 
   /* Ensure backgrounds work */
@@ -54,35 +54,38 @@
 @layer base {
   /* Smooth transitions for theme changes */
   html {
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   body {
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   * {
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Selection colors */
   ::selection {
-    background-color: oklch(0.65 0.120 230 / 0.3);
-    color: oklch(0.20 0.010 230);
+    background-color: oklch(0.65 0.12 230 / 0.3);
+    color: oklch(0.2 0.01 230);
   }
 
   [data-theme="dark"] ::selection {
-    background-color: oklch(0.65 0.120 230 / 0.35);
+    background-color: oklch(0.65 0.12 230 / 0.35);
     color: oklch(0.92 0.008 230);
   }
 
   /* Focus visible styles for accessibility */
   :focus-visible {
-    outline: 2px solid oklch(0.65 0.120 230);
+    outline: 2px solid oklch(0.65 0.12 230);
     outline-offset: 2px;
   }
 
@@ -127,7 +130,7 @@
   }
 
   .skeleton-shimmer::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;

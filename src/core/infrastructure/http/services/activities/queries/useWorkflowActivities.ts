@@ -3,11 +3,11 @@
  * React Query hook for fetching workflow activities
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { getWorkflowActivities } from './getWorkflowActivities';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { getWorkflowActivities } from "./getWorkflowActivities";
 
 export function useWorkflowActivities(workflowId: string) {
   return useQuery({

@@ -3,14 +3,14 @@
  * GET /api/notifications - List all notifications
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createApiHandler } from '@/core/infrastructure/http';
-import { logger } from '@/core/base/utils/Logger';
-import { Result } from '@/core/base/utils/Result';
-import { createPaginatedResponse } from '@/core/utils/paginationUtils';
-import { validateQuery } from '@/core/utils/validation';
-import { listNotificationsQuerySchema } from '@/core/schemas/notification';
-import { setAuditContext } from '@/app/api/middleware/auditContext';
+import { setAuditContext } from "@/app/api/middleware/auditContext";
+import { logger } from "@/core/base/utils/Logger";
+import { Result } from "@/core/base/utils/Result";
+import { createApiHandler } from "@/core/infrastructure/http";
+import { listNotificationsQuerySchema } from "@/core/schemas/notification";
+import { createPaginatedResponse } from "@/core/utils/paginationUtils";
+import { validateQuery } from "@/core/utils/validation";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
 
 /**
  * GET /api/notifications
@@ -32,18 +32,30 @@ export const GET = createApiHandler(async (request) => {
     return queryResult;
   }
 
-  const { page, limit, delivery_id: deliveryId, customer_id: customerId, includeStats } = queryResult.value;
+  const {
+    page,
+    limit,
+    delivery_id: deliveryId,
+    customer_id: customerId,
+    includeStats,
+  } = queryResult.value;
 
   let notificationsResult;
 
   if (deliveryId) {
-    logger.info(`📧 [Notifications API] Fetching notifications for delivery: ${deliveryId}`);
+    logger.info(
+      `📧 [Notifications API] Fetching notifications for delivery: ${deliveryId}`,
+    );
     notificationsResult = await db.listNotificationsByDelivery(deliveryId);
   } else if (customerId) {
-    logger.info(`📧 [Notifications API] Fetching notifications for customer: ${customerId}`);
+    logger.info(
+      `📧 [Notifications API] Fetching notifications for customer: ${customerId}`,
+    );
     notificationsResult = await db.listNotificationsByCustomer(customerId);
   } else {
-    logger.info('📧 [Notifications API] Fetching all notifications via DatabaseService');
+    logger.info(
+      "📧 [Notifications API] Fetching all notifications via DatabaseService",
+    );
     notificationsResult = await db.listNotifications(1000);
   }
 
@@ -64,13 +76,17 @@ export const GET = createApiHandler(async (request) => {
       error_message: n.error_message,
     }));
 
-    const paginatedResponse = createPaginatedResponse(sanitizedNotifications, page, limit);
+    const paginatedResponse = createPaginatedResponse(
+      sanitizedNotifications,
+      page,
+      limit,
+    );
 
     // Calculate and include stats if requested
     if (includeStats) {
       const total = notifications.length;
-      const sent = notifications.filter(n => n.status === 'sent').length;
-      const failed = notifications.filter(n => n.status === 'failed').length;
+      const sent = notifications.filter((n) => n.status === "sent").length;
+      const failed = notifications.filter((n) => n.status === "failed").length;
       const successRate = total > 0 ? (sent / total) * 100 : 0;
 
       return {

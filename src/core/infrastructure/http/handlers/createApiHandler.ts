@@ -3,11 +3,11 @@
  * Higher-order function to create API route handlers with standardized error handling
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { Result } from '@/core/base/utils/Result';
-import type { ApiResponse, ApiHandlerOptions } from '../types';
-import { handleResult } from './handleResult';
-import { createErrorResponse } from './createErrorResponse';
+import type { NextRequest, NextResponse } from "next/server";
+import type { Result } from "@/core/base/utils/Result";
+import type { ApiHandlerOptions, ApiResponse } from "../types";
+import { createErrorResponse } from "./createErrorResponse";
+import { handleResult } from "./handleResult";
 
 /**
  * Higher-order function to create API handlers with standardized error handling
@@ -19,12 +19,15 @@ import { createErrorResponse } from './createErrorResponse';
  * });
  */
 export function createApiHandler<T = any>(
-  handler: (request: NextRequest, context?: Record<string, unknown>) => Promise<Result<T>>,
-  options?: ApiHandlerOptions
+  handler: (
+    request: NextRequest,
+    context?: Record<string, unknown>,
+  ) => Promise<Result<T>>,
+  options?: ApiHandlerOptions,
 ) {
   return async (
     request: NextRequest,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
   ): Promise<NextResponse<ApiResponse<T>>> => {
     try {
       const result = await handler(request, context);

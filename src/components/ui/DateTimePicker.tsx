@@ -3,17 +3,18 @@
  * Enhanced datetime input with validation
  */
 
-'use client';
+"use client";
 
-import { FC, forwardRef } from 'react';
-import { Calendar, Clock } from 'lucide-react';
-import { Input, type InputProps } from './Input';
+import { Calendar, Clock } from "lucide-react";
+import { type FC, forwardRef } from "react";
+import { Input, type InputProps } from "./Input";
 
-export interface DateTimePickerProps extends Omit<InputProps, 'type' | 'leftIcon'> {
+export interface DateTimePickerProps
+  extends Omit<InputProps, "type" | "leftIcon"> {
   /** Show calendar icon */
   showIcon?: boolean;
   /** Datetime format (datetime-local, date, time) */
-  dateType?: 'datetime-local' | 'date' | 'time';
+  dateType?: "datetime-local" | "date" | "time";
 }
 
 /**
@@ -21,14 +22,26 @@ export interface DateTimePickerProps extends Omit<InputProps, 'type' | 'leftIcon
  * Uses native HTML5 datetime inputs with custom styling
  */
 export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
-  ({ showIcon = true, dateType = 'datetime-local', ...props }, ref) => {
-    const icon = dateType === 'time' ? <Clock className="h-4 w-4" /> : <Calendar className="h-4 w-4" />;
+  ({ showIcon = true, dateType = "datetime-local", ...props }, ref) => {
+    const icon =
+      dateType === "time" ? (
+        <Clock className="h-4 w-4" />
+      ) : (
+        <Calendar className="h-4 w-4" />
+      );
 
-    return <Input ref={ref} type={dateType} leftIcon={showIcon ? icon : undefined} {...props} />;
-  }
+    return (
+      <Input
+        ref={ref}
+        type={dateType}
+        leftIcon={showIcon ? icon : undefined}
+        {...props}
+      />
+    );
+  },
 );
 
-DateTimePicker.displayName = 'DateTimePicker';
+DateTimePicker.displayName = "DateTimePicker";
 
 export interface DateRangePickerProps {
   startDate?: string;
@@ -42,7 +55,7 @@ export interface DateRangePickerProps {
   required?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
 }
 
 /**
@@ -53,14 +66,14 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   endDate,
   onStartChange,
   onEndChange,
-  startLabel = 'Start Date',
-  endLabel = 'End Date',
+  startLabel = "Start Date",
+  endLabel = "End Date",
   startError,
   endError,
   required,
   disabled,
   fullWidth,
-  size = 'md',
+  size = "md",
 }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -92,4 +105,4 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   );
 };
 
-DateRangePicker.displayName = 'DateRangePicker';
+DateRangePicker.displayName = "DateRangePicker";

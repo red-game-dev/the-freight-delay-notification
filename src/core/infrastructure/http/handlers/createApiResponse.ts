@@ -3,15 +3,15 @@
  * Creates standardized success response
  */
 
-import { NextResponse } from 'next/server';
-import type { ApiResponse, ApiHandlerOptions } from '../types';
+import { NextResponse } from "next/server";
+import type { ApiHandlerOptions, ApiResponse } from "../types";
 
 /**
  * Create a standardized API success response
  */
 export function createApiResponse<T>(
   data: T,
-  options?: ApiHandlerOptions
+  options?: ApiHandlerOptions,
 ): NextResponse<ApiResponse<T>> {
   const response: ApiResponse<T> = {
     success: true,

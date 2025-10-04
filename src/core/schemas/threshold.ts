@@ -3,17 +3,16 @@
  * Zod schemas for threshold-related operations
  */
 
-import { z } from 'zod';
-import { uuidSchema } from './common';
-import { sanitizeString } from '@/core/utils/validation';
-import { notificationChannelSchema } from './notification';
+import { z } from "zod";
+import { sanitizeString } from "@/core/utils/validation";
+import { uuidSchema } from "./common";
+import { notificationChannelSchema } from "./notification";
 
 /**
  * Create threshold input schema
  */
 export const createThresholdSchema = z.object({
-  name: z.string().min(1).max(200).trim()
-    .transform(sanitizeString),
+  name: z.string().min(1).max(200).trim().transform(sanitizeString),
   delay_minutes: z.number().int().min(0).max(1440),
   notification_channels: z.array(notificationChannelSchema).min(1),
   is_default: z.boolean().default(false),

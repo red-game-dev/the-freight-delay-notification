@@ -5,13 +5,16 @@
  * DELETE /api/thresholds/[id] - Delete threshold
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { createParamApiHandler } from '@/core/infrastructure/http';
-import { HttpError } from '@/core/base/errors/HttpError';
-import { Result } from '@/core/base/utils/Result';
-import { validateBody } from '@/core/utils/validation';
-import { updateThresholdSchema } from '@/core/schemas/threshold';
-import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
+import {
+  getCustomerEmailFromRequest,
+  setAuditContext,
+} from "@/app/api/middleware/auditContext";
+import { HttpError } from "@/core/base/errors/HttpError";
+import { Result } from "@/core/base/utils/Result";
+import { createParamApiHandler } from "@/core/infrastructure/http";
+import { updateThresholdSchema } from "@/core/schemas/threshold";
+import { validateBody } from "@/core/utils/validation";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
 
 /**
  * GET /api/thresholds/[id]
@@ -22,17 +25,18 @@ export const GET = createParamApiHandler(async (request, { params }) => {
   const db = getDatabaseService();
 
   // Transform result to only expose safe fields
-  return Result.map(
-    await db.getThresholdById(params.id),
-    (threshold) => threshold ? {
-      id: threshold.id,
-      name: threshold.name,
-      delay_minutes: threshold.delay_minutes,
-      notification_channels: threshold.notification_channels,
-      is_default: threshold.is_default,
-      is_system: threshold.is_system,
-      created_at: threshold.created_at,
-    } : null
+  return Result.map(await db.getThresholdById(params.id), (threshold) =>
+    threshold
+      ? {
+          id: threshold.id,
+          name: threshold.name,
+          delay_minutes: threshold.delay_minutes,
+          notification_channels: threshold.notification_channels,
+          is_default: threshold.is_default,
+          is_system: threshold.is_system,
+          created_at: threshold.created_at,
+        }
+      : null,
   );
 });
 
@@ -57,7 +61,7 @@ export const PATCH = createParamApiHandler(async (request, { params }) => {
   }
 
   if (thresholdResult.value && thresholdResult.value.is_system) {
-    return Result.fail(new HttpError('Cannot edit system threshold', 400));
+    return Result.fail(new HttpError("Cannot edit system threshold", 400));
   }
 
   // If setting this threshold as default, unset all other defaults first
@@ -75,43 +79,43 @@ export const PATCH = createParamApiHandler(async (request, { params }) => {
   }
 
   // Transform result to only expose safe fields
-  return Result.map(
-    await db.updateThreshold(params.id, body),
-    (threshold) => ({
-      id: threshold.id,
-      name: threshold.name,
-      delay_minutes: threshold.delay_minutes,
-      is_default: threshold.is_default,
-    })
-  );
+  return Result.map(await db.updateThreshold(params.id, body), (threshold) => ({
+    id: threshold.id,
+    name: threshold.name,
+    delay_minutes: threshold.delay_minutes,
+    is_default: threshold.is_default,
+  }));
 });
 
 /**
  * DELETE /api/thresholds/[id]
  * Delete threshold (cannot delete system or default threshold)
  */
-export const DELETE = createParamApiHandler(async (request, { params }) => {
-  await setAuditContext(request, await getCustomerEmailFromRequest(request));
-  const db = getDatabaseService();
+export const DELETE = createParamApiHandler(
+  async (request, { params }) => {
+    await setAuditContext(request, await getCustomerEmailFromRequest(request));
+    const db = getDatabaseService();
 
-  // Check if threshold exists and is not system or default, then delete
-  const thresholdResult = await db.getThresholdById(params.id);
+    // Check if threshold exists and is not system or default, then delete
+    const thresholdResult = await db.getThresholdById(params.id);
 
-  if (!thresholdResult.success) {
-    return thresholdResult;
-  }
+    if (!thresholdResult.success) {
+      return thresholdResult;
+    }
 
-  if (!thresholdResult.value) {
-    return Result.fail(new HttpError('Threshold not found', 404));
-  }
+    if (!thresholdResult.value) {
+      return Result.fail(new HttpError("Threshold not found", 404));
+    }
 
-  if (thresholdResult.value.is_system) {
-    return Result.fail(new HttpError('Cannot delete system threshold', 400));
-  }
+    if (thresholdResult.value.is_system) {
+      return Result.fail(new HttpError("Cannot delete system threshold", 400));
+    }
 
-  if (thresholdResult.value.is_default) {
-    return Result.fail(new HttpError('Cannot delete default threshold', 400));
-  }
+    if (thresholdResult.value.is_default) {
+      return Result.fail(new HttpError("Cannot delete default threshold", 400));
+    }
 
-  return await db.deleteThreshold(params.id);
-}, { successStatus: 204 });
+    return await db.deleteThreshold(params.id);
+  },
+  { successStatus: 204 },
+);

@@ -2,21 +2,19 @@
  * Table component for displaying tabular data
  */
 
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export interface TableProps {
   children: ReactNode;
   className?: string;
 }
 
-export function Table({ children, className = '' }: TableProps) {
+export function Table({ children, className = "" }: TableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className={`w-full ${className}`}>
-        {children}
-      </table>
+      <table className={`w-full ${className}`}>{children}</table>
     </div>
   );
 }
@@ -26,7 +24,7 @@ export interface TableHeaderProps {
   className?: string;
 }
 
-export function TableHeader({ children, className = '' }: TableHeaderProps) {
+export function TableHeader({ children, className = "" }: TableHeaderProps) {
   return (
     <thead className={`border-t border-b bg-muted/50 ${className}`}>
       {children}
@@ -39,12 +37,8 @@ export interface TableBodyProps {
   className?: string;
 }
 
-export function TableBody({ children, className = '' }: TableBodyProps) {
-  return (
-    <tbody className={`divide-y ${className}`}>
-      {children}
-    </tbody>
-  );
+export function TableBody({ children, className = "" }: TableBodyProps) {
+  return <tbody className={`divide-y ${className}`}>{children}</tbody>;
 }
 
 export interface TableRowProps {
@@ -53,13 +47,13 @@ export interface TableRowProps {
   className?: string;
 }
 
-export function TableRow({ children, onClick, className = '' }: TableRowProps) {
+export function TableRow({ children, onClick, className = "" }: TableRowProps) {
   return (
     <tr
       onClick={onClick}
       className={`
         hover:bg-muted/50 transition-colors
-        ${onClick ? 'cursor-pointer' : ''}
+        ${onClick ? "cursor-pointer" : ""}
         ${className}
       `}
     >
@@ -73,7 +67,7 @@ export interface TableHeadProps {
   className?: string;
 }
 
-export function TableHead({ children, className = '' }: TableHeadProps) {
+export function TableHead({ children, className = "" }: TableHeadProps) {
   return (
     <th
       className={`px-4 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider ${className}`}
@@ -88,10 +82,6 @@ export interface TableCellProps {
   className?: string;
 }
 
-export function TableCell({ children, className = '' }: TableCellProps) {
-  return (
-    <td className={`px-4 sm:px-6 py-4 ${className}`}>
-      {children}
-    </td>
-  );
+export function TableCell({ children, className = "" }: TableCellProps) {
+  return <td className={`px-4 sm:px-6 py-4 ${className}`}>{children}</td>;
 }

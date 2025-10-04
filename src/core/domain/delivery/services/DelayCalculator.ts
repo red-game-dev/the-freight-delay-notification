@@ -3,10 +3,10 @@
  * Provides business logic for assessing delivery delays
  */
 
-import type { Delivery } from '../entities/Delivery';
-import type { TrafficData } from '../../../../types/shared/traffic.types';
+import type { TrafficData } from "../../../../types/shared/traffic.types";
+import type { Delivery } from "../entities/Delivery";
 
-export type DelaySeverity = 'none' | 'minor' | 'major' | 'severe';
+export type DelaySeverity = "none" | "minor" | "major" | "severe";
 
 export interface DelayAssessment {
   delayMinutes: number;
@@ -26,7 +26,10 @@ export class DelayCalculator {
    * @param trafficData - Traffic data with delay information
    * @returns Comprehensive delay assessment
    */
-  static assessDelay(delivery: Delivery, trafficData: TrafficData): DelayAssessment {
+  static assessDelay(
+    delivery: Delivery,
+    trafficData: TrafficData,
+  ): DelayAssessment {
     const { delayMinutes } = trafficData;
     const threshold = delivery.delayThresholdMinutes;
     const exceedsThreshold = delayMinutes > threshold;
@@ -35,9 +38,15 @@ export class DelayCalculator {
       delayMinutes,
       thresholdMinutes: threshold,
       exceedsThreshold,
-      severity: this.calculateSeverity(delayMinutes, threshold),
-      delayPercentage: this.calculateDelayPercentage(delayMinutes, threshold),
-      recommendedAction: this.getRecommendedAction(delayMinutes, threshold),
+      severity: DelayCalculator.calculateSeverity(delayMinutes, threshold),
+      delayPercentage: DelayCalculator.calculateDelayPercentage(
+        delayMinutes,
+        threshold,
+      ),
+      recommendedAction: DelayCalculator.getRecommendedAction(
+        delayMinutes,
+        threshold,
+      ),
     };
   }
 
@@ -50,26 +59,32 @@ export class DelayCalculator {
    * - major: delay > 1.5x threshold but <= 2x threshold
    * - severe: delay > 2x threshold
    */
-  private static calculateSeverity(delayMinutes: number, threshold: number): DelaySeverity {
+  private static calculateSeverity(
+    delayMinutes: number,
+    threshold: number,
+  ): DelaySeverity {
     if (delayMinutes <= threshold) {
-      return 'none';
+      return "none";
     }
 
     const ratio = delayMinutes / threshold;
 
     if (ratio <= 1.5) {
-      return 'minor';
+      return "minor";
     } else if (ratio <= 2.0) {
-      return 'major';
+      return "major";
     } else {
-      return 'severe';
+      return "severe";
     }
   }
 
   /**
    * Calculate delay as percentage of threshold
    */
-  private static calculateDelayPercentage(delayMinutes: number, threshold: number): number {
+  private static calculateDelayPercentage(
+    delayMinutes: number,
+    threshold: number,
+  ): number {
     if (threshold === 0) {
       return 0;
     }
@@ -85,19 +100,22 @@ export class DelayCalculator {
    * - Major delay: Urgent notification with alternatives
    * - Severe delay: Critical notification with escalation
    */
-  private static getRecommendedAction(delayMinutes: number, threshold: number): string {
+  private static getRecommendedAction(
+    delayMinutes: number,
+    threshold: number,
+  ): string {
     if (delayMinutes <= threshold) {
-      return 'Monitor - no notification needed';
+      return "Monitor - no notification needed";
     }
 
     const ratio = delayMinutes / threshold;
 
     if (ratio <= 1.5) {
-      return 'Send standard delay notification';
+      return "Send standard delay notification";
     } else if (ratio <= 2.0) {
-      return 'Send urgent delay notification with alternative delivery options';
+      return "Send urgent delay notification with alternative delivery options";
     } else {
-      return 'Send critical delay notification and escalate to customer support';
+      return "Send critical delay notification and escalate to customer support";
     }
   }
 
@@ -113,7 +131,7 @@ export class DelayCalculator {
     const remainingMinutes = minutes % 60;
 
     if (remainingMinutes === 0) {
-      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
     }
 
     return `${hours}h ${remainingMinutes}m`;

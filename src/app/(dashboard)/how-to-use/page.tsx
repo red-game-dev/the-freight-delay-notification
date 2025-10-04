@@ -2,24 +2,24 @@
  * How to Use Page - Comprehensive guide for using the application
  */
 
-import Link from 'next/link';
 import {
-  Package,
   Activity,
+  AlertCircle,
+  ArrowRight,
   Bell,
-  Workflow,
-  Settings,
-  Plus,
+  CheckCircle,
   Clock,
   MapPin,
-  AlertCircle,
-  CheckCircle,
+  Package,
   PlayCircle,
+  Plus,
+  Settings,
   StopCircle,
-  ArrowRight
-} from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+  Workflow,
+} from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 export default function HowToUsePage() {
   return (
@@ -27,7 +27,8 @@ export default function HowToUsePage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">How to Use This App</h1>
         <p className="text-muted-foreground">
-          A comprehensive guide to managing freight deliveries and automated delay notifications
+          A comprehensive guide to managing freight deliveries and automated
+          delay notifications
         </p>
       </div>
 
@@ -43,8 +44,9 @@ export default function HowToUsePage() {
               1
             </span>
             <div>
-              <strong>Create a Delivery:</strong> Navigate to the Deliveries page and click &quot;Create Delivery&quot;.
-              Fill in customer details, origin, destination, and expected delivery time.
+              <strong>Create a Delivery:</strong> Navigate to the Deliveries
+              page and click &quot;Create Delivery&quot;. Fill in customer
+              details, origin, destination, and expected delivery time.
             </div>
           </li>
           <li className="flex gap-3">
@@ -52,8 +54,9 @@ export default function HowToUsePage() {
               2
             </span>
             <div>
-              <strong>Configure Thresholds:</strong> Go to Settings to configure delay thresholds.
-              Set how many minutes of delay should trigger notifications.
+              <strong>Configure Thresholds:</strong> Go to Settings to configure
+              delay thresholds. Set how many minutes of delay should trigger
+              notifications.
             </div>
           </li>
           <li className="flex gap-3">
@@ -61,8 +64,9 @@ export default function HowToUsePage() {
               3
             </span>
             <div>
-              <strong>Monitor Automatically:</strong> The system will automatically check traffic conditions
-              and send notifications when delays exceed your configured thresholds.
+              <strong>Monitor Automatically:</strong> The system will
+              automatically check traffic conditions and send notifications when
+              delays exceed your configured thresholds.
             </div>
           </li>
         </ol>
@@ -83,7 +87,10 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">Creating a Delivery</h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                <li>Click the <Plus className="h-4 w-4 inline" /> &quot;Create Delivery&quot; button</li>
+                <li>
+                  Click the <Plus className="h-4 w-4 inline" /> &quot;Create
+                  Delivery&quot; button
+                </li>
                 <li>Enter customer information (name, email, phone number)</li>
                 <li>Specify the origin address (pickup location)</li>
                 <li>Specify the destination address (delivery location)</li>
@@ -95,11 +102,17 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">Managing Deliveries</h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                <li>View all deliveries in the table with status, origin, and destination</li>
+                <li>
+                  View all deliveries in the table with status, origin, and
+                  destination
+                </li>
                 <li>Click on any delivery to view detailed information</li>
                 <li>Edit delivery details using the &quot;Edit&quot; button</li>
                 <li>View delivery route on an interactive map</li>
-                <li>See all workflows and notifications associated with the delivery</li>
+                <li>
+                  See all workflows and notifications associated with the
+                  delivery
+                </li>
                 <li>Start or stop recurring traffic checks manually</li>
               </ul>
             </div>
@@ -108,27 +121,45 @@ export default function HowToUsePage() {
               <h3 className="font-semibold mb-2">Delivery Statuses</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-xs">Pending</span>
+                  <span className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-xs">
+                    Pending
+                  </span>
                   <span className="text-muted-foreground">Not yet started</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 rounded bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 text-xs">In Transit</span>
-                  <span className="text-muted-foreground">Currently being delivered</span>
+                  <span className="px-2 py-1 rounded bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 text-xs">
+                    In Transit
+                  </span>
+                  <span className="text-muted-foreground">
+                    Currently being delivered
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs">Delayed</span>
-                  <span className="text-muted-foreground">Experiencing significant delays</span>
+                  <span className="px-2 py-1 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs">
+                    Delayed
+                  </span>
+                  <span className="text-muted-foreground">
+                    Experiencing significant delays
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs">Delivered</span>
-                  <span className="text-muted-foreground">Successfully completed</span>
+                  <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs">
+                    Delivered
+                  </span>
+                  <span className="text-muted-foreground">
+                    Successfully completed
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="pt-2">
               <Link href="/deliveries">
-                <Button variant="outline" size="sm" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
                   Go to Deliveries
                 </Button>
               </Link>
@@ -149,9 +180,11 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">How It Works</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                The system continuously monitors traffic conditions on all active delivery routes using
-                real-time data. When traffic conditions cause delays beyond your configured thresholds,
-                the system automatically generates and sends notifications to customers.
+                The system continuously monitors traffic conditions on all
+                active delivery routes using real-time data. When traffic
+                conditions cause delays beyond your configured thresholds, the
+                system automatically generates and sends notifications to
+                customers.
               </p>
             </div>
 
@@ -171,7 +204,9 @@ export default function HowToUsePage() {
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-orange-600" />
                   <span className="font-medium">Heavy:</span>
-                  <span className="text-muted-foreground">Significant delays</span>
+                  <span className="text-muted-foreground">
+                    Significant delays
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-red-600" />
@@ -194,7 +229,11 @@ export default function HowToUsePage() {
 
             <div className="pt-2">
               <Link href="/monitoring">
-                <Button variant="outline" size="sm" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
                   Go to Monitoring
                 </Button>
               </Link>
@@ -215,9 +254,10 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">Automatic Notifications</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                When delays are detected, the system automatically generates personalized notification
-                messages using AI and sends them to customers via email and SMS. All notifications are
-                logged and can be reviewed in the Notifications page.
+                When delays are detected, the system automatically generates
+                personalized notification messages using AI and sends them to
+                customers via email and SMS. All notifications are logged and
+                can be reviewed in the Notifications page.
               </p>
             </div>
 
@@ -258,7 +298,11 @@ export default function HowToUsePage() {
 
             <div className="pt-2">
               <Link href="/notifications">
-                <Button variant="outline" size="sm" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
                   Go to Notifications
                 </Button>
               </Link>
@@ -279,9 +323,10 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">What are Workflows?</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Workflows are automated processes managed by Temporal that handle traffic monitoring
-                and notification delivery. Each delivery can have multiple workflows assigned to it
-                for different purposes.
+                Workflows are automated processes managed by Temporal that
+                handle traffic monitoring and notification delivery. Each
+                delivery can have multiple workflows assigned to it for
+                different purposes.
               </p>
             </div>
 
@@ -291,7 +336,8 @@ export default function HowToUsePage() {
                 <div>
                   <span className="font-medium">Recurring Check:</span>
                   <span className="text-muted-foreground ml-2">
-                    Periodically checks traffic conditions (e.g., every 15 minutes)
+                    Periodically checks traffic conditions (e.g., every 15
+                    minutes)
                   </span>
                 </div>
                 <div>
@@ -315,22 +361,30 @@ export default function HowToUsePage() {
                 <div className="flex items-center gap-2">
                   <PlayCircle className="h-4 w-4 text-blue-600" />
                   <span className="font-medium">Running:</span>
-                  <span className="text-muted-foreground">Currently active</span>
+                  <span className="text-muted-foreground">
+                    Currently active
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <span className="font-medium">Completed:</span>
-                  <span className="text-muted-foreground">Finished successfully</span>
+                  <span className="text-muted-foreground">
+                    Finished successfully
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-red-600" />
                   <span className="font-medium">Failed:</span>
-                  <span className="text-muted-foreground">Encountered error</span>
+                  <span className="text-muted-foreground">
+                    Encountered error
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <StopCircle className="h-4 w-4 text-gray-600" />
                   <span className="font-medium">Cancelled:</span>
-                  <span className="text-muted-foreground">Manually stopped</span>
+                  <span className="text-muted-foreground">
+                    Manually stopped
+                  </span>
                 </div>
               </div>
             </div>
@@ -348,7 +402,11 @@ export default function HowToUsePage() {
 
             <div className="pt-2">
               <Link href="/workflows">
-                <Button variant="outline" size="sm" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
                   Go to Workflows
                 </Button>
               </Link>
@@ -369,24 +427,41 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">Threshold Configuration</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Configure when the system should send delay notifications based on traffic conditions.
-                The threshold is measured in minutes of additional delay compared to normal traffic.
+                Configure when the system should send delay notifications based
+                on traffic conditions. The threshold is measured in minutes of
+                additional delay compared to normal traffic.
               </p>
             </div>
 
             <div>
               <h3 className="font-semibold mb-2">Configurable Options</h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                <li><strong>Delay Threshold:</strong> Minimum delay in minutes to trigger notification</li>
-                <li><strong>Check Interval:</strong> How often to check traffic (for recurring workflows)</li>
-                <li><strong>Notification Channels:</strong> Enable/disable email and SMS</li>
-                <li><strong>AI Settings:</strong> Configure notification message generation</li>
+                <li>
+                  <strong>Delay Threshold:</strong> Minimum delay in minutes to
+                  trigger notification
+                </li>
+                <li>
+                  <strong>Check Interval:</strong> How often to check traffic
+                  (for recurring workflows)
+                </li>
+                <li>
+                  <strong>Notification Channels:</strong> Enable/disable email
+                  and SMS
+                </li>
+                <li>
+                  <strong>AI Settings:</strong> Configure notification message
+                  generation
+                </li>
               </ul>
             </div>
 
             <div className="pt-2">
               <Link href="/settings">
-                <Button variant="outline" size="sm" rightIcon={<ArrowRight className="h-4 w-4" />}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
                   Go to Settings
                 </Button>
               </Link>
@@ -404,23 +479,38 @@ export default function HowToUsePage() {
         <ul className="space-y-2 text-sm">
           <li className="flex gap-2">
             <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <span>Set realistic delay thresholds based on your delivery routes and customer expectations</span>
+            <span>
+              Set realistic delay thresholds based on your delivery routes and
+              customer expectations
+            </span>
           </li>
           <li className="flex gap-2">
             <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <span>Double-check addresses when creating deliveries to ensure accurate route calculations</span>
+            <span>
+              Double-check addresses when creating deliveries to ensure accurate
+              route calculations
+            </span>
           </li>
           <li className="flex gap-2">
             <Bell className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <span>Review sent notifications regularly to ensure customers are receiving appropriate updates</span>
+            <span>
+              Review sent notifications regularly to ensure customers are
+              receiving appropriate updates
+            </span>
           </li>
           <li className="flex gap-2">
             <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <span>Monitor the Workflows page to ensure automated checks are running as expected</span>
+            <span>
+              Monitor the Workflows page to ensure automated checks are running
+              as expected
+            </span>
           </li>
           <li className="flex gap-2">
             <Package className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <span>Update delivery status manually when needed (e.g., mark as delivered when confirmed)</span>
+            <span>
+              Update delivery status manually when needed (e.g., mark as
+              delivered when confirmed)
+            </span>
           </li>
         </ul>
       </Card>
@@ -428,14 +518,10 @@ export default function HowToUsePage() {
       {/* Footer Navigation */}
       <div className="mt-8 pt-6 border-t flex justify-between items-center">
         <Link href="/">
-          <Button variant="ghost">
-            ← Back to Dashboard
-          </Button>
+          <Button variant="ghost">← Back to Dashboard</Button>
         </Link>
         <Link href="/settings">
-          <Button variant="primary">
-            Configure Settings →
-          </Button>
+          <Button variant="primary">Configure Settings →</Button>
         </Link>
       </div>
     </div>

@@ -4,9 +4,9 @@
  * Following Repository pattern from DDD
  */
 
-import type { Result } from '../../../base/utils/Result';
-import type { Route } from '../entities/Route';
-import type { TrafficCondition } from '@/core/types';
+import type { TrafficCondition } from "@/core/types";
+import type { Result } from "../../../base/utils/Result";
+import type { Route } from "../entities/Route";
 
 export interface RouteRepository {
   /**
@@ -30,7 +30,7 @@ export interface RouteRepository {
   updateTrafficData(
     routeId: string,
     currentDurationSeconds: number,
-    trafficCondition: TrafficCondition
+    trafficCondition: TrafficCondition,
   ): Promise<Result<void>>;
 
   /**

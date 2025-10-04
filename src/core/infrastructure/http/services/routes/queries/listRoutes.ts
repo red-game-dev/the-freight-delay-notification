@@ -3,9 +3,9 @@
  * GET /api/routes
  */
 
-import { fetchJson } from '../../../client/fetchJson';
-import { env } from '@/infrastructure/config/EnvValidator';
-import type { TrafficCondition } from '@/core/types';
+import type { TrafficCondition } from "@/core/types";
+import { env } from "@/infrastructure/config/EnvValidator";
+import { fetchJson } from "../../../client/fetchJson";
 
 export interface Route {
   id: string;

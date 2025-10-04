@@ -3,7 +3,7 @@
  * Defines the structure for traffic data fetching and processing
  */
 
-import type { TrafficCondition, Coordinates } from '@/core/types';
+import type { Coordinates, TrafficCondition } from "@/core/types";
 
 export interface TrafficData {
   delayMinutes: number;
@@ -11,18 +11,18 @@ export interface TrafficData {
   estimatedDuration: number; // in seconds
   normalDuration: number; // in seconds
   fetchedAt: Date;
-  provider: 'google' | 'mapbox'; // Track which API provided the data
+  provider: "google" | "mapbox"; // Track which API provided the data
   distance?: {
     value: number;
-    unit: 'meters' | 'miles' | 'kilometers';
+    unit: "meters" | "miles" | "kilometers";
   };
 }
 
 export interface RouteInput {
   origin: string;
   destination: string;
-  originCoords?: Pick<Coordinates, 'lat' | 'lng'>;
-  destinationCoords?: Pick<Coordinates, 'lat' | 'lng'>;
+  originCoords?: Pick<Coordinates, "lat" | "lng">;
+  destinationCoords?: Pick<Coordinates, "lat" | "lng">;
   departureTime?: Date;
 }
 

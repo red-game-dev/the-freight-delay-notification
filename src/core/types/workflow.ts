@@ -6,14 +6,29 @@
 /**
  * Workflow execution status
  */
-export type WorkflowStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out';
+export type WorkflowStatus =
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "timed_out";
 
 /**
  * Workflow activity status
  */
-export type WorkflowActivityStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type WorkflowActivityStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed";
 
 /**
  * Workflow step names in the delay notification workflow
  */
-export type WorkflowStep = 'traffic_check' | 'delay_evaluation' | 'message_generation' | 'notification_delivery' | 'completed' | 'failed';
+export type WorkflowStep =
+  | "traffic_check"
+  | "delay_evaluation"
+  | "message_generation"
+  | "notification_delivery"
+  | "completed"
+  | "failed";

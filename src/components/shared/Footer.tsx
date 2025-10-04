@@ -3,13 +3,30 @@
  * Site footer with links and company information
  */
 
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Package, Github, Mail, Shield, TruckIcon, Activity, Bell, Workflow, BookOpen, Home } from 'lucide-react';
-import { ThemeToggle } from '../ThemeToggle';
-import { APP_NAME, REPOSITORY, SOCIAL_LINKS, ROUTES, TECH_STACK } from '@/core/config/constants/app.constants';
+import {
+  Activity,
+  Bell,
+  BookOpen,
+  Github,
+  Home,
+  Mail,
+  Package,
+  Shield,
+  TruckIcon,
+  Workflow,
+} from "lucide-react";
+import Link from "next/link";
+import type React from "react";
+import {
+  APP_NAME,
+  REPOSITORY,
+  ROUTES,
+  SOCIAL_LINKS,
+  TECH_STACK,
+} from "@/core/config/constants/app.constants";
+import { ThemeToggle } from "../ThemeToggle";
 
 export interface FooterProps {
   /** Show theme switcher */
@@ -32,7 +49,7 @@ interface FooterSection {
 
 export const Footer: React.FC<FooterProps> = ({
   showThemeSwitcher = true,
-  className = '',
+  className = "",
   compact = false,
 }) => {
   const currentYear = new Date().getFullYear();
@@ -40,28 +57,28 @@ export const Footer: React.FC<FooterProps> = ({
   // Footer navigation sections
   const footerSections: FooterSection[] = [
     {
-      title: 'Navigation',
+      title: "Navigation",
       links: [
-        { label: 'Home', href: ROUTES.HOME },
-        { label: 'Deliveries', href: ROUTES.DELIVERIES },
-        { label: 'Monitoring', href: ROUTES.MONITORING },
-        { label: 'Notifications', href: ROUTES.NOTIFICATIONS },
-        { label: 'Workflows', href: ROUTES.WORKFLOWS },
+        { label: "Home", href: ROUTES.HOME },
+        { label: "Deliveries", href: ROUTES.DELIVERIES },
+        { label: "Monitoring", href: ROUTES.MONITORING },
+        { label: "Notifications", href: ROUTES.NOTIFICATIONS },
+        { label: "Workflows", href: ROUTES.WORKFLOWS },
       ],
     },
     {
-      title: 'Resources',
+      title: "Resources",
       links: [
-        { label: 'How to Use', href: ROUTES.HOW_TO_USE },
-        { label: 'Documentation', href: REPOSITORY.README },
-        { label: 'API Reference', href: REPOSITORY.DOCS },
+        { label: "How to Use", href: ROUTES.HOW_TO_USE },
+        { label: "Documentation", href: REPOSITORY.README },
+        { label: "API Reference", href: REPOSITORY.DOCS },
       ],
     },
     {
-      title: 'Support',
+      title: "Support",
       links: [
-        { label: 'GitHub Issues', href: REPOSITORY.ISSUES },
-        { label: 'Contact', href: SOCIAL_LINKS.EMAIL },
+        { label: "GitHub Issues", href: REPOSITORY.ISSUES },
+        { label: "Contact", href: SOCIAL_LINKS.EMAIL },
       ],
     },
   ];
@@ -73,7 +90,8 @@ export const Footer: React.FC<FooterProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <p className="text-xs text-muted-foreground text-center sm:text-left order-2 sm:order-1">
-              © {currentYear} {APP_NAME}. Built with {TECH_STACK.FRONTEND} & {TECH_STACK.WORKFLOWS}.
+              © {currentYear} {APP_NAME}. Built with {TECH_STACK.FRONTEND} &{" "}
+              {TECH_STACK.WORKFLOWS}.
             </p>
             {showThemeSwitcher && (
               <div className="flex items-center gap-2 order-1 sm:order-2">
@@ -100,8 +118,9 @@ export const Footer: React.FC<FooterProps> = ({
                 <span className="font-bold text-base">{APP_NAME}</span>
               </div>
               <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                Real-time freight delivery monitoring with intelligent delay notifications.
-                Built with {TECH_STACK.WORKFLOWS} workflows, {TECH_STACK.FRONTEND}, and modern web technologies.
+                Real-time freight delivery monitoring with intelligent delay
+                notifications. Built with {TECH_STACK.WORKFLOWS} workflows,{" "}
+                {TECH_STACK.FRONTEND}, and modern web technologies.
               </p>
               <div className="flex items-center gap-3">
                 <a
@@ -126,11 +145,13 @@ export const Footer: React.FC<FooterProps> = ({
             {/* Navigation Links */}
             {footerSections.map((section) => (
               <div key={section.title} className="min-w-0">
-                <h4 className="font-semibold text-sm mb-3 sm:mb-4">{section.title}</h4>
+                <h4 className="font-semibold text-sm mb-3 sm:mb-4">
+                  {section.title}
+                </h4>
                 <ul className="space-y-2.5 sm:space-y-3">
                   {section.links.map((link) => (
                     <li key={link.label}>
-                      {link.href.startsWith('http') ? (
+                      {link.href.startsWith("http") ? (
                         <a
                           href={link.href}
                           target="_blank"
@@ -184,7 +205,10 @@ export const Footer: React.FC<FooterProps> = ({
               © {currentYear} {APP_NAME}.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 order-1 sm:order-2">
-              <Link href={ROUTES.HOW_TO_USE} className="hover:text-foreground transition-colors py-1">
+              <Link
+                href={ROUTES.HOW_TO_USE}
+                className="hover:text-foreground transition-colors py-1"
+              >
                 Documentation
               </Link>
               <span className="hidden sm:inline">•</span>
@@ -202,7 +226,8 @@ export const Footer: React.FC<FooterProps> = ({
 
         <div className="border-t py-4">
           <p className="text-xs text-center text-muted-foreground leading-relaxed px-2">
-            🚚 Powered by {TECH_STACK.WORKFLOWS} Workflows • {TECH_STACK.AI} • {TECH_STACK.TRAFFIC} • {TECH_STACK.NOTIFICATIONS}
+            🚚 Powered by {TECH_STACK.WORKFLOWS} Workflows • {TECH_STACK.AI} •{" "}
+            {TECH_STACK.TRAFFIC} • {TECH_STACK.NOTIFICATIONS}
           </p>
         </div>
       </div>
@@ -210,6 +235,6 @@ export const Footer: React.FC<FooterProps> = ({
   );
 };
 
-Footer.displayName = 'Footer';
+Footer.displayName = "Footer";
 
 export default Footer;

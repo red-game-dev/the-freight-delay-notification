@@ -3,14 +3,18 @@
  * Always-available fallback for testing without real SMS service
  */
 
-import { logger } from '@/core/base/utils/Logger';
-import { Result, success } from '../../../core/base/utils/Result';
-import { NotificationAdapter, NotificationInput, NotificationResult } from './NotificationAdapter.interface';
+import { logger } from "@/core/base/utils/Logger";
+import { type Result, success } from "../../../core/base/utils/Result";
+import type {
+  NotificationAdapter,
+  NotificationInput,
+  NotificationResult,
+} from "./NotificationAdapter.interface";
 
 export class MockSMSAdapter implements NotificationAdapter {
-  public readonly providerName = 'Mock SMS';
+  public readonly providerName = "Mock SMS";
   public readonly priority = 999; // Lowest priority - only used as last resort
-  public readonly channel = 'sms' as const;
+  public readonly channel = "sms" as const;
 
   isAvailable(): boolean {
     return true; // Always available for testing
@@ -25,7 +29,7 @@ export class MockSMSAdapter implements NotificationAdapter {
     logger.info(`   Length: ${smsMessage.length} characters`);
 
     // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Generate deterministic mock message ID
     const mockMessageId = `mock-sms-${Date.now()}-${input.deliveryId}`;
@@ -42,16 +46,16 @@ export class MockSMSAdapter implements NotificationAdapter {
 
   private formatSMSMessage(message: string, deliveryId: string): string {
     // For SMS, keep it short and concise
-    const lines = message.split('\n').filter(line => line.trim());
+    const lines = message.split("\n").filter((line) => line.trim());
 
     // Extract key information
-    const shortMessage = `Delivery ${deliveryId} Update: ${lines.slice(0, 2).join(' ')}`;
+    const shortMessage = `Delivery ${deliveryId} Update: ${lines.slice(0, 2).join(" ")}`;
 
     // Limit to 160 characters for single SMS
     if (shortMessage.length <= 160) {
       return shortMessage;
     }
 
-    return shortMessage.substring(0, 157) + '...';
+    return shortMessage.substring(0, 157) + "...";
   }
 }

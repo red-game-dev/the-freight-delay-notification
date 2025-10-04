@@ -3,14 +3,14 @@
  * GET /api/workflows/stats - Get workflow execution statistics
  */
 
-import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
-import { getTemporalClient } from '@/infrastructure/temporal/TemporalClient';
-import { createApiHandler } from '@/core/infrastructure/http';
-import { Result } from '@/core/base/utils/Result';
-import { logger } from '@/core/base/utils/Logger';
-import { validateQuery } from '@/core/utils/validation';
-import { workflowStatsQuerySchema } from '@/core/schemas/workflow';
-import { setAuditContext } from '@/app/api/middleware/auditContext';
+import { setAuditContext } from "@/app/api/middleware/auditContext";
+import { logger } from "@/core/base/utils/Logger";
+import { Result } from "@/core/base/utils/Result";
+import { createApiHandler } from "@/core/infrastructure/http";
+import { workflowStatsQuerySchema } from "@/core/schemas/workflow";
+import { validateQuery } from "@/core/utils/validation";
+import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
+import { getTemporalClient } from "@/infrastructure/temporal/TemporalClient";
 
 /**
  * GET /api/workflows/stats
@@ -30,7 +30,7 @@ export const GET = createApiHandler(async (request) => {
   const { deliveryId } = queryResult.value;
   const db = getDatabaseService();
 
-  logger.info('📊 [Workflows Stats API] Fetching workflow statistics');
+  logger.info("📊 [Workflows Stats API] Fetching workflow statistics");
 
   // Get all deliveries with workflow settings (these have active/recent workflows)
   const deliveriesResult = await db.listDeliveries(1000);
@@ -58,7 +58,7 @@ export const GET = createApiHandler(async (request) => {
   for (const delivery of allDeliveries) {
     if (!delivery.auto_check_traffic) continue;
 
-    const workflowId = `${delivery.enable_recurring_checks ? 'recurring-check' : 'delay-notification'}-${delivery.id}`;
+    const workflowId = `${delivery.enable_recurring_checks ? "recurring-check" : "delay-notification"}-${delivery.id}`;
 
     try {
       const handle = temporal.workflow.getHandle(workflowId);
@@ -67,12 +67,12 @@ export const GET = createApiHandler(async (request) => {
       let status = description.status.name.toLowerCase();
 
       // Map Temporal status names to our schema
-      if (status === 'terminated') {
-        status = 'cancelled';
-      } else if (status === 'timed out') {
-        status = 'timed_out';
-      } else if (status === 'canceled') {
-        status = 'cancelled';
+      if (status === "terminated") {
+        status = "cancelled";
+      } else if (status === "timed out") {
+        status = "timed_out";
+      } else if (status === "canceled") {
+        status = "cancelled";
       }
 
       // Track this execution
@@ -83,12 +83,11 @@ export const GET = createApiHandler(async (request) => {
         statusCounts[status as keyof typeof statusCounts]++;
       } else {
         // Log unexpected status for debugging
-        logger.warn(`⚠️ Unexpected workflow status: ${description.status.name} for ${workflowId}`);
+        logger.warn(
+          `⚠️ Unexpected workflow status: ${description.status.name} for ${workflowId}`,
+        );
       }
-    } catch (err) {
-      // Workflow doesn't exist in Temporal, will count from DB
-      continue;
-    }
+    } catch (err) {}
   }
 
   // Add DB workflows that aren't in Temporal (historical only)
@@ -101,14 +100,21 @@ export const GET = createApiHandler(async (request) => {
         statusCounts[status as keyof typeof statusCounts]++;
         dbWorkflowsAdded++;
       } else {
-        logger.warn(`⚠️ Unexpected DB workflow status: ${status} for ${workflow.workflow_id}`);
+        logger.warn(
+          `⚠️ Unexpected DB workflow status: ${status} for ${workflow.workflow_id}`,
+        );
       }
     }
   }
 
-  const total = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
+  const total = Object.values(statusCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
 
-  logger.info(`📊 Workflow stats calculated - Total: ${total}, From Temporal: ${temporalExecutions.size}, From DB: ${dbWorkflowsAdded}, Running: ${statusCounts.running}, Completed: ${statusCounts.completed}, Failed: ${statusCounts.failed}, Cancelled: ${statusCounts.cancelled}, Timed Out: ${statusCounts.timed_out}`);
+  logger.info(
+    `📊 Workflow stats calculated - Total: ${total}, From Temporal: ${temporalExecutions.size}, From DB: ${dbWorkflowsAdded}, Running: ${statusCounts.running}, Completed: ${statusCounts.completed}, Failed: ${statusCounts.failed}, Cancelled: ${statusCounts.cancelled}, Timed Out: ${statusCounts.timed_out}`,
+  );
 
   return Result.ok({
     total,

@@ -3,10 +3,16 @@
  * Navigate through pages of data with accessible controls
  */
 
-import { FC, useMemo } from 'react';
-import { cn } from '@/core/base/utils/cn';
-import { Button } from './Button';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreHorizontal,
+} from "lucide-react";
+import { type FC, useMemo } from "react";
+import { cn } from "@/core/base/utils/cn";
+import { Button } from "./Button";
 
 export interface PaginationProps {
   /** Current page number (1-indexed) */
@@ -26,7 +32,7 @@ export interface PaginationProps {
   /** Show items info (default: false) */
   showItemsInfo?: boolean;
   /** Size variant */
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   /** Disabled state */
   disabled?: boolean;
   /** Custom className */
@@ -42,13 +48,13 @@ export const Pagination: FC<PaginationProps> = ({
   maxButtons = 5,
   showFirstLast = true,
   showItemsInfo = false,
-  size = 'md',
+  size = "md",
   disabled = false,
   className,
 }) => {
   // Calculate page numbers to display
   const pageNumbers = useMemo(() => {
-    const pages: (number | 'ellipsis')[] = [];
+    const pages: (number | "ellipsis")[] = [];
 
     if (totalPages <= maxButtons) {
       // Show all pages if total is less than max
@@ -72,7 +78,7 @@ export const Pagination: FC<PaginationProps> = ({
       // Add first page and ellipsis if needed
       if (start > 1) {
         pages.push(1);
-        if (start > 2) pages.push('ellipsis');
+        if (start > 2) pages.push("ellipsis");
       }
 
       // Add page numbers
@@ -82,7 +88,7 @@ export const Pagination: FC<PaginationProps> = ({
 
       // Add ellipsis and last page if needed
       if (end < totalPages) {
-        if (end < totalPages - 1) pages.push('ellipsis');
+        if (end < totalPages - 1) pages.push("ellipsis");
         pages.push(totalPages);
       }
     }
@@ -112,7 +118,7 @@ export const Pagination: FC<PaginationProps> = ({
 
   return (
     <nav
-      className={cn('flex items-center justify-between gap-4', className)}
+      className={cn("flex items-center justify-between gap-4", className)}
       aria-label="Pagination Navigation"
     >
       {/* Items info */}
@@ -152,7 +158,7 @@ export const Pagination: FC<PaginationProps> = ({
         {/* Page numbers */}
         <div className="flex items-center gap-1">
           {pageNumbers.map((page, index) => {
-            if (page === 'ellipsis') {
+            if (page === "ellipsis") {
               return (
                 <span
                   key={`ellipsis-${index}`}
@@ -167,13 +173,13 @@ export const Pagination: FC<PaginationProps> = ({
             return (
               <Button
                 key={page}
-                variant={page === currentPage ? 'primary' : 'ghost'}
+                variant={page === currentPage ? "primary" : "ghost"}
                 size={size}
                 onClick={() => handlePageClick(page)}
                 disabled={disabled}
                 aria-label={`Go to page ${page}`}
-                aria-current={page === currentPage ? 'page' : undefined}
-                className={cn('min-w-[40px]')}
+                aria-current={page === currentPage ? "page" : undefined}
+                className={cn("min-w-[40px]")}
               >
                 {page}
               </Button>
@@ -217,4 +223,4 @@ export const Pagination: FC<PaginationProps> = ({
   );
 };
 
-Pagination.displayName = 'Pagination';
+Pagination.displayName = "Pagination";

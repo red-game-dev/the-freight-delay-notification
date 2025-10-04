@@ -30,8 +30,10 @@ export function getCurrentISOTimestamp(): string {
  * Subtract hours from a date
  */
 export function subtractHours(date: Date | string, hours: number): Date {
-  const baseDate = typeof date === 'string' ? new Date(date) : date;
-  return new Date(baseDate.getTime() - hours * TIME_CONSTANTS.MILLISECONDS_PER_HOUR);
+  const baseDate = typeof date === "string" ? new Date(date) : date;
+  return new Date(
+    baseDate.getTime() - hours * TIME_CONSTANTS.MILLISECONDS_PER_HOUR,
+  );
 }
 
 // ===== Scheduling Utilities =====
@@ -48,7 +50,7 @@ export function calculateNextRunTime(
   startTime: string,
   intervalMinutes: number,
   completedRuns: number,
-  lastCheckTime?: string
+  lastCheckTime?: string,
 ): number {
   const intervalMs = intervalMinutes * TIME_CONSTANTS.MILLISECONDS_PER_MINUTE;
 
@@ -61,7 +63,7 @@ export function calculateNextRunTime(
   // Fallback: calculate based on start time + completed runs
   // This is less accurate for workflows that were stopped/restarted
   const startTimeMs = new Date(startTime).getTime();
-  return startTimeMs + ((completedRuns + 1) * intervalMs);
+  return startTimeMs + (completedRuns + 1) * intervalMs;
 }
 
 /**
@@ -75,19 +77,31 @@ export function calculateNextRunTime(
 export function formatNextScheduledTime(
   startTime: string,
   intervalMinutes: number,
-  completedRuns: number
+  completedRuns: number,
 ): string | null {
-  const nextRunTime = calculateNextRunTime(startTime, intervalMinutes, completedRuns);
+  const nextRunTime = calculateNextRunTime(
+    startTime,
+    intervalMinutes,
+    completedRuns,
+  );
   const now = Date.now();
   const timeUntilNext = nextRunTime - now;
 
   if (timeUntilNext < 0) {
-    return 'Running now...';
+    return "Running now...";
   }
 
-  const hours = Math.floor(timeUntilNext / TIME_CONSTANTS.MILLISECONDS_PER_HOUR);
-  const minutes = Math.floor((timeUntilNext % TIME_CONSTANTS.MILLISECONDS_PER_HOUR) / TIME_CONSTANTS.MILLISECONDS_PER_MINUTE);
-  const seconds = Math.floor((timeUntilNext % TIME_CONSTANTS.MILLISECONDS_PER_MINUTE) / TIME_CONSTANTS.MILLISECONDS_PER_SECOND);
+  const hours = Math.floor(
+    timeUntilNext / TIME_CONSTANTS.MILLISECONDS_PER_HOUR,
+  );
+  const minutes = Math.floor(
+    (timeUntilNext % TIME_CONSTANTS.MILLISECONDS_PER_HOUR) /
+      TIME_CONSTANTS.MILLISECONDS_PER_MINUTE,
+  );
+  const seconds = Math.floor(
+    (timeUntilNext % TIME_CONSTANTS.MILLISECONDS_PER_MINUTE) /
+      TIME_CONSTANTS.MILLISECONDS_PER_SECOND,
+  );
 
   if (hours > 0) {
     return `in ${hours}h ${minutes}m`;

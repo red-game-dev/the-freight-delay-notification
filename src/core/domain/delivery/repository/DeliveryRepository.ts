@@ -4,8 +4,8 @@
  * Following Repository pattern from DDD
  */
 
-import type { Result } from '../../../base/utils/Result';
-import type { Delivery } from '../entities/Delivery';
+import type { Result } from "../../../base/utils/Result";
+import type { Delivery } from "../entities/Delivery";
 
 export interface DeliveryRepository {
   /**
@@ -21,7 +21,9 @@ export interface DeliveryRepository {
   /**
    * Find delivery by tracking number
    */
-  findByTrackingNumber(trackingNumber: string): Promise<Result<Delivery | null>>;
+  findByTrackingNumber(
+    trackingNumber: string,
+  ): Promise<Result<Delivery | null>>;
 
   /**
    * Find all active deliveries (pending, in_transit, delayed)

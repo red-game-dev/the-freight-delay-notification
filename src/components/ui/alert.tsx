@@ -2,23 +2,32 @@
  * Alert component for notifications and messages
  */
 
-'use client';
+"use client";
 
-import { ReactNode, useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, XCircle, AlertTriangle, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { cn } from '@/core/base/utils/cn';
-import { Button } from './Button';
-import { useExpandedItems } from '@/stores';
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  X,
+  XCircle,
+} from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { cn } from "@/core/base/utils/cn";
+import { useExpandedItems } from "@/stores";
+import { Button } from "./Button";
 
 export interface AlertAction {
   label: string;
   onClick: () => void;
-  variant?: 'default' | 'primary';
+  variant?: "default" | "primary";
 }
 
 export interface AlertProps {
   children: ReactNode;
-  variant?: 'info' | 'success' | 'warning' | 'error' | 'default';
+  variant?: "info" | "success" | "warning" | "error" | "default";
   title?: string;
   dismissible?: boolean;
   onDismiss?: () => void;
@@ -37,29 +46,39 @@ export interface AlertProps {
 
 const variantStyles = {
   default: {
-    container: 'bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100',
-    border: 'border-gray-200 dark:border-gray-700',
-    button: 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100',
+    container:
+      "bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100",
+    border: "border-gray-200 dark:border-gray-700",
+    button:
+      "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100",
   },
   info: {
-    container: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-100',
-    border: 'border-blue-200 dark:border-blue-700',
-    button: 'text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100',
+    container:
+      "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-100",
+    border: "border-blue-200 dark:border-blue-700",
+    button:
+      "text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100",
   },
   success: {
-    container: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-100',
-    border: 'border-green-200 dark:border-green-700',
-    button: 'text-green-700 hover:text-green-900 dark:text-green-300 dark:hover:text-green-100',
+    container:
+      "bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-100",
+    border: "border-green-200 dark:border-green-700",
+    button:
+      "text-green-700 hover:text-green-900 dark:text-green-300 dark:hover:text-green-100",
   },
   warning: {
-    container: 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-100',
-    border: 'border-yellow-200 dark:border-yellow-700',
-    button: 'text-yellow-700 hover:text-yellow-900 dark:text-yellow-300 dark:hover:text-yellow-100',
+    container:
+      "bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-100",
+    border: "border-yellow-200 dark:border-yellow-700",
+    button:
+      "text-yellow-700 hover:text-yellow-900 dark:text-yellow-300 dark:hover:text-yellow-100",
   },
   error: {
-    container: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-100',
-    border: 'border-red-200 dark:border-red-700',
-    button: 'text-red-700 hover:text-red-900 dark:text-red-300 dark:hover:text-red-100',
+    container:
+      "bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-100",
+    border: "border-red-200 dark:border-red-700",
+    button:
+      "text-red-700 hover:text-red-900 dark:text-red-300 dark:hover:text-red-100",
   },
 };
 
@@ -73,7 +92,7 @@ const icons = {
 
 export function Alert({
   children,
-  variant = 'default',
+  variant = "default",
   title,
   dismissible = false,
   onDismiss,
@@ -82,20 +101,24 @@ export function Alert({
   actions,
   defaultExpanded = false,
   id,
-  pageKey = 'alerts',
+  pageKey = "alerts",
 }: AlertProps) {
   // Use persistent state if ID provided, otherwise use local state
   const expandedStore = id ? useExpandedItems(pageKey) : null;
   const [localExpanded, setLocalExpanded] = useState(defaultExpanded);
 
   // Get expanded state from store if ID provided, otherwise use local state
-  const isExpanded = id && expandedStore
-    ? expandedStore.isExpanded(id)
-    : localExpanded;
+  const isExpanded =
+    id && expandedStore ? expandedStore.isExpanded(id) : localExpanded;
 
   // Initialize store state if ID provided and not yet set
   useEffect(() => {
-    if (id && expandedStore && defaultExpanded && !expandedStore.isExpanded(id)) {
+    if (
+      id &&
+      expandedStore &&
+      defaultExpanded &&
+      !expandedStore.isExpanded(id)
+    ) {
       expandedStore.set(id, true);
     }
   }, [id, defaultExpanded, expandedStore]);
@@ -114,15 +137,13 @@ export function Alert({
 
   return (
     <div
-      className={cn('border rounded-lg', styles.container, className)}
+      className={cn("border rounded-lg", styles.container, className)}
       role="alert"
     >
       <div className="flex gap-3 p-4">
         <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          {title && (
-            <h5 className="font-semibold mb-1">{title}</h5>
-          )}
+          {title && <h5 className="font-semibold mb-1">{title}</h5>}
           <div className="text-sm">{children}</div>
         </div>
         {dismissible && onDismiss && (
@@ -147,13 +168,19 @@ export function Alert({
             variant="ghost"
             size="sm"
             fullWidth
-            className={cn('justify-between border-t', styles.border)}
-            rightIcon={isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            className={cn("justify-between border-t", styles.border)}
+            rightIcon={
+              isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )
+            }
           >
-            {isExpanded ? 'Hide Details' : 'View Details'}
+            {isExpanded ? "Hide Details" : "View Details"}
           </Button>
           {isExpanded && (
-            <div className={cn('px-4 py-3 text-sm border-t', styles.border)}>
+            <div className={cn("px-4 py-3 text-sm border-t", styles.border)}>
               {details}
             </div>
           )}
@@ -162,12 +189,17 @@ export function Alert({
 
       {/* Actions */}
       {actions && actions.length > 0 && (
-        <div className={cn('flex items-center gap-2 px-4 py-3 border-t', styles.border)}>
+        <div
+          className={cn(
+            "flex items-center gap-2 px-4 py-3 border-t",
+            styles.border,
+          )}
+        >
           {actions.map((action, index) => (
             <Button
               key={index}
               onClick={action.onClick}
-              variant={action.variant === 'primary' ? 'primary' : 'ghost'}
+              variant={action.variant === "primary" ? "primary" : "ghost"}
               size="sm"
             >
               {action.label}

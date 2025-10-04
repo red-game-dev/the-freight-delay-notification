@@ -3,15 +3,15 @@
  * Reusable component to display workflow configuration and runtime info
  */
 
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Badge } from '@/components/ui/Badge';
-import { Clock } from 'lucide-react';
-import { calculateNextRunTime } from '@/core/utils/dateUtils';
-import { isWorkflowType, WorkflowType } from '@/core/utils/workflowUtils';
-import { CountdownTimerInline } from '@/components/ui/CountdownTimer';
-import Link from 'next/link';
+import { Clock } from "lucide-react";
+import Link from "next/link";
+import * as React from "react";
+import { Badge } from "@/components/ui/Badge";
+import { CountdownTimerInline } from "@/components/ui/CountdownTimer";
+import { calculateNextRunTime } from "@/core/utils/dateUtils";
+import { isWorkflowType, WorkflowType } from "@/core/utils/workflowUtils";
 
 interface WorkflowDetailsProps {
   workflowId: string;
@@ -22,7 +22,7 @@ interface WorkflowDetailsProps {
   completedAt?: string;
   updatedAt?: string; // Last check time for accurate next run calculation
   settings?: {
-    type: 'recurring' | 'one-time';
+    type: "recurring" | "one-time";
     check_interval_minutes?: number;
     max_checks?: number;
     checks_performed?: number;
@@ -48,24 +48,30 @@ export function WorkflowDetails({
   showLink = true,
   compact = false,
 }: WorkflowDetailsProps) {
-  const isRecurring = workflowId ? isWorkflowType(workflowId, WorkflowType.RECURRING_CHECK) : false;
-  const isRunning = status === 'running';
+  const isRecurring = workflowId
+    ? isWorkflowType(workflowId, WorkflowType.RECURRING_CHECK)
+    : false;
+  const isRunning = status === "running";
 
   // Calculate duration
   const duration = completedAt
-    ? Math.round((new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000)
+    ? Math.round(
+        (new Date(completedAt).getTime() - new Date(startedAt).getTime()) /
+          1000,
+      )
     : null;
 
   // Calculate next run time for recurring workflows
   // Priority: 1) settings.last_check_time (from delivery.updated_at) 2) updatedAt (workflow.updated_at) 3) fallback calculation
-  const nextRunTime = isRecurring && isRunning && settings?.check_interval_minutes
-    ? calculateNextRunTime(
-        startedAt,
-        settings.check_interval_minutes,
-        settings.checks_performed || 0,
-        settings.last_check_time || updatedAt // Prefer delivery's updated_at over workflow's
-      )
-    : null;
+  const nextRunTime =
+    isRecurring && isRunning && settings?.check_interval_minutes
+      ? calculateNextRunTime(
+          startedAt,
+          settings.check_interval_minutes,
+          settings.checks_performed || 0,
+          settings.last_check_time || updatedAt, // Prefer delivery's updated_at over workflow's
+        )
+      : null;
 
   if (compact) {
     return (
@@ -73,7 +79,7 @@ export function WorkflowDetails({
         {/* Type and Status */}
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="default" className="text-xs">
-            {isRecurring ? 'Recurring' : 'One-time'}
+            {isRecurring ? "Recurring" : "One-time"}
           </Badge>
           {nextRunTime && (
             <CountdownTimerInline
@@ -90,12 +96,15 @@ export function WorkflowDetails({
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <div>
               <span className="text-muted-foreground">Interval:</span>
-              <span className="ml-1 font-medium">{settings.check_interval_minutes}min</span>
+              <span className="ml-1 font-medium">
+                {settings.check_interval_minutes}min
+              </span>
             </div>
             <div>
               <span className="text-muted-foreground">Progress:</span>
               <span className="ml-1 font-medium">
-                {settings.checks_performed || 0}/{settings.max_checks === -1 ? '∞' : settings.max_checks}
+                {settings.checks_performed || 0}/
+                {settings.max_checks === -1 ? "∞" : settings.max_checks}
               </span>
             </div>
           </div>
@@ -142,13 +151,13 @@ export function WorkflowDetails({
         <div>
           <span className="text-muted-foreground">Duration:</span>
           <span className="ml-2 font-medium">
-            {duration !== null ? `${duration}s` : 'In progress'}
+            {duration !== null ? `${duration}s` : "In progress"}
           </span>
         </div>
         <div>
           <span className="text-muted-foreground">Type:</span>
           <span className="ml-2 font-medium">
-            {isRecurring ? 'Recurring Check' : 'One-time Check'}
+            {isRecurring ? "Recurring Check" : "One-time Check"}
           </span>
         </div>
 
@@ -179,7 +188,8 @@ export function WorkflowDetails({
             <div>
               <span className="text-muted-foreground">Progress:</span>
               <span className="ml-2 font-medium">
-                {settings.checks_performed || 0}/{settings.max_checks === -1 ? '∞' : settings.max_checks} checks
+                {settings.checks_performed || 0}/
+                {settings.max_checks === -1 ? "∞" : settings.max_checks} checks
               </span>
             </div>
             <div>
@@ -189,9 +199,12 @@ export function WorkflowDetails({
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground">Notification Cooldown:</span>
+              <span className="text-muted-foreground">
+                Notification Cooldown:
+              </span>
               <span className="ml-2 font-medium">
-                {settings.min_hours_between_notifications}h / {settings.min_delay_change_threshold}min change
+                {settings.min_hours_between_notifications}h /{" "}
+                {settings.min_delay_change_threshold}min change
               </span>
             </div>
           </>

@@ -3,12 +3,11 @@
  * Exports all query operations (GET requests)
  */
 
+export { getNotification } from "./getNotification";
+export { getNotificationStats } from "./getNotificationStats";
 // Fetchers
-export { listNotifications } from './listNotifications';
-export { getNotification } from './getNotification';
-export { getNotificationStats } from './getNotificationStats';
-
+export { listNotifications } from "./listNotifications";
+export { useNotification } from "./useNotification";
+export { useNotificationStats } from "./useNotificationStats";
 // Hooks
-export { useNotifications } from './useNotifications';
-export { useNotification } from './useNotification';
-export { useNotificationStats } from './useNotificationStats';
+export { useNotifications } from "./useNotifications";

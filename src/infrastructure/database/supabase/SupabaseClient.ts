@@ -10,8 +10,8 @@
  * ```
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { env } from '../../config/EnvValidator';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { env } from "../../config/EnvValidator";
 
 /**
  * Check if Supabase is properly configured
@@ -48,7 +48,10 @@ export const supabase = (() => {
  */
 export const supabaseAdmin = (() => {
   if (!_supabaseAdmin && isSupabaseAdminConfigured()) {
-    _supabaseAdmin = createClient(env.SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE_KEY!);
+    _supabaseAdmin = createClient(
+      env.SUPABASE_URL!,
+      env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
   }
   return _supabaseAdmin!;
 })();

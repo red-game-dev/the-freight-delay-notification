@@ -3,11 +3,11 @@
  * React Query hook for fetching a single notification
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { getNotification } from './getNotification';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { getNotification } from "./getNotification";
 
 export function useNotification(id: string) {
   return useQuery({

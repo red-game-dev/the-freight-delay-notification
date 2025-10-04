@@ -4,10 +4,10 @@
  * Contains PDF workflow logic for delay threshold checking
  */
 
-import { Entity } from '../../shared/Entity';
-import { DeliveryStatus } from '../value-objects/DeliveryStatus';
-import type { Coordinates } from '../value-objects/Coordinates';
-import { DomainError } from '../../../base/errors/BaseError';
+import { DomainError } from "../../../base/errors/BaseError";
+import { Entity } from "../../shared/Entity";
+import type { Coordinates } from "../value-objects/Coordinates";
+import { DeliveryStatus } from "../value-objects/DeliveryStatus";
 
 interface DeliveryProps {
   trackingNumber: string;
@@ -28,10 +28,10 @@ export class Delivery extends Entity<DeliveryProps> {
    * Create a new Delivery entity
    */
   static create(
-    props: Omit<DeliveryProps, 'createdAt' | 'updatedAt' | 'metadata'> & {
+    props: Omit<DeliveryProps, "createdAt" | "updatedAt" | "metadata"> & {
       metadata?: Record<string, any>;
     },
-    id: string
+    id: string,
   ): Delivery {
     const now = new Date();
     return new Delivery(
@@ -41,7 +41,7 @@ export class Delivery extends Entity<DeliveryProps> {
         createdAt: now,
         updatedAt: now,
       },
-      id
+      id,
     );
   }
 
@@ -120,7 +120,7 @@ export class Delivery extends Entity<DeliveryProps> {
           deliveryId: this.id,
           currentStatus: this.props.status.value,
           trackingNumber: this.props.trackingNumber,
-        }
+        },
       );
     }
 
@@ -143,7 +143,7 @@ export class Delivery extends Entity<DeliveryProps> {
     if (!this.props.status.canTransitionTo(DeliveryStatus.delivered())) {
       throw new DomainError(
         `Cannot mark delivery as delivered. Current status: ${this.props.status.value}`,
-        { deliveryId: this.id, currentStatus: this.props.status.value }
+        { deliveryId: this.id, currentStatus: this.props.status.value },
       );
     }
 
@@ -159,7 +159,7 @@ export class Delivery extends Entity<DeliveryProps> {
     if (!this.props.status.canTransitionTo(DeliveryStatus.cancelled())) {
       throw new DomainError(
         `Cannot cancel delivery. Current status: ${this.props.status.value}`,
-        { deliveryId: this.id, currentStatus: this.props.status.value }
+        { deliveryId: this.id, currentStatus: this.props.status.value },
       );
     }
 
@@ -178,7 +178,9 @@ export class Delivery extends Entity<DeliveryProps> {
    * Check if delivery is overdue
    */
   public isOverdue(currentTime: Date = new Date()): boolean {
-    return currentTime > this.props.scheduledDelivery && !this.props.actualDelivery;
+    return (
+      currentTime > this.props.scheduledDelivery && !this.props.actualDelivery
+    );
   }
 
   /**

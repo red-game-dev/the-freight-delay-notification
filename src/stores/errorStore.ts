@@ -9,9 +9,9 @@
  * - Supports error deduplication and batching
  */
 
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { generateShortId } from '@/core/utils/idUtils';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { generateShortId } from "@/core/utils/idUtils";
 
 // Type for errors that may have additional properties
 interface UnknownError extends Error {
@@ -26,7 +26,7 @@ export interface AppError {
   code?: string;
   timestamp: number;
   source?: string; // Which API call/component triggered it
-  severity: 'error' | 'warning' | 'critical';
+  severity: "error" | "warning" | "critical";
   metadata?: Record<string, unknown>;
   dismissed?: boolean;
 }
@@ -37,7 +37,7 @@ interface ErrorStore {
   lastError: AppError | null;
 
   // Actions
-  addError: (error: Omit<AppError, 'id' | 'timestamp'>) => void;
+  addError: (error: Omit<AppError, "id" | "timestamp">) => void;
   dismissError: (id: string) => void;
   clearErrors: () => void;
   clearDismissed: () => void;
@@ -68,7 +68,7 @@ export const useErrorStore = create<ErrorStore>()(
             (e) =>
               e.message === newError.message &&
               !e.dismissed &&
-              Date.now() - e.timestamp < 5000
+              Date.now() - e.timestamp < 5000,
           );
 
           if (isDuplicate) {
@@ -86,7 +86,7 @@ export const useErrorStore = create<ErrorStore>()(
       dismissError: (id) => {
         set((state) => ({
           errors: state.errors.map((e) =>
-            e.id === id ? { ...e, dismissed: true } : e
+            e.id === id ? { ...e, dismissed: true } : e,
           ),
         }));
       },
@@ -116,9 +116,9 @@ export const useErrorStore = create<ErrorStore>()(
       },
     }),
     {
-      name: 'freight-delay-error-store',
-    }
-  )
+      name: "freight-delay-error-store",
+    },
+  ),
 );
 
 /**
@@ -127,12 +127,12 @@ export const useErrorStore = create<ErrorStore>()(
 export function createErrorFromException(
   error: Error,
   source?: string,
-  severity: AppError['severity'] = 'error'
-): Omit<AppError, 'id' | 'timestamp'> {
+  severity: AppError["severity"] = "error",
+): Omit<AppError, "id" | "timestamp"> {
   const unknownError = error as UnknownError;
 
   return {
-    message: error.message || 'An unexpected error occurred',
+    message: error.message || "An unexpected error occurred",
     code: unknownError.code || unknownError.statusCode?.toString(),
     source,
     severity,

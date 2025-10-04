@@ -3,7 +3,7 @@
  * Centralized timeout and retry policies for workflow activities
  */
 
-import type { ActivityOptions } from '@temporalio/workflow';
+import type { ActivityOptions } from "@temporalio/workflow";
 
 /**
  * Fast activities configuration
@@ -12,12 +12,12 @@ import type { ActivityOptions } from '@temporalio/workflow';
  * - Moderate retries
  */
 export const FAST_ACTIVITY_CONFIG: ActivityOptions = {
-  startToCloseTimeout: '2 minutes',
+  startToCloseTimeout: "2 minutes",
   retry: {
-    initialInterval: '5s',
+    initialInterval: "5s",
     backoffCoefficient: 2,
     maximumAttempts: 3,
-    maximumInterval: '1 minute',
+    maximumInterval: "1 minute",
   },
 };
 
@@ -28,12 +28,12 @@ export const FAST_ACTIVITY_CONFIG: ActivityOptions = {
  * - More retries for transient failures
  */
 export const DATABASE_ACTIVITY_CONFIG: ActivityOptions = {
-  startToCloseTimeout: '5 minutes',
+  startToCloseTimeout: "5 minutes",
   retry: {
-    initialInterval: '10s',
+    initialInterval: "10s",
     backoffCoefficient: 2,
     maximumAttempts: 5,
-    maximumInterval: '2 minutes',
+    maximumInterval: "2 minutes",
   },
 };
 
@@ -44,11 +44,11 @@ export const DATABASE_ACTIVITY_CONFIG: ActivityOptions = {
  * - Few retries
  */
 export const SHORT_ACTIVITY_CONFIG: ActivityOptions = {
-  startToCloseTimeout: '30 seconds',
+  startToCloseTimeout: "30 seconds",
   retry: {
-    initialInterval: '3s',
+    initialInterval: "3s",
     backoffCoefficient: 2,
     maximumAttempts: 2,
-    maximumInterval: '30s',
+    maximumInterval: "30s",
   },
 };

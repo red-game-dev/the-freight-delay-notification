@@ -3,7 +3,7 @@
  * Reusable utilities for traffic condition handling and data transformation
  */
 
-import type { TrafficSnapshot } from '@/core/infrastructure/http/services/traffic/queries/listTrafficSnapshots';
+import type { TrafficSnapshot } from "@/core/infrastructure/http/services/traffic/queries/listTrafficSnapshots";
 
 /**
  * Traffic condition configuration
@@ -11,28 +11,28 @@ import type { TrafficSnapshot } from '@/core/infrastructure/http/services/traffi
  */
 export const TRAFFIC_CONFIG = {
   light: {
-    label: 'Light',
-    variant: 'success' as const,
-    color: 'text-green-600',
-    hexColor: '#22c55e',
+    label: "Light",
+    variant: "success" as const,
+    color: "text-green-600",
+    hexColor: "#22c55e",
   },
   moderate: {
-    label: 'Moderate',
-    variant: 'warning' as const,
-    color: 'text-yellow-600',
-    hexColor: '#eab308',
+    label: "Moderate",
+    variant: "warning" as const,
+    color: "text-yellow-600",
+    hexColor: "#eab308",
   },
   heavy: {
-    label: 'Heavy',
-    variant: 'error' as const,
-    color: 'text-orange-600',
-    hexColor: '#f97316',
+    label: "Heavy",
+    variant: "error" as const,
+    color: "text-orange-600",
+    hexColor: "#f97316",
   },
   severe: {
-    label: 'Severe',
-    variant: 'error' as const,
-    color: 'text-red-600',
-    hexColor: '#ef4444',
+    label: "Severe",
+    variant: "error" as const,
+    color: "text-red-600",
+    hexColor: "#ef4444",
   },
 } as const;
 
@@ -40,10 +40,10 @@ export const TRAFFIC_CONFIG = {
  * Severity color mapping for incident markers
  */
 export const SEVERITY_COLORS = {
-  minor: '#eab308',    // yellow
-  moderate: '#f97316', // orange
-  major: '#ef4444',    // red
-  severe: '#dc2626',   // dark red
+  minor: "#eab308", // yellow
+  moderate: "#f97316", // orange
+  major: "#ef4444", // red
+  severe: "#dc2626", // dark red
 } as const;
 
 export type TrafficCondition = keyof typeof TRAFFIC_CONFIG;
@@ -87,7 +87,7 @@ export interface EnrichedSnapshot {
   affected_area: string | null;
   incident_type: string | null;
   snapshot_at: string;
-  config: typeof TRAFFIC_CONFIG[TrafficCondition];
+  config: (typeof TRAFFIC_CONFIG)[TrafficCondition];
   formatted_incident_type: string | null;
 }
 
@@ -100,13 +100,13 @@ export function enrichSnapshot(snapshot: TrafficSnapshot): EnrichedSnapshot {
     traffic_condition: snapshot.traffic_condition,
     delay_minutes: snapshot.delay_minutes,
     description: snapshot.description || null,
-    severity: snapshot.severity || 'minor',
+    severity: snapshot.severity || "minor",
     affected_area: snapshot.affected_area || null,
     incident_type: snapshot.incident_type || null,
     snapshot_at: snapshot.snapshot_at,
     config,
     formatted_incident_type: snapshot.incident_type
-      ? snapshot.incident_type.replace('_', ' ')
+      ? snapshot.incident_type.replace("_", " ")
       : null,
   };
 }
@@ -141,9 +141,10 @@ export interface TrafficCounts {
 export function countByCondition(snapshots: TrafficSnapshot[]): TrafficCounts {
   return {
     all: snapshots.length,
-    light: snapshots.filter(s => s.traffic_condition === 'light').length,
-    moderate: snapshots.filter(s => s.traffic_condition === 'moderate').length,
-    heavy: snapshots.filter(s => s.traffic_condition === 'heavy').length,
-    severe: snapshots.filter(s => s.traffic_condition === 'severe').length,
+    light: snapshots.filter((s) => s.traffic_condition === "light").length,
+    moderate: snapshots.filter((s) => s.traffic_condition === "moderate")
+      .length,
+    heavy: snapshots.filter((s) => s.traffic_condition === "heavy").length,
+    severe: snapshots.filter((s) => s.traffic_condition === "severe").length,
   };
 }

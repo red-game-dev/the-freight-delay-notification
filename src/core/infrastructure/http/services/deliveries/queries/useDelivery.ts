@@ -3,11 +3,11 @@
  * React Query hook for fetching a single delivery
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { getDelivery } from './getDelivery';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { getDelivery } from "./getDelivery";
 
 export function useDelivery(id: string) {
   return useQuery({

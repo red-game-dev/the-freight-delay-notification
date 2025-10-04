@@ -6,4 +6,10 @@
 /**
  * Delivery status values
  */
-export type DeliveryStatus = 'pending' | 'in_transit' | 'delayed' | 'delivered' | 'cancelled' | 'failed';
+export type DeliveryStatus =
+  | "pending"
+  | "in_transit"
+  | "delayed"
+  | "delivered"
+  | "cancelled"
+  | "failed";

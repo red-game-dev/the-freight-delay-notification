@@ -2,54 +2,54 @@
  * Sidebar Component for Dashboard Navigation
  */
 
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
-  Package,
   Activity,
   Bell,
-  Workflow,
   Home,
-  Settings
-} from 'lucide-react';
-import { ROUTES } from '@/core/config/constants/app.constants';
+  Package,
+  Settings,
+  Workflow,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import * as React from "react";
+import { ROUTES } from "@/core/config/constants/app.constants";
 
 const navigation = [
   {
-    name: 'Home',
+    name: "Home",
     href: ROUTES.HOME,
     icon: Home,
   },
   {
-    name: 'Deliveries',
+    name: "Deliveries",
     href: ROUTES.DELIVERIES,
     icon: Package,
   },
   {
-    name: 'Monitoring',
+    name: "Monitoring",
     href: ROUTES.MONITORING,
     icon: Activity,
   },
   {
-    name: 'Notifications',
+    name: "Notifications",
     href: ROUTES.NOTIFICATIONS,
     icon: Bell,
   },
   {
-    name: 'Workflows',
+    name: "Workflows",
     href: ROUTES.WORKFLOWS,
     icon: Workflow,
   },
   {
-    name: 'Settings',
-    href: '/settings',
+    name: "Settings",
+    href: "/settings",
     icon: Settings,
   },
   {
-    name: 'How to use',
+    name: "How to use",
     href: ROUTES.HOW_TO_USE,
     icon: Workflow,
   },
@@ -70,8 +70,8 @@ export function Sidebar() {
                   href={item.href}
                   className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors ${
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-primary hover:bg-muted'
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-primary hover:bg-muted"
                   }`}
                 >
                   <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />

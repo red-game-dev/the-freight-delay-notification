@@ -3,13 +3,17 @@
  * React Query mutation hook for creating customers
  */
 
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { createCustomer } from './createCustomer';
-import { useNotificationStore, useErrorStore, createErrorFromException } from '@/stores';
-import type { CreateCustomerInput } from '../types';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createErrorFromException,
+  useErrorStore,
+  useNotificationStore,
+} from "@/stores";
+import { queryKeys } from "../../../queryKeys";
+import type { CreateCustomerInput } from "../types";
+import { createCustomer } from "./createCustomer";
 
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
@@ -18,12 +22,12 @@ export function useCreateCustomer() {
     mutationFn: (data: CreateCustomerInput) => createCustomer(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
-      useNotificationStore.getState().success('Customer created successfully');
+      useNotificationStore.getState().success("Customer created successfully");
     },
     onError: (err: Error) => {
-      useErrorStore.getState().addError(
-        createErrorFromException(err, 'useCreateCustomer')
-      );
+      useErrorStore
+        .getState()
+        .addError(createErrorFromException(err, "useCreateCustomer"));
     },
   });
 }

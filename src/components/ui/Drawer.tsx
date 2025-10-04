@@ -3,17 +3,24 @@
  * Based on the-game-library implementation with proper z-index and animations
  */
 
-'use client';
+"use client";
 
-import { MouseEvent, ReactNode, useCallback, useEffect, useRef, KeyboardEvent } from 'react';
-import { X } from 'lucide-react';
-import { Button } from './Button';
+import { X } from "lucide-react";
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import { Button } from "./Button";
 
 export interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
-  side?: 'left' | 'right';
+  side?: "left" | "right";
   title?: string;
   showOverlay?: boolean;
   closeOnOverlay?: boolean;
@@ -25,7 +32,7 @@ export function Drawer({
   isOpen,
   onClose,
   children,
-  side = 'left',
+  side = "left",
   title,
   showOverlay = true,
   closeOnOverlay = true,
@@ -38,11 +45,11 @@ export function Drawer({
   // Handle ESC key press
   const handleEscKey = useCallback(
     (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape' && closeOnEsc) {
+      if (event.key === "Escape" && closeOnEsc) {
         onClose();
       }
     },
-    [closeOnEsc, onClose]
+    [closeOnEsc, onClose],
   );
 
   // Handle overlay click
@@ -53,7 +60,7 @@ export function Drawer({
         onClose();
       }
     },
-    [closeOnOverlay, onClose]
+    [closeOnOverlay, onClose],
   );
 
   // Lock body scroll when open
@@ -61,16 +68,16 @@ export function Drawer({
     if (isOpen) {
       const scrollbarWidth =
         window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     } else {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
     }
 
     return () => {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
     };
   }, [isOpen]);
 
@@ -83,7 +90,7 @@ export function Drawer({
 
     // Add ESC key listener
     if (closeOnEsc) {
-      document.addEventListener('keydown', handleEscKey);
+      document.addEventListener("keydown", handleEscKey);
     }
 
     // Focus drawer on open
@@ -92,7 +99,7 @@ export function Drawer({
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscKey);
+      document.removeEventListener("keydown", handleEscKey);
 
       // Restore focus to previous element
       if (previousActiveElement.current) {
@@ -103,10 +110,10 @@ export function Drawer({
 
   // Trap focus within drawer
   const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'Tab' || !drawerRef.current) return;
+    if (event.key !== "Tab" || !drawerRef.current) return;
 
     const focusableElements = drawerRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
 
     const firstElement = focusableElements[0] as HTMLElement;
@@ -126,18 +133,18 @@ export function Drawer({
   if (!isOpen) return null;
 
   const sideStyles = {
-    left: 'left-0',
-    right: 'right-0',
+    left: "left-0",
+    right: "right-0",
   };
 
   const borderStyles = {
-    left: 'border-r',
-    right: 'border-l',
+    left: "border-r",
+    right: "border-l",
   };
 
   const animationClass = {
-    left: 'drawer-slide-left',
-    right: 'drawer-slide-right',
+    left: "drawer-slide-left",
+    right: "drawer-slide-right",
   };
 
   return (
@@ -162,7 +169,7 @@ export function Drawer({
         `}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? 'drawer-title' : undefined}
+        aria-labelledby={title ? "drawer-title" : undefined}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
       >

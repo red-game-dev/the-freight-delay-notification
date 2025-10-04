@@ -3,24 +3,37 @@
  * Top navigation bar with logo, theme toggle, and mobile menu
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Package, Menu, Home, TruckIcon, Activity, Bell, Workflow, BookOpen } from 'lucide-react';
-import { ThemeToggle } from '../ThemeToggle';
-import { Drawer } from '../ui/Drawer';
-import { Button } from '../ui/Button';
-import { APP_NAME, APP_SHORT_NAME, ROUTES } from '@/core/config/constants/app.constants';
+import {
+  Activity,
+  Bell,
+  BookOpen,
+  Home,
+  Menu,
+  Package,
+  TruckIcon,
+  Workflow,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import {
+  APP_NAME,
+  APP_SHORT_NAME,
+  ROUTES,
+} from "@/core/config/constants/app.constants";
+import { ThemeToggle } from "../ThemeToggle";
+import { Button } from "../ui/Button";
+import { Drawer } from "../ui/Drawer";
 
 const navigation = [
-  { name: 'Home', href: ROUTES.HOME, icon: Home },
-  { name: 'Deliveries', href: ROUTES.DELIVERIES, icon: TruckIcon },
-  { name: 'Monitoring', href: ROUTES.MONITORING, icon: Activity },
-  { name: 'Notifications', href: ROUTES.NOTIFICATIONS, icon: Bell },
-  { name: 'Workflows', href: ROUTES.WORKFLOWS, icon: Workflow },
-  { name: 'How to Use', href: ROUTES.HOW_TO_USE, icon: BookOpen },
+  { name: "Home", href: ROUTES.HOME, icon: Home },
+  { name: "Deliveries", href: ROUTES.DELIVERIES, icon: TruckIcon },
+  { name: "Monitoring", href: ROUTES.MONITORING, icon: Activity },
+  { name: "Notifications", href: ROUTES.NOTIFICATIONS, icon: Bell },
+  { name: "Workflows", href: ROUTES.WORKFLOWS, icon: Workflow },
+  { name: "How to Use", href: ROUTES.HOW_TO_USE, icon: BookOpen },
 ];
 
 export function Header() {
@@ -38,7 +51,9 @@ export function Header() {
               <span className="font-bold text-sm sm:text-base hidden sm:inline">
                 {APP_NAME}
               </span>
-              <span className="font-bold text-sm sm:inline md:hidden">{APP_SHORT_NAME}</span>
+              <span className="font-bold text-sm sm:inline md:hidden">
+                {APP_SHORT_NAME}
+              </span>
             </Link>
           </div>
 
@@ -82,8 +97,8 @@ export function Header() {
                 onClick={() => setIsDrawerOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
                 }`}
               >
                 <Icon className="h-5 w-5" />

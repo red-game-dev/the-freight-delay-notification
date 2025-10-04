@@ -3,28 +3,28 @@
  * Centralized configuration for workflow operations
  */
 
-import type { LucideIcon } from 'lucide-react';
-import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import type { BadgeVariant } from './statusUtils';
+import type { LucideIcon } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
+import type { BadgeVariant } from "./statusUtils";
 
 /**
  * Workflow types supported by the system
  */
 export enum WorkflowType {
-  DELAY_NOTIFICATION = 'delay-notification',
-  RECURRING_CHECK = 'recurring-check',
-  ONE_TIME_CHECK = 'one-time-check',
-  MANUAL_CHECK = 'manual-check',
+  DELAY_NOTIFICATION = "delay-notification",
+  RECURRING_CHECK = "recurring-check",
+  ONE_TIME_CHECK = "one-time-check",
+  MANUAL_CHECK = "manual-check",
 }
 
 /**
  * Workflow ID prefixes for each workflow type
  */
 const WORKFLOW_PREFIXES: Record<WorkflowType, string> = {
-  [WorkflowType.DELAY_NOTIFICATION]: 'delay-notification',
-  [WorkflowType.RECURRING_CHECK]: 'recurring-check',
-  [WorkflowType.ONE_TIME_CHECK]: 'one-time-check',
-  [WorkflowType.MANUAL_CHECK]: 'manual-check',
+  [WorkflowType.DELAY_NOTIFICATION]: "delay-notification",
+  [WorkflowType.RECURRING_CHECK]: "recurring-check",
+  [WorkflowType.ONE_TIME_CHECK]: "one-time-check",
+  [WorkflowType.MANUAL_CHECK]: "manual-check",
 };
 
 /**
@@ -42,34 +42,34 @@ export interface ParsedWorkflowId {
  */
 export const WORKFLOW_STATUS_CONFIG = {
   running: {
-    label: 'Running',
-    variant: 'info' as BadgeVariant,
+    label: "Running",
+    variant: "info" as BadgeVariant,
     icon: Clock,
-    color: 'text-blue-600',
+    color: "text-blue-600",
   },
   completed: {
-    label: 'Completed',
-    variant: 'success' as BadgeVariant,
+    label: "Completed",
+    variant: "success" as BadgeVariant,
     icon: CheckCircle,
-    color: 'text-green-600',
+    color: "text-green-600",
   },
   failed: {
-    label: 'Failed',
-    variant: 'error' as BadgeVariant,
+    label: "Failed",
+    variant: "error" as BadgeVariant,
     icon: XCircle,
-    color: 'text-red-600',
+    color: "text-red-600",
   },
   cancelled: {
-    label: 'Cancelled',
-    variant: 'default' as BadgeVariant,
+    label: "Cancelled",
+    variant: "default" as BadgeVariant,
     icon: XCircle,
-    color: 'text-gray-600',
+    color: "text-gray-600",
   },
   timed_out: {
-    label: 'Timed Out',
-    variant: 'warning' as BadgeVariant,
+    label: "Timed Out",
+    variant: "warning" as BadgeVariant,
     icon: AlertCircle,
-    color: 'text-yellow-600',
+    color: "text-yellow-600",
   },
 } as const;
 
@@ -101,7 +101,7 @@ export function createWorkflowId(
   type: WorkflowType,
   deliveryId: string,
   includeTimestamp: boolean = true,
-  checkNumber?: number
+  checkNumber?: number,
 ): string {
   const prefix = WORKFLOW_PREFIXES[type];
   let id = `${prefix}-${deliveryId}`;
@@ -130,18 +130,21 @@ export function parseWorkflowId(workflowId: string): ParsedWorkflowId | null {
   // Try to match pattern: {prefix}-{deliveryId}-{timestamp?}
   for (const [type, prefix] of Object.entries(WORKFLOW_PREFIXES)) {
     if (workflowId.startsWith(`${prefix}-`)) {
-      const parts = workflowId.substring(prefix.length + 1).split('-');
+      const parts = workflowId.substring(prefix.length + 1).split("-");
 
       if (parts.length === 0) return null;
 
       // Last part might be timestamp if it's a number
       const lastPart = parts[parts.length - 1];
-      const timestamp = /^\d+$/.test(lastPart) ? parseInt(lastPart, 10) : undefined;
+      const timestamp = /^\d+$/.test(lastPart)
+        ? parseInt(lastPart, 10)
+        : undefined;
 
       // Delivery ID is everything except the timestamp (if present)
-      const deliveryId = timestamp !== undefined
-        ? parts.slice(0, -1).join('-')
-        : parts.join('-');
+      const deliveryId =
+        timestamp !== undefined
+          ? parts.slice(0, -1).join("-")
+          : parts.join("-");
 
       if (!deliveryId) return null;
 
@@ -192,7 +195,10 @@ export function isValidWorkflowId(workflowId: string): boolean {
  * @param type - The workflow type to compare against
  * @returns True if the workflow ID matches the type
  */
-export function isWorkflowType(workflowId: string, type: WorkflowType): boolean {
+export function isWorkflowType(
+  workflowId: string,
+  type: WorkflowType,
+): boolean {
   const parsed = parseWorkflowId(workflowId);
   return parsed?.type === type;
 }
@@ -205,14 +211,14 @@ export function isWorkflowType(workflowId: string, type: WorkflowType): boolean 
 export function getWorkflowTypeName(type: WorkflowType): string {
   switch (type) {
     case WorkflowType.DELAY_NOTIFICATION:
-      return 'Delay Notification';
+      return "Delay Notification";
     case WorkflowType.RECURRING_CHECK:
-      return 'Recurring Check';
+      return "Recurring Check";
     case WorkflowType.ONE_TIME_CHECK:
-      return 'One-Time Check';
+      return "One-Time Check";
     case WorkflowType.MANUAL_CHECK:
-      return 'Manual Check';
+      return "Manual Check";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 }

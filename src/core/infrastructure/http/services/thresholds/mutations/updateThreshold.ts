@@ -3,14 +3,17 @@
  * PATCH /api/thresholds/:id
  */
 
-import { fetchJson } from '../../../client/fetchJson';
-import { env } from '@/infrastructure/config/EnvValidator';
-import type { Threshold, UpdateThresholdInput } from '../types';
+import { env } from "@/infrastructure/config/EnvValidator";
+import { fetchJson } from "../../../client/fetchJson";
+import type { Threshold, UpdateThresholdInput } from "../types";
 
-export async function updateThreshold(id: string, data: UpdateThresholdInput): Promise<Threshold> {
+export async function updateThreshold(
+  id: string,
+  data: UpdateThresholdInput,
+): Promise<Threshold> {
   const url = `${env.NEXT_PUBLIC_API_URL}/api/thresholds/${id}`;
   return fetchJson<Threshold>(url, {
-    method: 'PATCH',
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 }

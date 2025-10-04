@@ -3,11 +3,11 @@
  * Handler for routes with dynamic parameters (e.g., [id]/route.ts)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { Result } from '@/core/base/utils/Result';
-import type { ApiResponse, ApiHandlerOptions } from '../types';
-import { handleResult } from './handleResult';
-import { createErrorResponse } from './createErrorResponse';
+import type { NextRequest, NextResponse } from "next/server";
+import type { Result } from "@/core/base/utils/Result";
+import type { ApiHandlerOptions, ApiResponse } from "../types";
+import { createErrorResponse } from "./createErrorResponse";
+import { handleResult } from "./handleResult";
 
 /**
  * Create API handler for route with params (e.g., [id]/route.ts)
@@ -21,17 +21,22 @@ import { createErrorResponse } from './createErrorResponse';
 export function createParamApiHandler<T = any>(
   handler: (
     request: NextRequest,
-    context: { params: Record<string, string> }
+    context: { params: Record<string, string> },
   ) => Promise<Result<T>>,
-  options?: ApiHandlerOptions
+  options?: ApiHandlerOptions,
 ) {
   return async (
     request: NextRequest,
-    context: { params: Promise<Record<string, string>> | Record<string, string> }
+    context: {
+      params: Promise<Record<string, string>> | Record<string, string>;
+    },
   ): Promise<NextResponse<ApiResponse<T>>> => {
     try {
       // Handle Next.js 15's async params
-      const params = context.params instanceof Promise ? await context.params : context.params;
+      const params =
+        context.params instanceof Promise
+          ? await context.params
+          : context.params;
       const result = await handler(request, { params });
       return handleResult(result, options);
     } catch (error) {

@@ -4,11 +4,11 @@
  */
 
 // Fetchers
-export { createDelivery } from './createDelivery';
-export { updateDelivery } from './updateDelivery';
-export { deleteDelivery } from './deleteDelivery';
+export { createDelivery } from "./createDelivery";
+export { deleteDelivery } from "./deleteDelivery";
+export { updateDelivery } from "./updateDelivery";
 
 // Hooks
-export { useCreateDelivery } from './useCreateDelivery';
-export { useUpdateDelivery } from './useUpdateDelivery';
-export { useDeleteDelivery } from './useDeleteDelivery';
+export { useCreateDelivery } from "./useCreateDelivery";
+export { useDeleteDelivery } from "./useDeleteDelivery";
+export { useUpdateDelivery } from "./useUpdateDelivery";

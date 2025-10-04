@@ -3,11 +3,11 @@
  * React Query hook for fetching workflow statistics
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { getWorkflowStats } from './getWorkflowStats';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { getWorkflowStats } from "./getWorkflowStats";
 
 export function useWorkflowStats() {
   return useQuery({

@@ -4,7 +4,7 @@
  */
 
 // Fetchers
-export { getWorkflowActivities } from './getWorkflowActivities';
+export { getWorkflowActivities } from "./getWorkflowActivities";
 
 // Hooks
-export { useWorkflowActivities } from './useWorkflowActivities';
+export { useWorkflowActivities } from "./useWorkflowActivities";

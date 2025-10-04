@@ -3,17 +3,13 @@
  * Provides consistent header, sidebar, and footer for all dashboard pages
  */
 
-import { Suspense, type ReactNode } from 'react';
-import { Header } from '@/components/shared/Header';
-import { Sidebar } from '@/components/shared/Sidebar';
-import { Footer } from '@/components/shared/Footer';
-import { SkeletonWorkflow } from '@/components/ui/Skeleton';
+import { type ReactNode, Suspense } from "react";
+import { Footer } from "@/components/shared/Footer";
+import { Header } from "@/components/shared/Header";
+import { Sidebar } from "@/components/shared/Sidebar";
+import { SkeletonWorkflow } from "@/components/ui/Skeleton";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />

@@ -3,7 +3,7 @@
  * Creates a Map for fast route lookups by ID
  */
 
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
 /**
  * Convert routes array to a Map for O(1) lookup performance
@@ -12,7 +12,7 @@ import { useMemo } from 'react';
 export function useRouteMap<T extends { id: string }>(routes: T[] | undefined) {
   return useMemo(() => {
     if (!routes) return new Map<string, T>();
-    return new Map(routes.map(route => [route.id, route]));
+    return new Map(routes.map((route) => [route.id, route]));
   }, [routes]);
 }
 
@@ -21,7 +21,7 @@ export function useRouteMap<T extends { id: string }>(routes: T[] | undefined) {
  */
 export function findRoute<T extends { id: string }>(
   routeMap: Map<string, T>,
-  routeId: string
+  routeId: string,
 ): T | undefined {
   return routeMap.get(routeId);
 }

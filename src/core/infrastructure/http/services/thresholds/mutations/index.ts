@@ -4,11 +4,11 @@
  */
 
 // Fetchers
-export { createThreshold } from './createThreshold';
-export { updateThreshold } from './updateThreshold';
-export { deleteThreshold } from './deleteThreshold';
+export { createThreshold } from "./createThreshold";
+export { deleteThreshold } from "./deleteThreshold";
+export { updateThreshold } from "./updateThreshold";
 
 // Hooks
-export { useCreateThreshold } from './useCreateThreshold';
-export { useUpdateThreshold } from './useUpdateThreshold';
-export { useDeleteThreshold } from './useDeleteThreshold';
+export { useCreateThreshold } from "./useCreateThreshold";
+export { useDeleteThreshold } from "./useDeleteThreshold";
+export { useUpdateThreshold } from "./useUpdateThreshold";

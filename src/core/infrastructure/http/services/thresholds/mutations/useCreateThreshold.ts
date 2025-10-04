@@ -3,12 +3,16 @@
  * React Query mutation hook for creating a threshold
  */
 
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { useNotificationStore, useErrorStore, createErrorFromException } from '@/stores';
-import { createThreshold } from './createThreshold';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createErrorFromException,
+  useErrorStore,
+  useNotificationStore,
+} from "@/stores";
+import { queryKeys } from "../../../queryKeys";
+import { createThreshold } from "./createThreshold";
 
 export function useCreateThreshold() {
   const queryClient = useQueryClient();
@@ -17,12 +21,12 @@ export function useCreateThreshold() {
     mutationFn: createThreshold,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.thresholds.all });
-      useNotificationStore.getState().success('Threshold created successfully');
+      useNotificationStore.getState().success("Threshold created successfully");
     },
     onError: (err: Error) => {
-      useErrorStore.getState().addError(
-        createErrorFromException(err, 'useCreateThreshold')
-      );
+      useErrorStore
+        .getState()
+        .addError(createErrorFromException(err, "useCreateThreshold"));
     },
   });
 }

@@ -3,19 +3,19 @@
  * Real-time polling for workflow status updates
  */
 
-'use client';
+"use client";
 
-import { FC, useEffect, useState, useRef } from 'react';
-import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
-import { Alert } from '@/components/ui/Alert';
-import { CompactTimeline } from '@/components/ui/Timeline';
-import { CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
-import { useWorkflowStatus } from '@/core/infrastructure/http/services/workflows';
-import { useWorkflowActivities } from '@/core/infrastructure/http/services/activities';
-import { WorkflowDetails } from './WorkflowDetails';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/core/infrastructure/http/queryKeys';
+import { useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
+import { type FC, useEffect, useRef, useState } from "react";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { CompactTimeline } from "@/components/ui/Timeline";
+import { queryKeys } from "@/core/infrastructure/http/queryKeys";
+import { useWorkflowActivities } from "@/core/infrastructure/http/services/activities";
+import { useWorkflowStatus } from "@/core/infrastructure/http/services/workflows";
+import { WorkflowDetails } from "./WorkflowDetails";
 
 interface WorkflowStatusPollingProps {
   workflowId: string;
@@ -29,7 +29,7 @@ interface WorkflowStatusPollingProps {
   trackingNumber?: string;
   /** Workflow settings from delivery */
   settings?: {
-    type: 'recurring' | 'one-time';
+    type: "recurring" | "one-time";
     check_interval_minutes?: number;
     max_checks?: number;
     checks_performed?: number;
@@ -43,34 +43,34 @@ interface WorkflowStatusPollingProps {
 
 const statusConfig = {
   running: {
-    label: 'Running',
-    variant: 'info' as const,
+    label: "Running",
+    variant: "info" as const,
     icon: Loader2,
-    description: 'Workflow is currently executing',
+    description: "Workflow is currently executing",
   },
   completed: {
-    label: 'Completed',
-    variant: 'success' as const,
+    label: "Completed",
+    variant: "success" as const,
     icon: CheckCircle2,
-    description: 'Workflow completed successfully',
+    description: "Workflow completed successfully",
   },
   failed: {
-    label: 'Failed',
-    variant: 'error' as const,
+    label: "Failed",
+    variant: "error" as const,
     icon: XCircle,
-    description: 'Workflow execution failed',
+    description: "Workflow execution failed",
   },
   cancelled: {
-    label: 'Cancelled',
-    variant: 'warning' as const,
+    label: "Cancelled",
+    variant: "warning" as const,
     icon: XCircle,
-    description: 'Workflow was cancelled',
+    description: "Workflow was cancelled",
   },
   timed_out: {
-    label: 'Timed Out',
-    variant: 'error' as const,
+    label: "Timed Out",
+    variant: "error" as const,
     icon: Clock,
-    description: 'Workflow exceeded time limit',
+    description: "Workflow exceeded time limit",
   },
 };
 
@@ -103,12 +103,15 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
   // Update terminal state and invalidate workflows list when status changes
   useEffect(() => {
     if (workflow) {
-      const terminalStates = ['completed', 'failed', 'cancelled', 'timed_out'];
+      const terminalStates = ["completed", "failed", "cancelled", "timed_out"];
       const isNowTerminal = terminalStates.includes(workflow.status);
       setIsTerminal(isNowTerminal);
 
       // Detect status change
-      if (previousStatusRef.current !== null && previousStatusRef.current !== workflow.status) {
+      if (
+        previousStatusRef.current !== null &&
+        previousStatusRef.current !== workflow.status
+      ) {
         // Status changed - invalidate workflows list to trigger refresh
         queryClient.invalidateQueries({ queryKey: queryKeys.workflows.list() });
         queryClient.invalidateQueries({ queryKey: queryKeys.workflows.all });
@@ -132,7 +135,9 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <h3 className="text-lg font-semibold">Loading workflow status...</h3>
+            <h3 className="text-lg font-semibold">
+              Loading workflow status...
+            </h3>
           </div>
         </div>
       </Card>
@@ -142,8 +147,12 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
   // Handle case where workflow doesn't exist yet (404 or no data)
   if (error || !workflow) {
     // Check if it's a 404 error (workflow doesn't exist yet)
-    const errorMessage = error instanceof Error ? error.message : String(error || '');
-    const isNotFound = (typeof errorMessage === 'string' && (errorMessage.includes('404') || errorMessage.includes('not found'))) || !workflow;
+    const errorMessage =
+      error instanceof Error ? error.message : String(error || "");
+    const isNotFound =
+      (typeof errorMessage === "string" &&
+        (errorMessage.includes("404") || errorMessage.includes("not found"))) ||
+      !workflow;
 
     if (isNotFound) {
       return (
@@ -151,7 +160,8 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
           <div className="p-6">
             <h2 className="text-xl font-bold mb-4">Workflow History</h2>
             <Alert variant="info">
-              No workflow has been started for this delivery yet. Click "Check Traffic & Notify" to start monitoring for delays.
+              No workflow has been started for this delivery yet. Click "Check
+              Traffic & Notify" to start monitoring for delays.
             </Alert>
           </div>
         </Card>
@@ -161,7 +171,7 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
     // For other errors, show error message
     return (
       <Alert variant="error">
-        Failed to load workflow status. {errorMessage || 'Please try again.'}
+        Failed to load workflow status. {errorMessage || "Please try again."}
       </Alert>
     );
   }
@@ -177,12 +187,14 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Icon
-                className={`h-5 w-5 ${workflow.status === 'running' ? 'animate-spin' : ''}`}
+                className={`h-5 w-5 ${workflow.status === "running" ? "animate-spin" : ""}`}
               />
               <h3 className="text-lg font-semibold">Workflow Status</h3>
               <Badge variant={config.variant}>{config.label}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{config.description}</p>
+            <p className="text-sm text-muted-foreground">
+              {config.description}
+            </p>
           </div>
         </div>
 
@@ -205,23 +217,33 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
         {/* Error/Info Message */}
         {workflow.error && (
           <Alert
-            variant={workflow.status === 'cancelled' ? 'warning' : 'error'}
-            title={workflow.status === 'cancelled' ? 'Workflow Stopped' : 'Workflow Error'}
+            variant={workflow.status === "cancelled" ? "warning" : "error"}
+            title={
+              workflow.status === "cancelled"
+                ? "Workflow Stopped"
+                : "Workflow Error"
+            }
             className="mb-6"
             details={
-              workflow.status === 'cancelled' ? (
+              workflow.status === "cancelled" ? (
                 <div>
                   <p className="font-medium mb-1">Reason:</p>
                   <p className="text-sm opacity-90">{workflow.error}</p>
                 </div>
-              ) : workflow.error.includes('Workflow code was updated') ? (
+              ) : workflow.error.includes("Workflow code was updated") ? (
                 <div>
                   <p className="font-medium mb-2">Error Details:</p>
                   <p className="text-sm opacity-90 mb-3">{workflow.error}</p>
                   <p className="font-medium mb-2">Action Required:</p>
                   <ol className="space-y-1 list-decimal list-inside ml-1 text-sm">
-                    <li>Click <strong>"Stop Recurring Checks"</strong> and enable <strong>"Force Cancel"</strong></li>
-                    <li>Then restart by clicking <strong>"Check Traffic & Notify"</strong></li>
+                    <li>
+                      Click <strong>"Stop Recurring Checks"</strong> and enable{" "}
+                      <strong>"Force Cancel"</strong>
+                    </li>
+                    <li>
+                      Then restart by clicking{" "}
+                      <strong>"Check Traffic & Notify"</strong>
+                    </li>
                   </ol>
                 </div>
               ) : (
@@ -231,18 +253,27 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
                 </div>
               )
             }
-            defaultExpanded={workflow.error.includes('Workflow code was updated')}
+            defaultExpanded={workflow.error.includes(
+              "Workflow code was updated",
+            )}
           >
-            {workflow.status === 'cancelled' ? (
-              <>To resume monitoring, click the <strong>"Check Traffic & Notify"</strong> button above to start a new workflow.</>
+            {workflow.status === "cancelled" ? (
+              <>
+                To resume monitoring, click the{" "}
+                <strong>"Check Traffic & Notify"</strong> button above to start
+                a new workflow.
+              </>
             ) : (
-              <>The workflow encountered an error and could not complete. Check the details below for more information.</>
+              <>
+                The workflow encountered an error and could not complete. Check
+                the details below for more information.
+              </>
             )}
           </Alert>
         )}
 
         {/* Real-time indicator */}
-        {workflow.status === 'running' && (
+        {workflow.status === "running" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
             <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
             <span>Live updates enabled</span>
@@ -257,8 +288,12 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
               steps={activities.map((activity) => ({
                 id: activity.id || activity.activity_type,
                 label: getActivityTitle(activity.activity_type),
-                status: activity.status === 'completed' ? 'completed' :
-                        activity.status === 'running' ? 'in_progress' : 'pending',
+                status:
+                  activity.status === "completed"
+                    ? "completed"
+                    : activity.status === "running"
+                      ? "in_progress"
+                      : "pending",
               }))}
             />
           </div>
@@ -270,10 +305,10 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
 
 function getActivityTitle(activityType: string): string {
   const titles: Record<string, string> = {
-    traffic_check: 'Traffic Check',
-    delay_evaluation: 'Delay Evaluation',
-    message_generation: 'Message Generation',
-    notification_delivery: 'Notification Delivery',
+    traffic_check: "Traffic Check",
+    delay_evaluation: "Delay Evaluation",
+    message_generation: "Message Generation",
+    notification_delivery: "Notification Delivery",
   };
   return titles[activityType] || activityType;
 }

@@ -8,19 +8,30 @@
  * Activities (activities.ts) can use logger since they're not replayed.
  */
 
-import { proxyActivities, defineSignal, defineQuery, setHandler, sleep, workflowInfo, patched } from '@temporalio/workflow';
-import type * as activities from './activities';
+import {
+  defineQuery,
+  defineSignal,
+  patched,
+  proxyActivities,
+  setHandler,
+  sleep,
+  workflowInfo,
+} from "@temporalio/workflow";
+import { getCurrentISOTimestamp } from "../core/utils/dateUtils";
+import { createWorkflowId, WorkflowType } from "../core/utils/workflowUtils";
+import {
+  DATABASE_ACTIVITY_CONFIG,
+  FAST_ACTIVITY_CONFIG,
+} from "../infrastructure/temporal/ActivityConfig";
+import type * as activities from "./activities";
 import type {
+  CancelNotificationSignal,
   DelayNotificationWorkflowInput,
   DelayNotificationWorkflowResult,
   RecurringCheckWorkflowInput,
-  CancelNotificationSignal,
   UpdateThresholdSignal,
   WorkflowStatusQuery,
-} from './types';
-import { getCurrentISOTimestamp } from '../core/utils/dateUtils';
-import { createWorkflowId, WorkflowType } from '../core/utils/workflowUtils';
-import { FAST_ACTIVITY_CONFIG, DATABASE_ACTIVITY_CONFIG } from '../infrastructure/temporal/ActivityConfig';
+} from "./types";
 
 // Fast activities (traffic, AI, notifications)
 const {
@@ -42,25 +53,30 @@ const {
 } = proxyActivities<typeof activities>(DATABASE_ACTIVITY_CONFIG);
 
 // Define signals for workflow control
-export const cancelNotificationSignal = defineSignal<[CancelNotificationSignal]>('cancelNotification');
-export const updateThresholdSignal = defineSignal<[UpdateThresholdSignal]>('updateThreshold');
+export const cancelNotificationSignal =
+  defineSignal<[CancelNotificationSignal]>("cancelNotification");
+export const updateThresholdSignal =
+  defineSignal<[UpdateThresholdSignal]>("updateThreshold");
 
 // Define query for workflow status
-export const workflowStatusQuery = defineQuery<WorkflowStatusQuery>('workflowStatus');
+export const workflowStatusQuery =
+  defineQuery<WorkflowStatusQuery>("workflowStatus");
 
 // Main workflow implementation
 export async function DelayNotificationWorkflow(
-  input: DelayNotificationWorkflowInput
+  input: DelayNotificationWorkflowInput,
 ): Promise<DelayNotificationWorkflowResult> {
-  console.log(`🚀 Starting Delay Notification Workflow for delivery ${input.deliveryId}`);
+  console.log(
+    `🚀 Starting Delay Notification Workflow for delivery ${input.deliveryId}`,
+  );
 
   // Get Temporal workflow info (includes runId)
   const wfInfo = workflowInfo();
 
   // Initialize workflow state
-  let currentStep: WorkflowStatusQuery['currentStep'] = 'traffic_check';
+  let currentStep: WorkflowStatusQuery["currentStep"] = "traffic_check";
   let canceled = false;
-  let cancelReason = '';
+  let cancelReason = "";
   let thresholdMinutes = input.thresholdMinutes || 30; // Default 30 minutes as per PDF
 
   const result: DelayNotificationWorkflowResult = {
@@ -100,7 +116,7 @@ export async function DelayNotificationWorkflow(
 
     if (!deliveryDetailsResult.success || !deliveryDetailsResult.delivery) {
       console.error(`❌ Failed to fetch delivery details`);
-      result.error = 'Failed to fetch delivery details';
+      result.error = "Failed to fetch delivery details";
       result.success = false;
       return result;
     }
@@ -109,8 +125,8 @@ export async function DelayNotificationWorkflow(
 
     // Step 1: Check Traffic Conditions
     if (!canceled) {
-      currentStep = 'traffic_check';
-      console.log('[Workflow] Step 1: Checking traffic conditions...');
+      currentStep = "traffic_check";
+      console.log("[Workflow] Step 1: Checking traffic conditions...");
 
       result.steps.trafficCheck = await checkTrafficConditions({
         origin: input.origin,
@@ -118,14 +134,17 @@ export async function DelayNotificationWorkflow(
         departureTime: input.scheduledTime,
       });
 
-      console.log(`[Workflow] Traffic check complete: ${result.steps.trafficCheck.delayMinutes} minutes delay detected`);
+      console.log(
+        `[Workflow] Traffic check complete: ${result.steps.trafficCheck.delayMinutes} minutes delay detected`,
+      );
 
       // Save traffic snapshot to database
       await saveTrafficSnapshot({
         routeId: input.routeId,
         trafficCondition: result.steps.trafficCheck.trafficCondition,
         delayMinutes: result.steps.trafficCheck.delayMinutes,
-        durationSeconds: result.steps.trafficCheck.estimatedDurationMinutes * 60,
+        durationSeconds:
+          result.steps.trafficCheck.estimatedDurationMinutes * 60,
         origin: input.origin,
         destination: input.destination,
       });
@@ -133,8 +152,8 @@ export async function DelayNotificationWorkflow(
 
     // Step 2: Evaluate Delay
     if (!canceled && result.steps.trafficCheck) {
-      currentStep = 'delay_evaluation';
-      console.log('[Workflow] Step 2: Evaluating delay against threshold...');
+      currentStep = "delay_evaluation";
+      console.log("[Workflow] Step 2: Evaluating delay against threshold...");
 
       result.steps.delayEvaluation = await evaluateDelay({
         delayMinutes: result.steps.trafficCheck.delayMinutes,
@@ -142,24 +161,28 @@ export async function DelayNotificationWorkflow(
         deliveryId: input.deliveryId,
       });
 
-      console.log(`[Workflow] Delay evaluation: ${result.steps.delayEvaluation.exceedsThreshold ? 'EXCEEDS' : 'WITHIN'} threshold`);
+      console.log(
+        `[Workflow] Delay evaluation: ${result.steps.delayEvaluation.exceedsThreshold ? "EXCEEDS" : "WITHIN"} threshold`,
+      );
 
       // Update delivery status to "delayed" if threshold exceeded
       if (result.steps.delayEvaluation.exceedsThreshold) {
         await updateDeliveryStatusInDb({
           deliveryId: input.deliveryId,
-          status: 'delayed',
+          status: "delayed",
         });
       }
     }
 
     // Step 3: Generate AI Message (only if threshold exceeded)
     if (!canceled && result.steps.delayEvaluation?.exceedsThreshold) {
-      currentStep = 'message_generation';
-      console.log('[Workflow] Step 3: Generating AI notification message...');
+      currentStep = "message_generation";
+      console.log("[Workflow] Step 3: Generating AI notification message...");
 
-      const estimatedArrival = new Date(new Date(input.scheduledTime).getTime() +
-        (result.steps.trafficCheck?.delayMinutes || 0) * 60000).toISOString();
+      const estimatedArrival = new Date(
+        new Date(input.scheduledTime).getTime() +
+          (result.steps.trafficCheck?.delayMinutes || 0) * 60000,
+      ).toISOString();
 
       result.steps.messageGeneration = await generateAIMessage({
         deliveryId: input.deliveryId,
@@ -168,26 +191,30 @@ export async function DelayNotificationWorkflow(
         origin: input.origin.address,
         destination: input.destination.address,
         delayMinutes: result.steps.trafficCheck?.delayMinutes || 0,
-        trafficCondition: result.steps.trafficCheck?.trafficCondition || 'unknown',
+        trafficCondition:
+          result.steps.trafficCheck?.trafficCondition || "unknown",
         estimatedArrival,
         originalArrival: input.scheduledTime,
       });
 
-      console.log('[Workflow] AI message generated successfully');
+      console.log("[Workflow] AI message generated successfully");
     }
 
     // Step 4: Send Notification (only if message was generated)
     if (!canceled && result.steps.messageGeneration) {
-      currentStep = 'notification_delivery';
-      console.log('[Workflow] Step 4: Sending notification to customer...');
+      currentStep = "notification_delivery";
+      console.log("[Workflow] Step 4: Sending notification to customer...");
 
       // Get notification channel preferences from delivery metadata
       // Default to both email and SMS if not specified
-      const notificationChannels = (deliveryDetails.metadata?.notification_channels as ('email' | 'sms')[]) || ['email', 'sms'];
-      const shouldSendEmail = notificationChannels.includes('email');
-      const shouldSendSMS = notificationChannels.includes('sms');
+      const notificationChannels = (deliveryDetails.metadata
+        ?.notification_channels as ("email" | "sms")[]) || ["email", "sms"];
+      const shouldSendEmail = notificationChannels.includes("email");
+      const shouldSendSMS = notificationChannels.includes("sms");
 
-      console.log(`[Workflow] Notification channels from settings: ${notificationChannels.join(', ')}`);
+      console.log(
+        `[Workflow] Notification channels from settings: ${notificationChannels.join(", ")}`,
+      );
 
       result.steps.notificationDelivery = await sendNotification({
         recipientEmail: shouldSendEmail ? input.customerEmail : undefined,
@@ -195,20 +222,30 @@ export async function DelayNotificationWorkflow(
         message: result.steps.messageGeneration.message,
         subject: result.steps.messageGeneration.subject,
         deliveryId: input.deliveryId,
-        priority: result.steps.delayEvaluation?.severity === 'severe' ? 'high' : 'normal',
+        priority:
+          result.steps.delayEvaluation?.severity === "severe"
+            ? "high"
+            : "normal",
       });
 
-      console.log(`[Workflow] Notification sent via ${result.steps.notificationDelivery.channel}`);
+      console.log(
+        `[Workflow] Notification sent via ${result.steps.notificationDelivery.channel}`,
+      );
 
       // Save notifications to database
-      if (result.steps.notificationDelivery.emailResult && input.customerEmail) {
+      if (
+        result.steps.notificationDelivery.emailResult &&
+        input.customerEmail
+      ) {
         await saveNotification({
           deliveryId: input.deliveryId,
           customerId: input.customerId,
-          channel: 'email',
+          channel: "email",
           recipient: input.customerEmail,
           message: result.steps.messageGeneration.message,
-          status: result.steps.notificationDelivery.emailResult.success ? 'sent' : 'failed',
+          status: result.steps.notificationDelivery.emailResult.success
+            ? "sent"
+            : "failed",
           messageId: result.steps.notificationDelivery.emailResult.messageId,
           error: result.steps.notificationDelivery.emailResult.error,
           delayMinutes: result.steps.trafficCheck?.delayMinutes || 0,
@@ -219,10 +256,12 @@ export async function DelayNotificationWorkflow(
         await saveNotification({
           deliveryId: input.deliveryId,
           customerId: input.customerId,
-          channel: 'sms',
+          channel: "sms",
           recipient: input.customerPhone,
           message: result.steps.messageGeneration.message,
-          status: result.steps.notificationDelivery.smsResult.success ? 'sent' : 'failed',
+          status: result.steps.notificationDelivery.smsResult.success
+            ? "sent"
+            : "failed",
           messageId: result.steps.notificationDelivery.smsResult.messageId,
           error: result.steps.notificationDelivery.smsResult.error,
           delayMinutes: result.steps.trafficCheck?.delayMinutes || 0,
@@ -231,40 +270,52 @@ export async function DelayNotificationWorkflow(
     }
 
     // Mark workflow as completed
-    currentStep = 'completed';
+    currentStep = "completed";
     result.success = !canceled;
 
     if (canceled) {
       result.error = `Workflow canceled: ${cancelReason}`;
       console.log(`❌ Workflow canceled for delivery ${input.deliveryId}`);
     } else if (!result.steps.delayEvaluation?.exceedsThreshold) {
-      console.log(`✅ Workflow completed: No notification needed (delay within threshold)`);
+      console.log(
+        `✅ Workflow completed: No notification needed (delay within threshold)`,
+      );
     } else {
-      console.log(`✅ Workflow completed successfully for delivery ${input.deliveryId}`);
+      console.log(
+        `✅ Workflow completed successfully for delivery ${input.deliveryId}`,
+      );
     }
 
     // Save workflow execution to database
     await saveWorkflowExecution({
-      workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId, false),
+      workflowId: createWorkflowId(
+        WorkflowType.DELAY_NOTIFICATION,
+        input.deliveryId,
+        false,
+      ),
       runId: wfInfo.runId,
       deliveryId: input.deliveryId,
-      status: 'completed',
+      status: "completed",
       steps: result.steps,
     });
-
   } catch (error) {
-    currentStep = 'failed';
+    currentStep = "failed";
     result.success = false;
-    result.error = error instanceof Error ? error.message : 'Unknown error occurred';
+    result.error =
+      error instanceof Error ? error.message : "Unknown error occurred";
     console.error(`❌ Workflow failed: ${result.error}`);
 
     // Save failed workflow execution to database
     try {
       await saveWorkflowExecution({
-        workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, input.deliveryId, false),
+        workflowId: createWorkflowId(
+          WorkflowType.DELAY_NOTIFICATION,
+          input.deliveryId,
+          false,
+        ),
         runId: wfInfo.runId,
         deliveryId: input.deliveryId,
-        status: 'failed',
+        status: "failed",
         steps: result.steps,
         error: result.error,
       });
@@ -283,19 +334,23 @@ export async function DelayNotificationWorkflow(
  * Monitors traffic conditions at configured intervals until stop conditions are met
  */
 export async function RecurringTrafficCheckWorkflow(
-  input: RecurringCheckWorkflowInput
+  input: RecurringCheckWorkflowInput,
 ): Promise<DelayNotificationWorkflowResult> {
-  console.log(`🔄 Starting Recurring Traffic Check Workflow for delivery ${input.deliveryId}`);
-  console.log(`📊 Configuration: Check every ${input.checkIntervalMinutes} minutes, max ${input.maxChecks === -1 ? 'unlimited' : input.maxChecks} checks`);
+  console.log(
+    `🔄 Starting Recurring Traffic Check Workflow for delivery ${input.deliveryId}`,
+  );
+  console.log(
+    `📊 Configuration: Check every ${input.checkIntervalMinutes} minutes, max ${input.maxChecks === -1 ? "unlimited" : input.maxChecks} checks`,
+  );
 
   // Get Temporal workflow info (includes runId)
   const wfInfo = workflowInfo();
 
   let canceled = false;
-  let cancelReason = '';
-  let thresholdMinutes = input.thresholdMinutes || 30;
+  let cancelReason = "";
+  const thresholdMinutes = input.thresholdMinutes || 30;
   let checksPerformed = 0;
-  let currentStep: WorkflowStatusQuery['currentStep'] = 'traffic_check';
+  let currentStep: WorkflowStatusQuery["currentStep"] = "traffic_check";
 
   const result: DelayNotificationWorkflowResult = {
     workflowId: input.deliveryId,
@@ -327,7 +382,7 @@ export async function RecurringTrafficCheckWorkflow(
     // Safe to remove after: All workflows started before 2025-10-04 are completed
     let cachedDeliveryDetails: any = null;
 
-    if (patched('cache-delivery-details-2025-10-04')) {
+    if (patched("cache-delivery-details-2025-10-04")) {
       // NEW CODE PATH: Fetch delivery details ONCE at start and cache
       console.log(`🆕 Using delivery caching (v1)`);
       const initialDetailsResult = await getDeliveryDetails({
@@ -336,8 +391,8 @@ export async function RecurringTrafficCheckWorkflow(
 
       if (!initialDetailsResult.success || !initialDetailsResult.delivery) {
         console.error(`❌ Failed to fetch initial delivery details`);
-        result.error = 'Failed to fetch delivery details at start';
-        throw new Error('Failed to fetch delivery details');
+        result.error = "Failed to fetch delivery details at start";
+        throw new Error("Failed to fetch delivery details");
       }
 
       cachedDeliveryDetails = initialDetailsResult.delivery;
@@ -349,11 +404,15 @@ export async function RecurringTrafficCheckWorkflow(
 
     // Main recurring check loop
     while (true) {
-      console.log(`\n🔄 Recurring check ${checksPerformed + 1}${input.maxChecks === -1 ? '' : `/${input.maxChecks}`} for delivery ${input.deliveryId}`);
+      console.log(
+        `\n🔄 Recurring check ${checksPerformed + 1}${input.maxChecks === -1 ? "" : `/${input.maxChecks}`} for delivery ${input.deliveryId}`,
+      );
 
       // Check stop condition 1: Max checks reached (skip if unlimited)
       if (input.maxChecks !== -1 && checksPerformed >= input.maxChecks) {
-        console.log(`✅ Recurring checks completed: ${checksPerformed}/${input.maxChecks} checks performed`);
+        console.log(
+          `✅ Recurring checks completed: ${checksPerformed}/${input.maxChecks} checks performed`,
+        );
         result.success = true;
         break;
       }
@@ -384,14 +443,18 @@ export async function RecurringTrafficCheckWorkflow(
         console.warn(`⚠️ Failed to refresh delivery details, using cached data`);
       } else {
         // Old workflow: No cache, and fetch failed - must throw
-        console.error(`❌ Failed to fetch delivery details and no cache available`);
-        throw new Error('Failed to fetch delivery details');
+        console.error(
+          `❌ Failed to fetch delivery details and no cache available`,
+        );
+        throw new Error("Failed to fetch delivery details");
       }
 
       // Check stop condition 3: Delivery status changed to terminal state
-      const terminalStatuses = ['delivered', 'cancelled', 'failed'];
+      const terminalStatuses = ["delivered", "cancelled", "failed"];
       if (terminalStatuses.includes(deliveryDetails.status)) {
-        console.log(`✅ Delivery reached terminal status: ${deliveryDetails.status}`);
+        console.log(
+          `✅ Delivery reached terminal status: ${deliveryDetails.status}`,
+        );
         result.success = true;
         break;
       }
@@ -400,57 +463,73 @@ export async function RecurringTrafficCheckWorkflow(
       // For infinite recurring checks (-1), use configurable cutoff (default 72 hours / 3 days)
       // For finite checks, use 2 hours cutoff
       const scheduledTime = new Date(deliveryDetails.scheduledDelivery);
-      const cutoffHours = input.maxChecks === -1 ? (input.cutoffHours || 72) : 2;
-      const cutoffTime = new Date(scheduledTime.getTime() + cutoffHours * 60 * 60 * 1000);
+      const cutoffHours = input.maxChecks === -1 ? input.cutoffHours || 72 : 2;
+      const cutoffTime = new Date(
+        scheduledTime.getTime() + cutoffHours * 60 * 60 * 1000,
+      );
       const now = new Date();
 
       if (now > cutoffTime) {
-        console.log(`✅ Cutoff time reached (scheduled delivery + ${cutoffHours} hours)`);
+        console.log(
+          `✅ Cutoff time reached (scheduled delivery + ${cutoffHours} hours)`,
+        );
         result.success = true;
         break;
       }
 
       // Perform traffic check (Step 1)
-      currentStep = 'traffic_check';
-      console.log('[Recurring] Step 1: Checking traffic conditions...');
+      currentStep = "traffic_check";
+      console.log("[Recurring] Step 1: Checking traffic conditions...");
       result.steps.trafficCheck = await checkTrafficConditions({
         origin: input.origin,
         destination: input.destination,
         departureTime: input.scheduledTime,
       });
 
-      console.log(`[Recurring] Traffic check complete: ${result.steps.trafficCheck.delayMinutes} minutes delay detected`);
+      console.log(
+        `[Recurring] Traffic check complete: ${result.steps.trafficCheck.delayMinutes} minutes delay detected`,
+      );
 
       // Save traffic snapshot
       await saveTrafficSnapshot({
         routeId: input.routeId,
         trafficCondition: result.steps.trafficCheck.trafficCondition,
         delayMinutes: result.steps.trafficCheck.delayMinutes,
-        durationSeconds: result.steps.trafficCheck.estimatedDurationMinutes * 60,
+        durationSeconds:
+          result.steps.trafficCheck.estimatedDurationMinutes * 60,
         origin: input.origin,
         destination: input.destination,
       });
 
       // Evaluate delay (Step 2)
-      currentStep = 'delay_evaluation';
-      console.log('[Recurring] Step 2: Evaluating delay against threshold...');
+      currentStep = "delay_evaluation";
+      console.log("[Recurring] Step 2: Evaluating delay against threshold...");
       result.steps.delayEvaluation = await evaluateDelay({
         delayMinutes: result.steps.trafficCheck.delayMinutes,
         thresholdMinutes,
         deliveryId: input.deliveryId,
       });
 
-      console.log(`[Recurring] Delay evaluation: ${result.steps.delayEvaluation.exceedsThreshold ? 'EXCEEDS' : 'WITHIN'} threshold`);
+      console.log(
+        `[Recurring] Delay evaluation: ${result.steps.delayEvaluation.exceedsThreshold ? "EXCEEDS" : "WITHIN"} threshold`,
+      );
 
       // Only notify if threshold exceeded
       if (result.steps.delayEvaluation.exceedsThreshold) {
-        console.log(`⚠️ Delay exceeds threshold (${result.steps.trafficCheck.delayMinutes} > ${thresholdMinutes}), checking if notification needed...`);
+        console.log(
+          `⚠️ Delay exceeds threshold (${result.steps.trafficCheck.delayMinutes} > ${thresholdMinutes}), checking if notification needed...`,
+        );
 
         // Check last notification to avoid spam
-        const lastNotificationResult = await getLastNotification({ deliveryId: input.deliveryId });
+        const lastNotificationResult = await getLastNotification({
+          deliveryId: input.deliveryId,
+        });
         let shouldNotify = false;
 
-        if (!lastNotificationResult.success || !lastNotificationResult.notification) {
+        if (
+          !lastNotificationResult.success ||
+          !lastNotificationResult.notification
+        ) {
           // No previous notification - this is the first one
           shouldNotify = true;
           console.log(`📢 First notification for this delivery - will notify`);
@@ -459,24 +538,33 @@ export async function RecurringTrafficCheckWorkflow(
           const currentDelay = result.steps.trafficCheck.delayMinutes;
           const lastDelay = lastNotif.delayMinutes;
           const delayChange = Math.abs(currentDelay - lastDelay);
-          const timeSinceLastNotif = Date.now() - new Date(lastNotif.sentAt).getTime();
+          const timeSinceLastNotif =
+            Date.now() - new Date(lastNotif.sentAt).getTime();
           const hoursSinceLastNotif = timeSinceLastNotif / (1000 * 60 * 60);
 
           // Notification deduplication rules - use delivery-specific settings
           // 1. Delay changed significantly (configurable threshold)
           // 2. OR sufficient time has passed since last notification (configurable hours)
-          const minDelayChangeThreshold = deliveryDetails.minDelayChangeThreshold || 15; // minutes
-          const minHoursBetweenNotifications = deliveryDetails.minHoursBetweenNotifications || 1.0; // hours
+          const minDelayChangeThreshold =
+            deliveryDetails.minDelayChangeThreshold || 15; // minutes
+          const minHoursBetweenNotifications =
+            deliveryDetails.minHoursBetweenNotifications || 1.0; // hours
 
           if (delayChange >= minDelayChangeThreshold) {
             shouldNotify = true;
-            console.log(`📢 Delay changed significantly (${lastDelay}min → ${currentDelay}min, Δ=${delayChange}min >= ${minDelayChangeThreshold}min) - will notify`);
+            console.log(
+              `📢 Delay changed significantly (${lastDelay}min → ${currentDelay}min, Δ=${delayChange}min >= ${minDelayChangeThreshold}min) - will notify`,
+            );
           } else if (hoursSinceLastNotif >= minHoursBetweenNotifications) {
             shouldNotify = true;
-            console.log(`📢 Sufficient time passed (${hoursSinceLastNotif.toFixed(1)}h >= ${minHoursBetweenNotifications}h since last notification) - will notify`);
+            console.log(
+              `📢 Sufficient time passed (${hoursSinceLastNotif.toFixed(1)}h >= ${minHoursBetweenNotifications}h since last notification) - will notify`,
+            );
           } else {
             shouldNotify = false;
-            console.log(`🔕 Skipping notification - delay change (Δ=${delayChange}min < ${minDelayChangeThreshold}min) and only ${hoursSinceLastNotif.toFixed(1)}h (< ${minHoursBetweenNotifications}h) since last notification`);
+            console.log(
+              `🔕 Skipping notification - delay change (Δ=${delayChange}min < ${minDelayChangeThreshold}min) and only ${hoursSinceLastNotif.toFixed(1)}h (< ${minHoursBetweenNotifications}h) since last notification`,
+            );
           }
         }
 
@@ -486,14 +574,18 @@ export async function RecurringTrafficCheckWorkflow(
           // Update delivery status to "delayed"
           await updateDeliveryStatusInDb({
             deliveryId: input.deliveryId,
-            status: 'delayed',
+            status: "delayed",
           });
 
           // Generate AI message (Step 3)
-          currentStep = 'message_generation';
-          console.log('[Recurring] Step 3: Generating AI notification message...');
-          const estimatedArrival = new Date(new Date(input.scheduledTime).getTime() +
-            (result.steps.trafficCheck.delayMinutes * 60000)).toISOString();
+          currentStep = "message_generation";
+          console.log(
+            "[Recurring] Step 3: Generating AI notification message...",
+          );
+          const estimatedArrival = new Date(
+            new Date(input.scheduledTime).getTime() +
+              result.steps.trafficCheck.delayMinutes * 60000,
+          ).toISOString();
 
           result.steps.messageGeneration = await generateAIMessage({
             deliveryId: input.deliveryId,
@@ -507,19 +599,24 @@ export async function RecurringTrafficCheckWorkflow(
             originalArrival: input.scheduledTime,
           });
 
-          console.log('[Recurring] AI message generated successfully');
+          console.log("[Recurring] AI message generated successfully");
 
           // Send notification (Step 4)
-          currentStep = 'notification_delivery';
-          console.log('[Recurring] Step 4: Sending notification to customer...');
+          currentStep = "notification_delivery";
+          console.log(
+            "[Recurring] Step 4: Sending notification to customer...",
+          );
 
           // Get notification channel preferences from delivery metadata
           // Default to both email and SMS if not specified
-          const notificationChannels = (deliveryDetails.metadata?.notification_channels as ('email' | 'sms')[]) || ['email', 'sms'];
-          const shouldSendEmail = notificationChannels.includes('email');
-          const shouldSendSMS = notificationChannels.includes('sms');
+          const notificationChannels = (deliveryDetails.metadata
+            ?.notification_channels as ("email" | "sms")[]) || ["email", "sms"];
+          const shouldSendEmail = notificationChannels.includes("email");
+          const shouldSendSMS = notificationChannels.includes("sms");
 
-          console.log(`[Recurring] Notification channels from settings: ${notificationChannels.join(', ')}`);
+          console.log(
+            `[Recurring] Notification channels from settings: ${notificationChannels.join(", ")}`,
+          );
 
           result.steps.notificationDelivery = await sendNotification({
             recipientEmail: shouldSendEmail ? input.customerEmail : undefined,
@@ -527,34 +624,50 @@ export async function RecurringTrafficCheckWorkflow(
             message: result.steps.messageGeneration.message,
             subject: result.steps.messageGeneration.subject,
             deliveryId: input.deliveryId,
-            priority: result.steps.delayEvaluation.severity === 'severe' ? 'high' : 'normal',
+            priority:
+              result.steps.delayEvaluation.severity === "severe"
+                ? "high"
+                : "normal",
           });
 
-          console.log(`[Recurring] Notification sent via ${result.steps.notificationDelivery.channel}`);
+          console.log(
+            `[Recurring] Notification sent via ${result.steps.notificationDelivery.channel}`,
+          );
 
           // Save notifications to database
-          if (result.steps.notificationDelivery.emailResult && input.customerEmail) {
+          if (
+            result.steps.notificationDelivery.emailResult &&
+            input.customerEmail
+          ) {
             await saveNotification({
               deliveryId: input.deliveryId,
               customerId: input.customerId,
-              channel: 'email',
+              channel: "email",
               recipient: input.customerEmail,
               message: result.steps.messageGeneration.message,
-              status: result.steps.notificationDelivery.emailResult.success ? 'sent' : 'failed',
-              messageId: result.steps.notificationDelivery.emailResult.messageId,
+              status: result.steps.notificationDelivery.emailResult.success
+                ? "sent"
+                : "failed",
+              messageId:
+                result.steps.notificationDelivery.emailResult.messageId,
               error: result.steps.notificationDelivery.emailResult.error,
               delayMinutes: result.steps.trafficCheck.delayMinutes,
             });
           }
 
-          if (result.steps.notificationDelivery.smsResult && input.customerPhone) {
+          if (
+            result.steps.notificationDelivery.smsResult &&
+            input.customerPhone
+          ) {
             await saveNotification({
               deliveryId: input.deliveryId,
               customerId: input.customerId,
-              channel: 'sms',
+              channel: "sms",
               recipient: input.customerPhone,
               message: result.steps.messageGeneration.message,
-              status: result.steps.notificationDelivery.smsResult.success ? 'sent' : 'failed',
+              status: result.steps.notificationDelivery.smsResult.success
+                ? "sent"
+                : "failed",
               messageId: result.steps.notificationDelivery.smsResult.messageId,
               error: result.steps.notificationDelivery.smsResult.error,
               delayMinutes: result.steps.trafficCheck.delayMinutes,
@@ -566,10 +679,15 @@ export async function RecurringTrafficCheckWorkflow(
           // Gives users visibility into each check cycle
           try {
             await saveWorkflowExecution({
-              workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, true, checksPerformed + 1),
+              workflowId: createWorkflowId(
+                WorkflowType.RECURRING_CHECK,
+                input.deliveryId,
+                true,
+                checksPerformed + 1,
+              ),
               runId: `run-check-${checksPerformed + 1}-${Date.now()}`,
               deliveryId: input.deliveryId,
-              status: 'completed',
+              status: "completed",
               steps: {
                 checkNumber: checksPerformed + 1,
                 trafficCheck: result.steps.trafficCheck,
@@ -578,16 +696,25 @@ export async function RecurringTrafficCheckWorkflow(
                 notificationDelivery: result.steps.notificationDelivery,
               },
             });
-            console.log(`✅ Saved workflow execution for check #${checksPerformed + 1}`);
+            console.log(
+              `✅ Saved workflow execution for check #${checksPerformed + 1}`,
+            );
           } catch (saveError) {
-            console.error(`❌ Failed to save workflow execution for check #${checksPerformed + 1}:`, saveError);
+            console.error(
+              `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
+              saveError,
+            );
             // Don't fail the workflow if save fails - just log and continue
           }
         } else {
-          console.log(`⏭️ Skipping notification for this check (deduplication rules)`);
+          console.log(
+            `⏭️ Skipping notification for this check (deduplication rules)`,
+          );
         }
       } else {
-        console.log(`✅ No notification needed - delay within threshold (${result.steps.trafficCheck.delayMinutes} ≤ ${thresholdMinutes})`);
+        console.log(
+          `✅ No notification needed - delay within threshold (${result.steps.trafficCheck.delayMinutes} ≤ ${thresholdMinutes})`,
+        );
       }
 
       // Increment checks_performed counter
@@ -597,12 +724,16 @@ export async function RecurringTrafficCheckWorkflow(
 
       if (incrementResult.success) {
         checksPerformed = incrementResult.checksPerformed;
-        console.log(`✅ Checks performed: ${checksPerformed}${input.maxChecks === -1 ? '' : `/${input.maxChecks}`}`);
+        console.log(
+          `✅ Checks performed: ${checksPerformed}${input.maxChecks === -1 ? "" : `/${input.maxChecks}`}`,
+        );
       }
 
       // Check if this was the last check (skip if unlimited)
       if (input.maxChecks !== -1 && checksPerformed >= input.maxChecks) {
-        console.log(`✅ Max checks reached: ${checksPerformed}/${input.maxChecks}`);
+        console.log(
+          `✅ Max checks reached: ${checksPerformed}/${input.maxChecks}`,
+        );
         result.success = true;
         break;
       }
@@ -614,24 +745,28 @@ export async function RecurringTrafficCheckWorkflow(
     }
 
     // Mark workflow as completed
-    currentStep = 'completed';
+    currentStep = "completed";
 
     // Update delivery status when workflow completes
     // Only update if delivery is still in a non-terminal status
-    const finalDeliveryResult = await getDeliveryDetails({ deliveryId: input.deliveryId });
+    const finalDeliveryResult = await getDeliveryDetails({
+      deliveryId: input.deliveryId,
+    });
     if (finalDeliveryResult.success && finalDeliveryResult.delivery) {
       const currentStatus = finalDeliveryResult.delivery.status;
-      const terminalStatuses = ['delivered', 'cancelled', 'failed'];
+      const terminalStatuses = ["delivered", "cancelled", "failed"];
 
       if (!terminalStatuses.includes(currentStatus)) {
         // If workflow completed due to cutoff time being reached, mark as in_transit
         // Unless it's already marked as delayed
-        if (currentStatus !== 'delayed') {
+        if (currentStatus !== "delayed") {
           await updateDeliveryStatusInDb({
             deliveryId: input.deliveryId,
-            status: 'in_transit',
+            status: "in_transit",
           });
-          console.log(`✅ Updated delivery status to 'in_transit' as workflow completed`);
+          console.log(
+            `✅ Updated delivery status to 'in_transit' as workflow completed`,
+          );
         }
       }
     }
@@ -640,22 +775,26 @@ export async function RecurringTrafficCheckWorkflow(
     // This represents the entire recurring workflow completion (all checks)
     // Individual check executions are saved after each notification
     await saveWorkflowExecution({
-      workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, false),
+      workflowId: createWorkflowId(
+        WorkflowType.RECURRING_CHECK,
+        input.deliveryId,
+        false,
+      ),
       runId: wfInfo.runId,
       deliveryId: input.deliveryId,
-      status: 'completed',
+      status: "completed",
       steps: {
         checksPerformed,
         totalChecks: checksPerformed,
-        reason: 'Workflow completed naturally',
-        ...result.steps
+        reason: "Workflow completed naturally",
+        ...result.steps,
       },
     });
-
   } catch (error) {
-    currentStep = 'failed';
+    currentStep = "failed";
     result.success = false;
-    result.error = error instanceof Error ? error.message : 'Unknown error occurred';
+    result.error =
+      error instanceof Error ? error.message : "Unknown error occurred";
     console.error(`❌ Recurring workflow failed: ${result.error}`);
 
     // Save failed workflow execution (best effort - don't let this fail the workflow)
@@ -663,17 +802,25 @@ export async function RecurringTrafficCheckWorkflow(
     // Failed workflows will still be visible in Temporal UI even if not saved to DB
     try {
       await saveWorkflowExecution({
-        workflowId: createWorkflowId(WorkflowType.RECURRING_CHECK, input.deliveryId, false),
+        workflowId: createWorkflowId(
+          WorkflowType.RECURRING_CHECK,
+          input.deliveryId,
+          false,
+        ),
         runId: wfInfo.runId,
         deliveryId: input.deliveryId,
-        status: 'failed',
+        status: "failed",
         steps: { checksPerformed, ...result.steps },
         error: result.error,
       });
       console.log(`✅ Failed workflow status saved to database`);
     } catch (saveError) {
-      console.error(`⚠️ Could not save failed workflow to database (DB may be down): ${saveError}`);
-      console.error(`   Workflow failure is still recorded in Temporal and will be visible there`);
+      console.error(
+        `⚠️ Could not save failed workflow to database (DB may be down): ${saveError}`,
+      );
+      console.error(
+        `   Workflow failure is still recorded in Temporal and will be visible there`,
+      );
     }
 
     throw error;

@@ -22,7 +22,7 @@ export interface PaginatedResponse<T> {
 export function createPaginatedResponse<T>(
   items: T[],
   page: number,
-  limit: number
+  limit: number,
 ): PaginatedResponse<T> {
   const total = items.length;
   const totalPages = Math.ceil(total / limit);
@@ -48,12 +48,12 @@ export function createPaginatedResponse<T>(
 export function parsePaginationParams(
   pageParam?: string | null,
   limitParam?: string | null,
-  maxLimit: number = 100
+  maxLimit: number = 100,
 ): { page: number; limit: number } {
-  const page = Math.max(1, parseInt(pageParam || '1', 10));
+  const page = Math.max(1, parseInt(pageParam || "1", 10));
   const limit = Math.min(
-    Math.max(1, parseInt(limitParam || '20', 10)),
-    maxLimit
+    Math.max(1, parseInt(limitParam || "20", 10)),
+    maxLimit,
   );
 
   return { page, limit };

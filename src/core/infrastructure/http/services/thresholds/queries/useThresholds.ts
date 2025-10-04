@@ -3,11 +3,11 @@
  * React Query hook for fetching thresholds list
  */
 
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '../../../queryKeys';
-import { listThresholds } from './listThresholds';
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../../queryKeys";
+import { listThresholds } from "./listThresholds";
 
 export function useThresholds() {
   return useQuery({

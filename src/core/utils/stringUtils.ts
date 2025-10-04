@@ -16,7 +16,10 @@ export function capitalizeFirstLetter(str: string): string {
  * @param address - The full address
  * @param delimiter - The delimiter to split on (default: ',')
  */
-export function extractFirstPart(address: string, delimiter: string = ','): string {
+export function extractFirstPart(
+  address: string,
+  delimiter: string = ",",
+): string {
   if (!address) return address;
   return address.split(delimiter)[0].trim();
 }

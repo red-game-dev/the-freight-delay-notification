@@ -34,7 +34,10 @@ export function isFailure<T, E>(result: Result<T, E>): result is Failure<E> {
 /**
  * Transform the value inside a Result if it's a success
  */
-export function map<T, U, E>(result: Result<T, E>, fn: (value: T) => U): Result<U, E> {
+export function map<T, U, E>(
+  result: Result<T, E>,
+  fn: (value: T) => U,
+): Result<U, E> {
   if (result.success) {
     return success(fn(result.value));
   }
@@ -44,7 +47,11 @@ export function map<T, U, E>(result: Result<T, E>, fn: (value: T) => U): Result<
 /**
  * Transform the value inside a Result, or return a default value if it's a failure
  */
-export function mapOr<T, U, E>(result: Result<T, E>, defaultValue: U, fn: (value: T) => U): U {
+export function mapOr<T, U, E>(
+  result: Result<T, E>,
+  defaultValue: U,
+  fn: (value: T) => U,
+): U {
   if (result.success) {
     return fn(result.value);
   }
@@ -66,7 +73,7 @@ export function unwrapOr<T, E>(result: Result<T, E>, defaultValue: T): T {
  */
 export function andThen<T, U, E>(
   result: Result<T, E>,
-  fn: (value: T) => Result<U, E>
+  fn: (value: T) => Result<U, E>,
 ): Result<U, E> {
   if (result.success) {
     return fn(result.value);
@@ -91,7 +98,7 @@ export function passthrough<T, E>(result: Result<T, E>): Result<T, E> | T {
  */
 export function unwrapOrFailWith<T, E = Error>(
   result: Result<T | null, E>,
-  error: E
+  error: E,
 ): Result<T, E> {
   if (!result.success) {
     return result;
@@ -112,7 +119,10 @@ export namespace Result {
     return failure(error);
   }
 
-  export function map<T, U, E>(result: Result<T, E>, fn: (value: T) => U): Result<U, E> {
+  export function map<T, U, E>(
+    result: Result<T, E>,
+    fn: (value: T) => U,
+  ): Result<U, E> {
     if (result.success) {
       return success(fn(result.value));
     }
@@ -128,7 +138,7 @@ export namespace Result {
 
   export function andThen<T, U, E>(
     result: Result<T, E>,
-    fn: (value: T) => Result<U, E>
+    fn: (value: T) => Result<U, E>,
   ): Result<U, E> {
     if (result.success) {
       return fn(result.value);

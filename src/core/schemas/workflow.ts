@@ -3,31 +3,31 @@
  * Zod schemas for workflow-related operations
  */
 
-import { z } from 'zod';
-import { uuidSchema } from './common';
-import { sanitizeString } from '@/core/utils/validation';
+import { z } from "zod";
+import { sanitizeString } from "@/core/utils/validation";
+import { uuidSchema } from "./common";
 
 /**
  * Workflow status enum
  */
 export const workflowStatusSchema = z.enum([
-  'running',
-  'completed',
-  'failed',
-  'cancelled',
-  'timed_out',
+  "running",
+  "completed",
+  "failed",
+  "cancelled",
+  "timed_out",
 ]);
 
 /**
  * Workflow step enum
  */
 export const workflowStepSchema = z.enum([
-  'traffic_check',
-  'delay_evaluation',
-  'message_generation',
-  'notification_delivery',
-  'completed',
-  'failed',
+  "traffic_check",
+  "delay_evaluation",
+  "message_generation",
+  "notification_delivery",
+  "completed",
+  "failed",
 ]);
 
 /**
@@ -41,10 +41,12 @@ export const startWorkflowSchema = z.object({
  * Cancel workflow input schema
  */
 export const cancelWorkflowSchema = z.object({
-  workflowId: z.string().min(1)
-    .transform(sanitizeString),
-  reason: z.string().max(500).optional()
-    .transform(val => val ? sanitizeString(val) : val),
+  workflowId: z.string().min(1).transform(sanitizeString),
+  reason: z
+    .string()
+    .max(500)
+    .optional()
+    .transform((val) => (val ? sanitizeString(val) : val)),
   force: z.boolean().default(false),
 });
 
@@ -52,8 +54,7 @@ export const cancelWorkflowSchema = z.object({
  * Workflow status query schema
  */
 export const workflowStatusQuerySchema = z.object({
-  workflowId: z.string().min(1)
-    .transform(sanitizeString),
+  workflowId: z.string().min(1).transform(sanitizeString),
 });
 
 /**
@@ -63,10 +64,14 @@ export const listWorkflowsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   delivery_id: uuidSchema.optional(),
-  status: z.string().optional()
-    .transform(val => val ? sanitizeString(val) : val),
-  statusNot: z.string().optional()
-    .transform(val => val ? sanitizeString(val) : val),
+  status: z
+    .string()
+    .optional()
+    .transform((val) => (val ? sanitizeString(val) : val)),
+  statusNot: z
+    .string()
+    .optional()
+    .transform((val) => (val ? sanitizeString(val) : val)),
 });
 
 /**
@@ -80,8 +85,7 @@ export const workflowStatsQuerySchema = z.object({
  * Workflow ID param schema
  */
 export const workflowIdParamSchema = z.object({
-  id: z.string().min(1)
-    .transform(sanitizeString),
+  id: z.string().min(1).transform(sanitizeString),
 });
 
 /**

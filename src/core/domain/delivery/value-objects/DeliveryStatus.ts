@@ -3,15 +3,15 @@
  * Encapsulates delivery status with business rules
  */
 
-import { DomainError } from '../../../base/errors/BaseError';
+import { DomainError } from "../../../base/errors/BaseError";
 
 export enum DeliveryStatusEnum {
-  PENDING = 'pending',
-  IN_TRANSIT = 'in_transit',
-  DELAYED = 'delayed',
-  DELIVERED = 'delivered',
-  CANCELLED = 'cancelled',
-  FAILED = 'failed',
+  PENDING = "pending",
+  IN_TRANSIT = "in_transit",
+  DELAYED = "delayed",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  FAILED = "failed",
 }
 
 export class DeliveryStatus {
@@ -21,7 +21,9 @@ export class DeliveryStatus {
    * Create status from string with validation
    */
   static create(status: string): DeliveryStatus {
-    if (!Object.values(DeliveryStatusEnum).includes(status as DeliveryStatusEnum)) {
+    if (
+      !Object.values(DeliveryStatusEnum).includes(status as DeliveryStatusEnum)
+    ) {
       throw new DomainError(`Invalid delivery status: ${status}`, { status });
     }
     return new DeliveryStatus(status as DeliveryStatusEnum);
@@ -70,7 +72,9 @@ export class DeliveryStatus {
    * Only pending or in-transit deliveries can be marked as delayed
    */
   canBeDelayed(): boolean {
-    return [DeliveryStatusEnum.PENDING, DeliveryStatusEnum.IN_TRANSIT].includes(this._value);
+    return [DeliveryStatusEnum.PENDING, DeliveryStatusEnum.IN_TRANSIT].includes(
+      this._value,
+    );
   }
 
   /**

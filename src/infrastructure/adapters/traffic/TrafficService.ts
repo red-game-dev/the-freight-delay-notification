@@ -3,15 +3,18 @@
  * Automatically falls back through all available adapters
  */
 
-import { TrafficAdapter } from './TrafficAdapter.interface';
-import { GoogleMapsAdapter } from './GoogleMapsAdapter';
-import { MapboxAdapter } from './MapboxAdapter';
-import { MockTrafficAdapter } from './MockTrafficAdapter';
-import { Result, failure } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
-import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
-import { logger } from '@/core/base/utils/Logger';
-import { env } from '../../config/EnvValidator';
+import { logger } from "@/core/base/utils/Logger";
+import { InfrastructureError } from "../../../core/base/errors/BaseError";
+import { failure, type Result } from "../../../core/base/utils/Result";
+import type {
+  RouteInput,
+  TrafficData,
+} from "../../../types/shared/traffic.types";
+import { env } from "../../config/EnvValidator";
+import { GoogleMapsAdapter } from "./GoogleMapsAdapter";
+import { MapboxAdapter } from "./MapboxAdapter";
+import { MockTrafficAdapter } from "./MockTrafficAdapter";
+import type { TrafficAdapter } from "./TrafficAdapter.interface";
 
 export class TrafficService {
   private adapters: TrafficAdapter[] = [];
@@ -24,7 +27,9 @@ export class TrafficService {
   private initializeAdapters(): void {
     // Check if we should force use of MockTrafficAdapter for testing
     if (env.FORCE_TRAFFIC_MOCK_ADAPTER) {
-      logger.info(`🧪 [TrafficService] TESTING MODE: Forcing MockTrafficAdapter`);
+      logger.info(
+        `🧪 [TrafficService] TESTING MODE: Forcing MockTrafficAdapter`,
+      );
       this.adapters = [new MockTrafficAdapter()];
       return;
     }
@@ -39,12 +44,16 @@ export class TrafficService {
     // Sort by priority and filter available ones
     this.adapters = allAdapters
       .sort((a, b) => a.priority - b.priority)
-      .filter(adapter => {
+      .filter((adapter) => {
         const available = adapter.isAvailable();
         if (available) {
-          logger.info(`✅ [TrafficService] ${adapter.providerName} adapter is available (priority: ${adapter.priority})`);
+          logger.info(
+            `✅ [TrafficService] ${adapter.providerName} adapter is available (priority: ${adapter.priority})`,
+          );
         } else {
-          logger.info(`⚠️ [TrafficService] ${adapter.providerName} adapter is not configured`);
+          logger.info(
+            `⚠️ [TrafficService] ${adapter.providerName} adapter is not configured`,
+          );
         }
         return available;
       });
@@ -54,7 +63,9 @@ export class TrafficService {
       this.adapters = [new MockTrafficAdapter()];
     }
 
-    logger.info(`📊 [TrafficService] ${this.adapters.length} adapter(s) available for traffic data`);
+    logger.info(
+      `📊 [TrafficService] ${this.adapters.length} adapter(s) available for traffic data`,
+    );
   }
 
   /**
@@ -62,7 +73,9 @@ export class TrafficService {
    * Automatically falls back through all available adapters
    */
   async getTrafficData(route: RouteInput): Promise<Result<TrafficData>> {
-    logger.info(`🚦 [TrafficService] Fetching traffic data: ${route.origin} → ${route.destination}`);
+    logger.info(
+      `🚦 [TrafficService] Fetching traffic data: ${route.origin} → ${route.destination}`,
+    );
 
     const errors: Array<{ provider: string; error: string }> = [];
 
@@ -77,7 +90,9 @@ export class TrafficService {
 
         // Log if we had to use fallback
         if (errors.length > 0) {
-          logger.info(`📝 [TrafficService] Used fallback after ${errors.length} failed attempt(s)`);
+          logger.info(
+            `📝 [TrafficService] Used fallback after ${errors.length} failed attempt(s)`,
+          );
         }
 
         return result;
@@ -86,32 +101,35 @@ export class TrafficService {
       // Log the error and continue to next adapter
       errors.push({
         provider: adapter.providerName,
-        error: result.error.message
+        error: result.error.message,
       });
 
-      logger.info(`⚠️ [TrafficService] ${adapter.providerName} failed: ${result.error.message}`);
+      logger.info(
+        `⚠️ [TrafficService] ${adapter.providerName} failed: ${result.error.message}`,
+      );
     }
 
     // All adapters failed (shouldn't happen with MockTrafficAdapter)
-    logger.error(`❌ [TrafficService] All ${this.adapters.length} adapter(s) failed`);
+    logger.error(
+      `❌ [TrafficService] All ${this.adapters.length} adapter(s) failed`,
+    );
 
-    return failure(new InfrastructureError(
-      'All traffic data adapters failed',
-      {
+    return failure(
+      new InfrastructureError("All traffic data adapters failed", {
         route,
         errors,
-        adaptersAttempted: this.adapters.map(a => a.providerName)
-      }
-    ));
+        adaptersAttempted: this.adapters.map((a) => a.providerName),
+      }),
+    );
   }
 
   /**
    * Get list of available adapters for diagnostics
    */
   getAvailableAdapters(): Array<{ name: string; priority: number }> {
-    return this.adapters.map(adapter => ({
+    return this.adapters.map((adapter) => ({
       name: adapter.providerName,
-      priority: adapter.priority
+      priority: adapter.priority,
     }));
   }
 }
