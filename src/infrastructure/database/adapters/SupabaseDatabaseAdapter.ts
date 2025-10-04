@@ -1038,4 +1038,49 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       return failure(new InfrastructureError(`Failed to list thresholds: ${getErrorMessage(error)}`, { error }));
     }
   }
+
+  // ===== Transaction Safety Functions =====
+
+  async incrementChecksPerformed(deliveryId: string): Promise<Result<number>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .rpc('increment_checks_performed', {
+          delivery_uuid: deliveryId
+        });
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to increment checks_performed: ${getErrorMessage(error)}`, { error }));
+      }
+
+      return success(data as number);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to increment checks_performed: ${getErrorMessage(error)}`, { error }));
+    }
+  }
+
+  // ===== Audit Context Functions =====
+
+  async setAuditContext(userId: string, requestId: string): Promise<Result<void>> {
+    try {
+      // Set user context
+      const { error: userError } = await this.ensureClient()
+        .rpc('set_audit_user', { user_id: userId });
+
+      if (userError) {
+        return failure(new InfrastructureError(`Failed to set audit user: ${getErrorMessage(userError)}`, { error: userError }));
+      }
+
+      // Set request ID context
+      const { error: requestError } = await this.ensureClient()
+        .rpc('set_audit_request_id', { req_id: requestId });
+
+      if (requestError) {
+        return failure(new InfrastructureError(`Failed to set audit request ID: ${getErrorMessage(requestError)}`, { error: requestError }));
+      }
+
+      return success(undefined);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to set audit context: ${getErrorMessage(error)}`, { error }));
+    }
+  }
 }

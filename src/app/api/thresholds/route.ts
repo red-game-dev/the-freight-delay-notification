@@ -9,12 +9,14 @@ import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { validateBody } from '@/core/utils/validation';
 import { createThresholdSchema } from '@/core/schemas/threshold';
+import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/thresholds
  * List all thresholds from database - returns sanitized threshold data
  */
 export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   // Transform result to only expose safe fields
@@ -27,7 +29,7 @@ export const GET = createApiHandler(async (request) => {
         delay_minutes: t.delay_minutes,
         notification_channels: t.notification_channels,
         is_default: t.is_default,
-        is_system: t.is_system || false,
+        is_system: t.is_system,
         created_at: t.created_at,
       }))
   );
@@ -38,6 +40,7 @@ export const GET = createApiHandler(async (request) => {
  * Create a new threshold in database
  */
 export const POST = createApiHandler(async (request) => {
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
   const bodyResult = await validateBody(createThresholdSchema, request);
   if (!bodyResult.success) {
     return bodyResult;

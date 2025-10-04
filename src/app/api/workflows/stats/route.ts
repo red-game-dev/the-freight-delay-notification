@@ -10,6 +10,7 @@ import { Result } from '@/core/base/utils/Result';
 import { logger } from '@/core/base/utils/Logger';
 import { validateQuery } from '@/core/utils/validation';
 import { workflowStatsQuerySchema } from '@/core/schemas/workflow';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/workflows/stats
@@ -19,6 +20,7 @@ import { workflowStatsQuerySchema } from '@/core/schemas/workflow';
  * Database may have stale status if workflows failed to save during errors.
  */
 export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   // Validate query parameters
   const queryResult = validateQuery(workflowStatsQuerySchema, request);
   if (!queryResult.success) {

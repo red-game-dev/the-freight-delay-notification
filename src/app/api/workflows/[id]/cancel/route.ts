@@ -12,8 +12,10 @@ import { logger, getErrorMessage, hasMessage } from '@/core/base/utils/Logger';
 import { InfrastructureError } from '@/core/base/errors/BaseError';
 import { validateBody } from '@/core/utils/validation';
 import { cancelWorkflowSchema } from '@/core/schemas/workflow';
+import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
 
 export const POST = createParamApiHandler(async (request, context) => {
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
   const params = await context.params;
   const workflowId = params.id;
 

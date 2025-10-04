@@ -10,6 +10,7 @@ import { Result } from '@/core/base/utils/Result';
 import { createPaginatedResponse } from '@/core/utils/paginationUtils';
 import { validateQuery } from '@/core/utils/validation';
 import { listTrafficSnapshotsQuerySchema } from '@/core/schemas/traffic';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/traffic
@@ -21,6 +22,7 @@ import { listTrafficSnapshotsQuerySchema } from '@/core/schemas/traffic';
  * - includeStats: If 'true', includes aggregate statistics in response
  */
 export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   // Validate query parameters

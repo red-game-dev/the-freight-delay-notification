@@ -357,6 +357,19 @@ export class DatabaseService {
   async listThresholds(limit?: number, offset?: number) {
     return this.readWithFallback('listThresholds', (adapter) => adapter.listThresholds(limit, offset));
   }
+
+  // ===== Transaction Safety Functions =====
+
+  async incrementChecksPerformed(deliveryId: string) {
+    return this.writeToAll('incrementChecksPerformed', (adapter) => adapter.incrementChecksPerformed(deliveryId));
+  }
+
+  // ===== Audit Context Functions =====
+
+  async setAuditContext(userId: string, requestId: string) {
+    // Only set on primary adapter (not all adapters)
+    return this.primaryAdapter.setAuditContext(userId, requestId);
+  }
 }
 
 // Singleton instance

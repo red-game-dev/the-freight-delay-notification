@@ -10,12 +10,14 @@ import { Result } from '@/core/base/utils/Result';
 import { NotFoundError } from '@/core/base/errors/BaseError';
 import { validateBody } from '@/core/utils/validation';
 import { updateCustomerSchema } from '@/core/schemas/customer';
+import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/customers/[id]
  * Get customer by ID - returns sanitized customer data
  */
 export const GET = createParamApiHandler(async (request, { params }) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   const customerResult = await db.getCustomerById(params.id);
@@ -39,6 +41,7 @@ export const GET = createParamApiHandler(async (request, { params }) => {
  * Update customer - returns sanitized customer data
  */
 export const PATCH = createParamApiHandler(async (request, { params }) => {
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
   const db = getDatabaseService();
 
   // Validate request body

@@ -9,12 +9,14 @@ import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { validateQuery, validateBody } from '@/core/utils/validation';
 import { customerEmailQuerySchema, createCustomerSchema } from '@/core/schemas/customer';
+import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/customers?email=xxx
  * Get customer by email - returns sanitized customer data
  */
 export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   // Validate query parameters
@@ -47,6 +49,7 @@ export const GET = createApiHandler(async (request) => {
  * Create a new customer (or return existing if email already exists) - returns sanitized customer data
  */
 export const POST = createApiHandler(async (request) => {
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
   const db = getDatabaseService();
 
   // Validate request body

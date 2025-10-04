@@ -7,12 +7,14 @@ import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { createApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { logger } from '@/core/base/utils/Logger';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/notifications/stats
  * Get notification statistics from database
  */
-export const GET = createApiHandler(async () => {
+export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   logger.info('📊 [Notifications Stats API] Fetching notification statistics via DatabaseService');

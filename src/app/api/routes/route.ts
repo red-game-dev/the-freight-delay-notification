@@ -7,12 +7,14 @@ import { createApiHandler } from '@/core/infrastructure/http';
 import { getDatabaseService } from '@/infrastructure/database/DatabaseService';
 import { logger } from '@/core/base/utils/Logger';
 import { Result } from '@/core/base/utils/Result';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/routes
  * Returns all routes with their latest traffic snapshot
  */
-export const GET = createApiHandler(async () => {
+export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   logger.info('🗺️ [Routes API] Fetching routes via DatabaseService');

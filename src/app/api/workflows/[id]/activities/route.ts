@@ -10,12 +10,14 @@ import { logger, hasMessage, hasName } from '@/core/base/utils/Logger';
 import { NotFoundError } from '@/core/base/errors/BaseError';
 import { validateParams } from '@/core/utils/validation';
 import { workflowIdParamSchema } from '@/core/schemas/workflow';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/workflows/[id]/activities
  * Get activities/events for a workflow from Temporal
  */
 export const GET = createParamApiHandler(async (request, { params }) => {
+  await setAuditContext(request);
   // Validate params
   const paramsResult = validateParams(workflowIdParamSchema, params);
   if (!paramsResult.success) {

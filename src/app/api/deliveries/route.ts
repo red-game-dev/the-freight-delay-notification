@@ -19,6 +19,7 @@ import { validateQuery, validateBody } from '@/core/utils/validation';
 import { listDeliveriesQuerySchema, createDeliverySchema } from '@/core/schemas/delivery';
 import { env } from '@/infrastructure/config/EnvValidator';
 import { WORKFLOW } from '@/core/config/constants/app.constants';
+import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/deliveries
@@ -29,6 +30,9 @@ import { WORKFLOW } from '@/core/config/constants/app.constants';
  * - limit: Items per page (default: 20, max: 100)
  */
 export const GET = createApiHandler(async (request) => {
+  // Set audit context for tracking changes
+  await setAuditContext(request);
+
   const db = getDatabaseService();
 
   // Validate query parameters
@@ -78,6 +82,9 @@ export const GET = createApiHandler(async (request) => {
  * NOTE: This handles the full creation flow (customer -> route -> delivery)
  */
 export const POST = createApiHandler(async (request) => {
+  // Set audit context for tracking changes (use customer email from request body)
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
+
   // Validate request body
   const bodyResult = await validateBody(createDeliverySchema, request);
   if (!bodyResult.success) {

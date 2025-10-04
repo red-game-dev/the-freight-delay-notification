@@ -8,12 +8,14 @@ import { createParamApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { validateParams } from '@/core/utils/validation';
 import { workflowIdParamSchema } from '@/core/schemas/workflow';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/workflows/[id]
  * Get workflow execution by ID - returns sanitized workflow data
  */
 export const GET = createParamApiHandler(async (request, context) => {
+  await setAuditContext(request);
   const params = await context.params;
 
   // Validate params

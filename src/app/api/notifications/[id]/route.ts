@@ -8,12 +8,14 @@ import { createParamApiHandler } from '@/core/infrastructure/http';
 import { Result } from '@/core/base/utils/Result';
 import { validateParams } from '@/core/utils/validation';
 import { notificationIdParamSchema } from '@/core/schemas/notification';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/notifications/[id]
  * Get notification by ID - returns sanitized notification data
  */
 export const GET = createParamApiHandler(async (request, { params }) => {
+  await setAuditContext(request);
   // Validate params
   const paramsResult = validateParams(notificationIdParamSchema, params);
   if (!paramsResult.success) {

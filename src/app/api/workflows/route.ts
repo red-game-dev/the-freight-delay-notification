@@ -11,6 +11,7 @@ import { createWorkflowId, parseWorkflowId, WorkflowType } from '@/core/utils/wo
 import { createPaginatedResponse } from '@/core/utils/paginationUtils';
 import { validateQuery } from '@/core/utils/validation';
 import { listWorkflowsQuerySchema } from '@/core/schemas/workflow';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 interface WorkflowListItem {
   id: string;
@@ -47,6 +48,7 @@ interface WorkflowListItem {
  * - limit: Items per page (default: 10, max: 100)
  */
 export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   // Validate query parameters

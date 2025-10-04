@@ -10,6 +10,7 @@ import { Result } from '@/core/base/utils/Result';
 import { createPaginatedResponse } from '@/core/utils/paginationUtils';
 import { validateQuery } from '@/core/utils/validation';
 import { listNotificationsQuerySchema } from '@/core/schemas/notification';
+import { setAuditContext } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/notifications
@@ -22,6 +23,7 @@ import { listNotificationsQuerySchema } from '@/core/schemas/notification';
  * - includeStats: Include statistics in response (default: false)
  */
 export const GET = createApiHandler(async (request) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   // Validate query parameters

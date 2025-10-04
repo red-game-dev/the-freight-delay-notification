@@ -11,12 +11,14 @@ import { Result } from '@/core/base/utils/Result';
 import type { UpdateDeliveryInput, DeliveryStatus } from '@/infrastructure/database/types/database.types';
 import { validateBody } from '@/core/utils/validation';
 import { updateDeliverySchema } from '@/core/schemas/delivery';
+import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/deliveries/[id]
  * Get delivery by ID - returns sanitized delivery data
  */
 export const GET = createParamApiHandler(async (request, context) => {
+  await setAuditContext(request);
   const params = await context.params;
   const db = getDatabaseService();
 
@@ -56,6 +58,7 @@ export const GET = createParamApiHandler(async (request, context) => {
  * Update delivery
  */
 export const PATCH = createParamApiHandler(async (request, context) => {
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
   const params = await context.params;
 
   // Validate request body
@@ -90,6 +93,7 @@ export const PATCH = createParamApiHandler(async (request, context) => {
  * Soft delete delivery by marking as cancelled
  */
 export const DELETE = createParamApiHandler(async (request, context) => {
+  await setAuditContext(request);
   const params = await context.params;
   const db = getDatabaseService();
 

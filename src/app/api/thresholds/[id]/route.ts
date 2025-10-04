@@ -11,12 +11,14 @@ import { HttpError } from '@/core/base/errors/HttpError';
 import { Result } from '@/core/base/utils/Result';
 import { validateBody } from '@/core/utils/validation';
 import { updateThresholdSchema } from '@/core/schemas/threshold';
+import { setAuditContext, getCustomerEmailFromRequest } from '@/app/api/middleware/auditContext';
 
 /**
  * GET /api/thresholds/[id]
  * Get threshold by ID - returns sanitized threshold data
  */
 export const GET = createParamApiHandler(async (request, { params }) => {
+  await setAuditContext(request);
   const db = getDatabaseService();
 
   // Transform result to only expose safe fields
@@ -28,7 +30,7 @@ export const GET = createParamApiHandler(async (request, { params }) => {
       delay_minutes: threshold.delay_minutes,
       notification_channels: threshold.notification_channels,
       is_default: threshold.is_default,
-      is_system: (threshold as any).is_system || false,
+      is_system: threshold.is_system,
       created_at: threshold.created_at,
     } : null
   );
@@ -39,6 +41,7 @@ export const GET = createParamApiHandler(async (request, { params }) => {
  * Update threshold (cannot update system thresholds)
  */
 export const PATCH = createParamApiHandler(async (request, { params }) => {
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
   const bodyResult = await validateBody(updateThresholdSchema, request);
   if (!bodyResult.success) {
     return bodyResult;
@@ -53,7 +56,7 @@ export const PATCH = createParamApiHandler(async (request, { params }) => {
     return thresholdResult;
   }
 
-  if (thresholdResult.value && (thresholdResult.value as any).is_system) {
+  if (thresholdResult.value && thresholdResult.value.is_system) {
     return Result.fail(new HttpError('Cannot edit system threshold', 400));
   }
 
@@ -88,6 +91,7 @@ export const PATCH = createParamApiHandler(async (request, { params }) => {
  * Delete threshold (cannot delete system or default threshold)
  */
 export const DELETE = createParamApiHandler(async (request, { params }) => {
+  await setAuditContext(request, await getCustomerEmailFromRequest(request));
   const db = getDatabaseService();
 
   // Check if threshold exists and is not system or default, then delete
@@ -101,7 +105,7 @@ export const DELETE = createParamApiHandler(async (request, { params }) => {
     return Result.fail(new HttpError('Threshold not found', 404));
   }
 
-  if ((thresholdResult.value as any).is_system) {
+  if (thresholdResult.value.is_system) {
     return Result.fail(new HttpError('Cannot delete system threshold', 400));
   }
 

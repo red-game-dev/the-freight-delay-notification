@@ -92,4 +92,19 @@ export interface DatabaseAdapter {
   updateThreshold(id: string, input: UpdateThresholdInput): Promise<Result<Threshold>>;
   deleteThreshold(id: string): Promise<Result<void>>;
   listThresholds(limit?: number, offset?: number): Promise<Result<Threshold[]>>;
+
+  // ===== Transaction Safety Functions =====
+  /**
+   * Atomic increment of checks_performed counter
+   * Prevents race conditions on concurrent workflow executions
+   * @returns The new count after increment
+   */
+  incrementChecksPerformed(deliveryId: string): Promise<Result<number>>;
+
+  // ===== Audit Context Functions =====
+  /**
+   * Set audit context for current transaction
+   * Should be called at start of each request
+   */
+  setAuditContext(userId: string, requestId: string): Promise<Result<void>>;
 }

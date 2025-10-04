@@ -5,11 +5,11 @@
 
 import { success, failure } from '../../../core/base/utils/Result';
 import type { Result } from '../../../core/base/utils/Result';
-import { InfrastructureError } from '../../../core/base/errors/BaseError';
+import { InfrastructureError, NotFoundError } from '../../../core/base/errors/BaseError';
 import type { DatabaseAdapter } from './DatabaseAdapter.interface';
 import { env } from '../../config/EnvValidator';
 import { getErrorMessage } from '@/core/base/utils/Logger';
-import { generateRandomId } from '@/core/utils/idUtils';
+import { generateId } from '@/core/utils/idUtils';
 import type {
   Customer,
   CreateCustomerInput,
@@ -523,10 +523,10 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
   }
 
   /**
-   * Generate deterministic UUID for testing
+   * Generate ID for testing (nanoid-based)
    */
   private generateId(): string {
-    return generateRandomId('mock');
+    return generateId();
   }
 
   // ===== Customer Operations =====
@@ -1018,6 +1018,7 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         delay_minutes: input.delay_minutes,
         notification_channels: input.notification_channels,
         is_default: input.is_default || false,
+        is_system: false,
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -1122,5 +1123,25 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       workflowExecutions: this.workflowExecutions.size,
       thresholds: this.thresholds.size,
     };
+  }
+
+  // ===== Transaction Safety Functions =====
+
+  async incrementChecksPerformed(deliveryId: string): Promise<Result<number>> {
+    const delivery = this.deliveries.get(deliveryId);
+    if (!delivery) {
+      return failure(new NotFoundError(`Delivery not found: ${deliveryId}`));
+    }
+
+    delivery.checks_performed = (delivery.checks_performed || 0) + 1;
+    return success(delivery.checks_performed);
+  }
+
+  // ===== Audit Context Functions =====
+
+  async setAuditContext(userId: string, requestId: string): Promise<Result<void>> {
+    // Mock implementation - just log it
+    console.log(`[MockDB] Audit context set: user=${userId}, request=${requestId}`);
+    return success(undefined);
   }
 }

@@ -627,7 +627,8 @@ export async function getDeliveryDetails(input: {
 }
 
 /**
- * Increment checks_performed counter
+ * Increment checks_performed counter (ATOMIC - prevents race conditions)
+ * Uses database function from Migration 5 for atomic increment
  */
 export async function incrementChecksPerformed(input: {
   deliveryId: string;
@@ -637,26 +638,17 @@ export async function incrementChecksPerformed(input: {
   try {
     const db = getDatabaseService();
 
-    // Get current value
-    const deliveryResult = await db.getDeliveryById(input.deliveryId);
-    if (!deliveryResult.success || !deliveryResult.value) {
-      return { success: false, checksPerformed: 0 };
-    }
+    // ✅ Use atomic increment function (prevents race conditions)
+    // This is a single database operation that reads, increments, and writes atomically
+    const result = await db.incrementChecksPerformed(input.deliveryId);
 
-    const currentChecks = deliveryResult.value.checks_performed || 0;
-    const newChecks = currentChecks + 1;
-
-    // Update with incremented value
-    const updateResult = await db.updateDelivery(input.deliveryId, {
-      checks_performed: newChecks,
-    });
-
-    if (updateResult.success) {
-      logger.info(`✅ Checks performed updated: ${newChecks}`);
-      return { success: true, checksPerformed: newChecks };
+    if (result.success) {
+      const newCount = result.value;
+      logger.info(`✅ Checks performed updated: ${newCount}`);
+      return { success: true, checksPerformed: newCount };
     } else {
-      logger.error(`❌ Failed to increment checks_performed`);
-      return { success: false, checksPerformed: currentChecks };
+      logger.error(`❌ Failed to increment checks_performed: ${result.error.message}`);
+      return { success: false, checksPerformed: 0 };
     }
   } catch (error: unknown) {
     logger.error(`❌ Error incrementing checks_performed: ${getErrorMessage(error)}`);
