@@ -14,3 +14,4 @@ export { useWorkflows } from './useWorkflows';
 export { useWorkflow } from './useWorkflow';
 export { useWorkflowStats } from './useWorkflowStats';
 export { useWorkflowStatus } from './useWorkflowStatus';
+export { useWorkflowPolling } from './useWorkflowPolling';
