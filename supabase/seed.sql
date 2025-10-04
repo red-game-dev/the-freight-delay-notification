@@ -1,3 +1,36 @@
+-- ========================================
+-- Freight Delay Notification - Seed Data
+-- ========================================
+--
+-- IMPORTANT DATA STANDARDS:
+--
+-- 1. NOTIFICATIONS:
+--    - Only 'sent' or 'failed' status in seed data
+--    - 'sent' notifications MUST have: external_id (message ID) + sent_at timestamp
+--    - 'failed' notifications have: NULL external_id + NULL sent_at + optional error_message
+--    - NO 'pending' status in seed data (only for active workflows)
+--
+-- 2. WORKFLOWS:
+--    - Only terminal states: 'completed', 'failed', 'cancelled'
+--    - All workflows MUST have: completed_at timestamp
+--    - 'failed' workflows should have: error_message
+--    - NO 'running' status in seed data (only for active Temporal workflows)
+--
+-- 3. CUSTOMERS:
+--    - All customers have valid email addresses
+--    - Phone numbers optional but formatted consistently
+--    - notification_preferences as JSONB with primary/secondary channels
+--
+-- 4. DELIVERIES:
+--    - Various statuses for testing: pending, in_transit, delayed, delivered, cancelled
+--    - Scheduled delivery times use NOW() + INTERVAL for realistic data
+--    - All have valid route_id and customer_id references
+--
+-- To clean up old data that doesn't meet these standards:
+--   Run: scripts/cleanup-old-seed-data.sql
+--
+-- ========================================
+
 -- Insert sample customers (20 total for pagination testing)
 INSERT INTO customers (id, email, phone, name, notification_preferences)
 VALUES
@@ -132,15 +165,6 @@ VALUES
   ('770e8400-e29b-41d4-a716-446655440043', 'FD-2024-044', '550e8400-e29b-41d4-a716-446655440016', '660e8400-e29b-41d4-a716-446655440001', 'delivered'::delivery_status, NOW() - INTERVAL '108 hours', NOW() - INTERVAL '107 hours', 30),
   ('770e8400-e29b-41d4-a716-446655440046', 'FD-2024-047', '550e8400-e29b-41d4-a716-446655440017', '660e8400-e29b-41d4-a716-446655440002', 'delivered'::delivery_status, NOW() - INTERVAL '144 hours', NOW() - INTERVAL '143 hours', 50),
 
-  -- Pending deliveries (7 total)
-  ('770e8400-e29b-41d4-a716-446655440003', 'FD-2024-004', '550e8400-e29b-41d4-a716-446655440003', '660e8400-e29b-41d4-a716-446655440003', 'pending'::delivery_status, NOW() + INTERVAL '6 hours', NULL, 30),
-  ('770e8400-e29b-41d4-a716-446655440007', 'FD-2024-008', '550e8400-e29b-41d4-a716-446655440002', '660e8400-e29b-41d4-a716-446655440002', 'pending'::delivery_status, NOW() + INTERVAL '12 hours', NULL, 45),
-  ('770e8400-e29b-41d4-a716-446655440010', 'FD-2024-011', '550e8400-e29b-41d4-a716-446655440005', '660e8400-e29b-41d4-a716-446655440005', 'pending'::delivery_status, NOW() + INTERVAL '8 hours', NULL, 35),
-  ('770e8400-e29b-41d4-a716-446655440014', 'FD-2024-015', '550e8400-e29b-41d4-a716-446655440006', '660e8400-e29b-41d4-a716-446655440006', 'pending'::delivery_status, NOW() + INTERVAL '24 hours', NULL, 50),
-  ('770e8400-e29b-41d4-a716-446655440038', 'FD-2024-039', '550e8400-e29b-41d4-a716-446655440014', '660e8400-e29b-41d4-a716-446655440014', 'pending'::delivery_status, NOW() + INTERVAL '18 hours', NULL, 40),
-  ('770e8400-e29b-41d4-a716-446655440041', 'FD-2024-042', '550e8400-e29b-41d4-a716-446655440015', '660e8400-e29b-41d4-a716-446655440000', 'pending'::delivery_status, NOW() + INTERVAL '10 hours', NULL, 30),
-  ('770e8400-e29b-41d4-a716-446655440044', 'FD-2024-045', '550e8400-e29b-41d4-a716-446655440016', '660e8400-e29b-41d4-a716-446655440001', 'pending'::delivery_status, NOW() + INTERVAL '15 hours', NULL, 35),
-
   -- Cancelled deliveries (3 total)
   ('770e8400-e29b-41d4-a716-446655440047', 'FD-2024-048', '550e8400-e29b-41d4-a716-446655440017', '660e8400-e29b-41d4-a716-446655440002', 'cancelled'::delivery_status, NOW() + INTERVAL '4 hours', NULL, 30),
   ('770e8400-e29b-41d4-a716-446655440048', 'FD-2024-049', '550e8400-e29b-41d4-a716-446655440018', '660e8400-e29b-41d4-a716-446655440003', 'cancelled'::delivery_status, NOW() + INTERVAL '7 hours', NULL, 40),
@@ -175,13 +199,11 @@ VALUES
   ('880e8400-e29b-41d4-a716-446655440016', '770e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440004', 'sms'::notification_channel, 'sent'::notification_status, '+1234567894', 'FD-2024-005 in transit. Expected arrival in 3 hours.', NULL, NOW() - INTERVAL '30 minutes', 'sms-007'),
   ('880e8400-e29b-41d4-a716-446655440017', '770e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440003', 'email'::notification_channel, 'sent'::notification_status, 'alice.williams@example.com', 'Shipment FD-2024-004 scheduled for delivery in 6 hours.', NULL, NOW() - INTERVAL '2 hours', 'msg-011'),
 
-  -- Failed notifications
+  -- Failed notifications (no external_id, no sent_at)
   ('880e8400-e29b-41d4-a716-446655440018', '770e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440002', 'sms'::notification_channel, 'failed'::notification_status, '+1234567892', 'Failed to send SMS notification for FD-2024-008.', NULL, NULL, NULL),
   ('880e8400-e29b-41d4-a716-446655440019', '770e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440005', 'email'::notification_channel, 'failed'::notification_status, 'david.miller@example.com', 'Email delivery failed for FD-2024-011 notification.', NULL, NULL, NULL),
 
-  -- Pending notifications
-  ('880e8400-e29b-41d4-a716-446655440020', '770e8400-e29b-41d4-a716-446655440014', '550e8400-e29b-41d4-a716-446655440006', 'email'::notification_channel, 'pending'::notification_status, 'emily.davis@example.com', 'Your delivery FD-2024-015 is scheduled for tomorrow.', NULL, NULL, NULL),
-  ('880e8400-e29b-41d4-a716-446655440021', '770e8400-e29b-41d4-a716-446655440038', '550e8400-e29b-41d4-a716-446655440014', 'sms'::notification_channel, 'pending'::notification_status, '+1234567804', 'FD-2024-039 notification pending.', NULL, NULL, NULL),
+  -- NOTE: No 'pending' notifications in seed data - pending status only for active workflows
 
   -- Cancellation notifications
   ('880e8400-e29b-41d4-a716-446655440022', '770e8400-e29b-41d4-a716-446655440047', '550e8400-e29b-41d4-a716-446655440017', 'email'::notification_channel, 'sent'::notification_status, 'paul.garcia@example.com', 'Delivery FD-2024-048 has been cancelled as requested.', NULL, NOW() - INTERVAL '2 hours', 'msg-012'),
@@ -204,11 +226,11 @@ VALUES
   ('990e8400-e29b-41d4-a716-446655440009', 'delay-notification-FD-2024-036', 'run-010', '770e8400-e29b-41d4-a716-446655440035', 'completed'::workflow_status, NOW() - INTERVAL '40 minutes', NOW() - INTERVAL '38 minutes', NULL),
   ('990e8400-e29b-41d4-a716-446655440010', 'delivery-confirmation-FD-2024-003', 'run-011', '770e8400-e29b-41d4-a716-446655440002', 'completed'::workflow_status, NOW() - INTERVAL '23 hours 5 minutes', NOW() - INTERVAL '23 hours', NULL),
   ('990e8400-e29b-41d4-a716-446655440011', 'delivery-confirmation-FD-2024-020', 'run-012', '770e8400-e29b-41d4-a716-446655440019', 'completed'::workflow_status, NOW() - INTERVAL '11 hours 5 minutes', NOW() - INTERVAL '11 hours', NULL),
+  ('990e8400-e29b-41d4-a716-446655440012', 'traffic-check-FD-2024-001', 'run-013', '770e8400-e29b-41d4-a716-446655440000', 'completed'::workflow_status, NOW() - INTERVAL '5 minutes', NOW() - INTERVAL '2 minutes', NULL),
+  ('990e8400-e29b-41d4-a716-446655440013', 'traffic-check-FD-2024-005', 'run-014', '770e8400-e29b-41d4-a716-446655440004', 'completed'::workflow_status, NOW() - INTERVAL '8 minutes', NOW() - INTERVAL '3 minutes', NULL),
+  ('990e8400-e29b-41d4-a716-446655440014', 'traffic-check-FD-2024-012', 'run-015', '770e8400-e29b-41d4-a716-446655440011', 'completed'::workflow_status, NOW() - INTERVAL '12 minutes', NOW() - INTERVAL '8 minutes', NULL),
 
-  -- Running workflows
-  ('990e8400-e29b-41d4-a716-446655440012', 'traffic-check-FD-2024-001', 'run-013', '770e8400-e29b-41d4-a716-446655440000', 'running'::workflow_status, NOW() - INTERVAL '5 minutes', NULL, NULL),
-  ('990e8400-e29b-41d4-a716-446655440013', 'traffic-check-FD-2024-005', 'run-014', '770e8400-e29b-41d4-a716-446655440004', 'running'::workflow_status, NOW() - INTERVAL '3 minutes', NULL, NULL),
-  ('990e8400-e29b-41d4-a716-446655440014', 'traffic-check-FD-2024-012', 'run-015', '770e8400-e29b-41d4-a716-446655440011', 'running'::workflow_status, NOW() - INTERVAL '8 minutes', NULL, NULL),
+  -- NOTE: No 'running' workflows in seed data - running status only for active Temporal workflows
 
   -- Failed workflows
   ('990e8400-e29b-41d4-a716-446655440015', 'delay-notification-FD-2024-008', 'run-016', '770e8400-e29b-41d4-a716-446655440007', 'failed'::workflow_status, NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '44 minutes', 'SMS service unavailable'),
