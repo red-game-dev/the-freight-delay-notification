@@ -8,8 +8,9 @@
 import * as React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Clock } from 'lucide-react';
-import { formatNextScheduledTime } from '@/core/utils/dateUtils';
+import { calculateNextRunTime } from '@/core/utils/dateUtils';
 import { isWorkflowType, WorkflowType } from '@/core/utils/workflowUtils';
+import { CountdownTimerInline } from '@/components/ui/CountdownTimer';
 import Link from 'next/link';
 
 interface WorkflowDetailsProps {
@@ -19,6 +20,7 @@ interface WorkflowDetailsProps {
   status: string;
   startedAt: string;
   completedAt?: string;
+  updatedAt?: string; // Last check time for accurate next run calculation
   settings?: {
     type: 'recurring' | 'one-time';
     check_interval_minutes?: number;
@@ -28,6 +30,7 @@ interface WorkflowDetailsProps {
     min_delay_change_threshold?: number;
     min_hours_between_notifications?: number;
     scheduled_delivery?: string;
+    last_check_time?: string; // From delivery.updated_at - more accurate than workflow times
   };
   showLink?: boolean;
   compact?: boolean;
@@ -40,6 +43,7 @@ export function WorkflowDetails({
   status,
   startedAt,
   completedAt,
+  updatedAt,
   settings,
   showLink = true,
   compact = false,
@@ -53,8 +57,14 @@ export function WorkflowDetails({
     : null;
 
   // Calculate next run time for recurring workflows
-  const nextRun = isRecurring && isRunning && settings?.check_interval_minutes
-    ? formatNextScheduledTime(startedAt, settings.check_interval_minutes, settings.checks_performed || 0)
+  // Priority: 1) settings.last_check_time (from delivery.updated_at) 2) updatedAt (workflow.updated_at) 3) fallback calculation
+  const nextRunTime = isRecurring && isRunning && settings?.check_interval_minutes
+    ? calculateNextRunTime(
+        startedAt,
+        settings.check_interval_minutes,
+        settings.checks_performed || 0,
+        settings.last_check_time || updatedAt // Prefer delivery's updated_at over workflow's
+      )
     : null;
 
   if (compact) {
@@ -65,11 +75,13 @@ export function WorkflowDetails({
           <Badge variant="default" className="text-xs">
             {isRecurring ? 'Recurring' : 'One-time'}
           </Badge>
-          {nextRun && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              <span>Next check {nextRun}</span>
-            </div>
+          {nextRunTime && (
+            <CountdownTimerInline
+              targetTime={nextRunTime}
+              prefix="Next check"
+              size="xs"
+              showIcon={true}
+            />
           )}
         </div>
 
@@ -141,11 +153,16 @@ export function WorkflowDetails({
         </div>
 
         {/* Next run time for recurring workflows */}
-        {nextRun && (
+        {nextRunTime && (
           <div className="col-span-2">
             <span className="text-muted-foreground">Next Check:</span>
-            <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">
-              {nextRun}
+            <span className="ml-2">
+              <CountdownTimerInline
+                targetTime={nextRunTime}
+                prefix=""
+                size="sm"
+                showIcon={false}
+              />
             </span>
           </div>
         )}
