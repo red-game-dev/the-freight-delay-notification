@@ -8,7 +8,7 @@
  * Activities (activities.ts) can use logger since they're not replayed.
  */
 
-import { proxyActivities, defineSignal, defineQuery, setHandler, sleep, workflowInfo } from '@temporalio/workflow';
+import { proxyActivities, defineSignal, defineQuery, setHandler, sleep, workflowInfo, patched } from '@temporalio/workflow';
 import type * as activities from './activities';
 import type {
   DelayNotificationWorkflowInput,
@@ -322,19 +322,30 @@ export async function RecurringTrafficCheckWorkflow(
   }));
 
   try {
-    // Fetch delivery details ONCE at start and cache (reduces DB calls)
-    const initialDetailsResult = await getDeliveryDetails({
-      deliveryId: input.deliveryId,
-    });
+    // VERSION 1 (2025-10-04): Added delivery details caching to reduce DB calls
+    // Reason: Supabase timeout issues with repeated getDeliveryDetails calls in loop
+    // Safe to remove after: All workflows started before 2025-10-04 are completed
+    let cachedDeliveryDetails: any = null;
 
-    if (!initialDetailsResult.success || !initialDetailsResult.delivery) {
-      console.error(`❌ Failed to fetch initial delivery details`);
-      result.error = 'Failed to fetch delivery details at start';
-      throw new Error('Failed to fetch delivery details');
+    if (patched('cache-delivery-details-2025-10-04')) {
+      // NEW CODE PATH: Fetch delivery details ONCE at start and cache
+      console.log(`🆕 Using delivery caching (v1)`);
+      const initialDetailsResult = await getDeliveryDetails({
+        deliveryId: input.deliveryId,
+      });
+
+      if (!initialDetailsResult.success || !initialDetailsResult.delivery) {
+        console.error(`❌ Failed to fetch initial delivery details`);
+        result.error = 'Failed to fetch delivery details at start';
+        throw new Error('Failed to fetch delivery details');
+      }
+
+      cachedDeliveryDetails = initialDetailsResult.delivery;
+      console.log(`✅ Cached delivery details for ${input.deliveryId}`);
+    } else {
+      // OLD CODE PATH: No caching, fetch on demand (replaying old workflows)
+      console.log(`⚠️ Replaying old workflow - no delivery caching`);
     }
-
-    let cachedDeliveryDetails = initialDetailsResult.delivery;
-    console.log(`✅ Cached delivery details for ${input.deliveryId}`);
 
     // Main recurring check loop
     while (true) {
@@ -360,12 +371,21 @@ export async function RecurringTrafficCheckWorkflow(
       });
 
       // Use cached data if refresh fails (Supabase timeout protection)
-      let deliveryDetails = cachedDeliveryDetails;
+      // For old workflows (no cache), this will be the first getDeliveryDetails call
+      let deliveryDetails;
       if (deliveryDetailsResult.success && deliveryDetailsResult.delivery) {
         deliveryDetails = deliveryDetailsResult.delivery;
-        cachedDeliveryDetails = deliveryDetails; // Update cache
-      } else {
+        if (cachedDeliveryDetails !== null) {
+          cachedDeliveryDetails = deliveryDetails; // Update cache (v1 only)
+        }
+      } else if (cachedDeliveryDetails !== null) {
+        // V1: Use cached data if refresh fails
+        deliveryDetails = cachedDeliveryDetails;
         console.warn(`⚠️ Failed to refresh delivery details, using cached data`);
+      } else {
+        // Old workflow: No cache, and fetch failed - must throw
+        console.error(`❌ Failed to fetch delivery details and no cache available`);
+        throw new Error('Failed to fetch delivery details');
       }
 
       // Check stop condition 3: Delivery status changed to terminal state

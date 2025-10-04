@@ -57,19 +57,22 @@ async function runTrafficCheck() {
 
     const data = await response.json();
 
-    if (data.success && data.result) {
+    // API returns { success: true, data: { success: true, result: {...} } }
+    const apiResult = data.data || data;
+
+    if (data.success && apiResult.result) {
       successCount++;
       console.log(`✅ Run #${runCount} completed successfully in ${duration}ms`);
       console.log(`📊 Results:`, {
-        routesChecked: data.result.routesChecked,
-        snapshotsSaved: data.result.snapshotsSaved,
-        delaysDetected: data.result.delaysDetected,
-        notificationsTriggered: data.result.notificationsTriggered,
-        errors: data.result.errors?.length || 0,
+        routesChecked: apiResult.result.routesChecked,
+        snapshotsSaved: apiResult.result.snapshotsSaved,
+        delaysDetected: apiResult.result.delaysDetected,
+        notificationsTriggered: apiResult.result.notificationsTriggered,
+        errors: apiResult.result.errors?.length || 0,
       });
 
-      if (data.result.errors && data.result.errors.length > 0) {
-        console.log(`⚠️  Errors encountered:`, data.result.errors);
+      if (apiResult.result.errors && apiResult.result.errors.length > 0) {
+        console.log(`⚠️  Errors encountered:`, apiResult.result.errors);
       }
     } else {
       throw new Error(data.error?.message || data.error || 'Unknown error');

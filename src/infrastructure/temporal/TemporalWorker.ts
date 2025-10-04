@@ -3,16 +3,34 @@ import * as activities from '../../workflows/activities';
 import { env } from '../config/EnvValidator';
 import { logger } from '../../core/base/utils/Logger';
 import { InfrastructureError } from '../../core/base/errors/BaseError';
+import { getBuildIdFromEnv, getBuildInfo } from './BuildVersion';
 import path from 'path';
 
 let worker: Worker | null = null;
 
 export async function createTemporalWorker(): Promise<Worker> {
   try {
+    // Get build information for worker versioning
+    const buildInfo = getBuildInfo();
+    const buildId = getBuildIdFromEnv();
+
+    logger.info('🏗️  Worker Build Information:');
+    logger.info(`   Build ID: ${buildId}`);
+    logger.info(`   Git Hash: ${buildInfo.gitHash}`);
+    logger.info(`   Git Branch: ${buildInfo.gitBranch}`);
+    logger.info(`   Timestamp: ${buildInfo.timestamp}`);
+    if (buildInfo.isDirty) {
+      logger.warn('   ⚠️  Working directory has uncommitted changes');
+    }
+
     // Create connection to Temporal server
     const connection = await NativeConnection.connect({
       address: env.TEMPORAL_ADDRESS,
     });
+
+    // Enable worker versioning via environment variable
+    // Set TEMPORAL_WORKER_VERSIONING=true to enable (recommended for production)
+    const useVersioning = env.TEMPORAL_WORKER_VERSIONING === 'true';
 
     // Create worker with workflow and activity registrations
     worker = await Worker.create({
@@ -21,14 +39,26 @@ export async function createTemporalWorker(): Promise<Worker> {
       taskQueue: env.TEMPORAL_TASK_QUEUE,
       workflowsPath: path.resolve(__dirname, '../../workflows/workflows.ts'),
       activities,
+
       // Worker configuration
       maxConcurrentActivityTaskExecutions: 10,
       maxConcurrentWorkflowTaskExecutions: 5,
+
+      // 🔑 Worker Versioning (enables zero-downtime deployments)
+      // When enabled:
+      // - Old workflows route to workers with their original build ID
+      // - New workflows route to workers with latest build ID
+      // - Multiple worker versions can run simultaneously
+      ...(useVersioning && {
+        buildId,
+        useVersioning: true,
+      }),
     });
 
     logger.info('✅ Temporal worker created successfully');
     logger.info(`   Task Queue: ${env.TEMPORAL_TASK_QUEUE}`);
     logger.info(`   Namespace: ${env.TEMPORAL_NAMESPACE}`);
+    logger.info(`   Versioning: ${useVersioning ? '✅ Enabled' : '❌ Disabled (use TEMPORAL_WORKER_VERSIONING=true)'}`);
 
     return worker;
   } catch (error) {

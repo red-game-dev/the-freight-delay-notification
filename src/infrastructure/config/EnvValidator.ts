@@ -16,14 +16,14 @@ const envSchema = z.object({
   TEMPORAL_ADDRESS: z.string().default('localhost:7233'),
   TEMPORAL_NAMESPACE: z.string().default('default'),
   TEMPORAL_TASK_QUEUE: z.string().default('freight-delay-notifications'),
+  TEMPORAL_WORKER_VERSIONING: z.string().optional().default('false'), // Enable worker versioning for zero-downtime deployments
+  TEMPORAL_WORKER_BUILD_ID: z.string().optional(), // Override auto-detected build ID (for CI/CD)
 
   // Database Configuration
   DATABASE_URL: z.string().optional(),
   SUPABASE_URL: z.string().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
 
   // API Keys
   GOOGLE_MAPS_API_KEY: z.string().optional(),

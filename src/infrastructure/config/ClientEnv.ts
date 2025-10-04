@@ -10,7 +10,6 @@ import { logger } from "@/core/base/utils/Logger";
 
 interface ClientEnv {
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?: string;
-  NEXT_PUBLIC_SUPABASE_URL?: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY?: string;
   NEXT_PUBLIC_API_URL?: string;
   NEXT_PUBLIC_APP_URL?: string;
@@ -25,8 +24,6 @@ interface ClientEnv {
  */
 export const clientEnv: ClientEnv = {
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   NODE_ENV: (process.env.NODE_ENV as 'development' | 'production' | 'test') || 'development',

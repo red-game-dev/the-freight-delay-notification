@@ -1,0 +1,49 @@
+# Railway Configuration for Temporal Workers
+# Deploy workers to Railway while your Next.js app runs on Vercel
+#
+# Setup:
+# 1. Install Railway CLI: npm i -g @railway/cli
+# 2. Login: railway login
+# 3. Initialize: railway init
+# 4. Deploy: railway up
+#
+# Learn more: https://docs.railway.app/reference/config-as-code
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install && pnpm run build"
+
+[deploy]
+# Start Temporal worker (long-running process)
+startCommand = "pnpm run temporal:worker"
+
+# Restart policy - keep worker running
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Health check (optional - Railway will monitor process)
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+
+[env]
+# Railway will use environment variables you set via CLI or dashboard
+# These are placeholders - set actual values in Railway dashboard
+
+# Required for worker versioning
+TEMPORAL_WORKER_VERSIONING = "true"
+
+# Temporal connection (update with your Temporal server)
+# TEMPORAL_ADDRESS = "your-temporal-server.com:7233"
+# TEMPORAL_NAMESPACE = "default"
+
+# Database (Supabase)
+# SUPABASE_URL = "https://your-project.supabase.co"
+# SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+
+# API Keys (same as Vercel)
+# OPENAI_API_KEY = "sk-..."
+# GOOGLE_MAPS_API_KEY = "your-key"
+# SENDGRID_API_KEY = "SG..."
+# TWILIO_ACCOUNT_SID = "AC..."
+# TWILIO_AUTH_TOKEN = "your-token"
+# TWILIO_FROM_PHONE = "+1234567890"
