@@ -11,6 +11,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { generateShortId } from '@/core/utils/idUtils';
 
 // Type for errors that may have additional properties
 interface UnknownError extends Error {
@@ -57,7 +58,7 @@ export const useErrorStore = create<ErrorStore>()(
       addError: (error) => {
         const newError: AppError = {
           ...error,
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: generateShortId(),
           timestamp: Date.now(),
         };
 

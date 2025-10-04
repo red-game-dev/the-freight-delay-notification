@@ -11,6 +11,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { generateShortId } from '@/core/utils/idUtils';
 
 export interface Notification {
   id: string;
@@ -53,7 +54,7 @@ export const useNotificationStore = create<NotificationStore>()(
       addNotification: (notification) => {
         const newNotification: Notification = {
           ...notification,
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: generateShortId(),
           timestamp: Date.now(),
           duration: notification.duration ?? DEFAULT_DURATION,
         };
