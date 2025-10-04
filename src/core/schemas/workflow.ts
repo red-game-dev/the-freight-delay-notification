@@ -65,6 +65,8 @@ export const listWorkflowsQuerySchema = z.object({
   delivery_id: uuidSchema.optional(),
   status: z.string().optional()
     .transform(val => val ? sanitizeString(val) : val),
+  statusNot: z.string().optional()
+    .transform(val => val ? sanitizeString(val) : val),
 });
 
 /**

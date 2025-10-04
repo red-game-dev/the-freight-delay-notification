@@ -12,3 +12,4 @@ export * from './workflow';
 export * from './notification';
 export * from './traffic';
 export * from './threshold';
+export * from './customer';

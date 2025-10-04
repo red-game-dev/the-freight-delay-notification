@@ -44,7 +44,16 @@ export const createDeliverySchema = z.object({
     .transform(val => val ? sanitizeString(val) : val),
   auto_check_traffic: z.boolean().default(false),
   enable_recurring_checks: z.boolean().default(false),
-  check_interval_minutes: z.number().int().min(5).max(1440).default(30),
+  check_interval_minutes: z.union([
+      z.number().int().min(5).max(43200),
+      z.null(),
+      z.literal(''),
+    ])
+    .transform(val => {
+      if (val === null || val === '') return undefined;
+      return val;
+    })
+    .optional(),
   max_checks: z.union([
       z.number().int().min(-1).max(1000),
       z.null(),
@@ -55,9 +64,36 @@ export const createDeliverySchema = z.object({
       return val;
     })
     .default(-1),
-  delay_threshold_minutes: z.number().int().min(1).max(1440).default(30),
-  min_delay_change_threshold: z.number().min(0).max(1440).default(15),
-  min_hours_between_notifications: z.number().min(0).max(72).default(1),
+  delay_threshold_minutes: z.union([
+      z.number().int().min(1).max(1440),
+      z.null(),
+      z.literal(''),
+    ])
+    .transform(val => {
+      if (val === null || val === '') return undefined;
+      return val;
+    })
+    .optional(),
+  min_delay_change_threshold: z.union([
+      z.number().min(0).max(1440),
+      z.null(),
+      z.literal(''),
+    ])
+    .transform(val => {
+      if (val === null || val === '') return undefined;
+      return val;
+    })
+    .optional(),
+  min_hours_between_notifications: z.union([
+      z.number().min(0).max(72),
+      z.null(),
+      z.literal(''),
+    ])
+    .transform(val => {
+      if (val === null || val === '') return undefined;
+      return val;
+    })
+    .optional(),
 });
 
 /**
