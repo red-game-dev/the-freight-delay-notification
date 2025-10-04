@@ -14,16 +14,14 @@ builder = "NIXPACKS"
 buildCommand = "pnpm install && pnpm run build"
 
 [deploy]
-# Start Temporal worker (long-running process)
-startCommand = "pnpm run temporal:worker"
+# Start Temporal worker (long-running background process)
+startCommand = "tsx src/workflows/worker.ts"
 
 # Restart policy - keep worker running
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
-# Health check (optional - Railway will monitor process)
-healthcheckPath = "/health"
-healthcheckTimeout = 100
+# No health check needed - this is a background worker, not a web service
 
 [env]
 # Railway will use environment variables you set via CLI or dashboard
