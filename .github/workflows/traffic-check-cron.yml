@@ -1,0 +1,38 @@
+name: Traffic Check Cron
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  trigger-traffic-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Vercel Cron Endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+        run: |
+          echo "Triggering traffic check..."
+
+          response=$(curl -s -w "\n%{http_code}" -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${VERCEL_URL}/api/cron/check-traffic")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response code: ${http_code}"
+          echo "Response body: ${body}"
+
+          if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
+            echo "✅ Traffic check triggered successfully"
+          else
+            echo "❌ Failed to trigger traffic check"
+            exit 1
+          fi
