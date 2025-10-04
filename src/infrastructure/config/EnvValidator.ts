@@ -65,6 +65,14 @@ const envSchema = z.object({
   TEST_EMAIL: z.string().optional(),
   TEST_PHONE: z.string().optional(),
   TEST_NAME: z.string().optional(),
+  // Force use MockTrafficAdapter for testing
+  FORCE_TRAFFIC_MOCK_ADAPTER: z.string().transform((val) => val === 'true').default('false'),
+  // Force traffic scenario: 'light' (0min), 'moderate' (20min), 'heavy' (45min), 'severe' (90min), or specific number in minutes
+  FORCE_TRAFFIC_SCENARIO: z.string().optional(),
+  // Force use MockAIAdapter for testing (skips OpenAI)
+  FORCE_AI_MOCK_ADAPTER: z.string().transform((val) => val === 'true').default('false'),
+  // Force use MockNotificationAdapter for testing (skips SendGrid/Twilio)
+  FORCE_NOTIFICATION_MOCK_ADAPTER: z.string().transform((val) => val === 'true').default('false'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

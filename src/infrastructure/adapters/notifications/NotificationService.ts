@@ -17,6 +17,7 @@ import { TwilioAdapter } from './TwilioAdapter';
 import { MockEmailAdapter } from './MockEmailAdapter';
 import { MockSMSAdapter } from './MockSMSAdapter';
 import { logger } from '@/core/base/utils/Logger';
+import { env } from '../../config/EnvValidator';
 
 export class NotificationService {
   private emailAdapters: NotificationAdapter[] = [];
@@ -30,6 +31,18 @@ export class NotificationService {
    * Initialize all notification adapters and sort by priority
    */
   private initializeAdapters(): void {
+    // Check if we should force use of MockNotificationAdapter for testing
+    if (env.FORCE_NOTIFICATION_MOCK_ADAPTER) {
+      logger.info(`🧪 [NotificationService] TESTING MODE: Forcing Mock adapters`);
+      this.emailAdapters = [new MockEmailAdapter()];
+      this.smsAdapters = [new MockSMSAdapter()];
+      logger.info('📬 [NotificationService] Initialized adapters (TESTING MODE):');
+      logger.info(`   Email adapters: ${this.emailAdapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
+      logger.info(`   SMS adapters: ${this.smsAdapters.map(a => `${a.providerName}(${a.priority})`).join(', ')}`);
+      return;
+    }
+
+    // Add all available adapters
     const allAdapters: NotificationAdapter[] = [
       new SendGridAdapter(),
       new TwilioAdapter(),
