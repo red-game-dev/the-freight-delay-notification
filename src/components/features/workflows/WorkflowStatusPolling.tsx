@@ -5,7 +5,7 @@
 
 'use client';
 
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useState, useRef } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
@@ -14,6 +14,8 @@ import { CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
 import { useWorkflowStatus } from '@/core/infrastructure/http/services/workflows';
 import { useWorkflowActivities } from '@/core/infrastructure/http/services/activities';
 import { WorkflowDetails } from './WorkflowDetails';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/core/infrastructure/http/queryKeys';
 
 interface WorkflowStatusPollingProps {
   workflowId: string;
@@ -35,6 +37,7 @@ interface WorkflowStatusPollingProps {
     min_delay_change_threshold?: number;
     min_hours_between_notifications?: number;
     scheduled_delivery?: string;
+    last_check_time?: string; // From delivery.updated_at - for accurate next run calculation
   };
 }
 
@@ -79,9 +82,14 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
   trackingNumber,
   settings,
 }) => {
+  const queryClient = useQueryClient();
+
   // Determine if workflow is in a terminal state (completed, failed, cancelled, timed_out)
   // We'll update this after fetching workflow data
   const [isTerminal, setIsTerminal] = useState(false);
+
+  // Track previous status to detect changes
+  const previousStatusRef = useRef<string | null>(null);
 
   // Poll workflow status - stop polling when workflow reaches terminal state
   const {
@@ -92,13 +100,24 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
     refetchInterval: enabled && !isTerminal ? pollInterval : undefined,
   });
 
-  // Update terminal state when workflow data changes
+  // Update terminal state and invalidate workflows list when status changes
   useEffect(() => {
     if (workflow) {
       const terminalStates = ['completed', 'failed', 'cancelled', 'timed_out'];
-      setIsTerminal(terminalStates.includes(workflow.status));
+      const isNowTerminal = terminalStates.includes(workflow.status);
+      setIsTerminal(isNowTerminal);
+
+      // Detect status change
+      if (previousStatusRef.current !== null && previousStatusRef.current !== workflow.status) {
+        // Status changed - invalidate workflows list to trigger refresh
+        queryClient.invalidateQueries({ queryKey: queryKeys.workflows.list() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.workflows.all });
+      }
+
+      // Update previous status
+      previousStatusRef.current = workflow.status;
     }
-  }, [workflow]);
+  }, [workflow, queryClient]);
 
   // Fetch activities
   const { data: activities } = useWorkflowActivities(workflowId);
@@ -123,8 +142,8 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
   // Handle case where workflow doesn't exist yet (404 or no data)
   if (error || !workflow) {
     // Check if it's a 404 error (workflow doesn't exist yet)
-    const errorMessage = error instanceof Error ? error.message : '';
-    const isNotFound = errorMessage.includes('404') || errorMessage.includes('not found') || !workflow;
+    const errorMessage = error instanceof Error ? error.message : String(error || '');
+    const isNotFound = (typeof errorMessage === 'string' && (errorMessage.includes('404') || errorMessage.includes('not found'))) || !workflow;
 
     if (isNotFound) {
       return (
@@ -176,6 +195,7 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
             status={workflow.status}
             startedAt={workflow.started_at}
             completedAt={workflow.completed_at}
+            updatedAt={workflow.updated_at}
             settings={settings}
             showLink={false}
             compact={false}
