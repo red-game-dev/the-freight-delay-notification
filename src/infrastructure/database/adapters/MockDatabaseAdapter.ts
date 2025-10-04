@@ -495,6 +495,7 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       delay_minutes: 30,
       notification_channels: ['email'],
       is_default: true,
+      is_system: true,
       created_at: new Date('2024-01-01T00:00:00Z'),
       updated_at: new Date('2024-01-01T00:00:00Z'),
     };
@@ -504,6 +505,7 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       delay_minutes: 15,
       notification_channels: ['email', 'sms'],
       is_default: false,
+      is_system: false,
       created_at: new Date('2024-01-01T00:00:00Z'),
       updated_at: new Date('2024-01-01T00:00:00Z'),
     };
@@ -513,6 +515,7 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       delay_minutes: 10,
       notification_channels: ['email', 'sms'],
       is_default: false,
+      is_system: false,
       created_at: new Date('2024-01-02T00:00:00Z'),
       updated_at: new Date('2024-01-02T00:00:00Z'),
     };

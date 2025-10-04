@@ -16,6 +16,7 @@ const envSchema = z.object({
   TEMPORAL_ADDRESS: z.string().default('localhost:7233'),
   TEMPORAL_NAMESPACE: z.string().default('default'),
   TEMPORAL_TASK_QUEUE: z.string().default('freight-delay-notifications'),
+  TEMPORAL_API_KEY: z.string().optional(), // For Temporal Cloud authentication
   TEMPORAL_WORKER_VERSIONING: z.string().optional().default('false'), // Enable worker versioning for zero-downtime deployments
   TEMPORAL_WORKER_BUILD_ID: z.string().optional(), // Override auto-detected build ID (for CI/CD)
 

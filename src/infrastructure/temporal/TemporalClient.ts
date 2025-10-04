@@ -13,9 +13,26 @@ export async function createTemporalClient(): Promise<Client> {
 
   try {
     // Create connection to Temporal server
-    temporalConnection = await Connection.connect({
+    // For Temporal Cloud, include TLS and authentication
+    const connectionOptions: any = {
       address: env.TEMPORAL_ADDRESS,
-    });
+    };
+
+    // Add Temporal Cloud authentication if API key is provided
+    if (env.TEMPORAL_API_KEY) {
+      logger.info('🔐 Connecting to Temporal Cloud with API key authentication');
+      connectionOptions.tls = {
+        // Temporal Cloud uses TLS by default
+      };
+      connectionOptions.metadata = {
+        'temporal-namespace': env.TEMPORAL_NAMESPACE,
+        'authorization': `Bearer ${env.TEMPORAL_API_KEY}`,
+      };
+    } else {
+      logger.info('🔌 Connecting to local Temporal server');
+    }
+
+    temporalConnection = await Connection.connect(connectionOptions);
 
     // Create client
     temporalClient = new Client({

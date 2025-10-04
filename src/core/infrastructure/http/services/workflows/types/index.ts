@@ -45,6 +45,8 @@ export interface WorkflowStats {
   running?: number;
   completed?: number;
   failed?: number;
+  cancelled?: number;
+  timed_out?: number;
   success_rate?: number;
 }
 

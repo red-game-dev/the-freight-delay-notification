@@ -14,11 +14,11 @@ console.log('══════════════════════�
 console.log('');
 
 // Extract project ref from SUPABASE_URL
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL;
 
 if (!supabaseUrl) {
-  console.error('❌ Error: NEXT_PUBLIC_SUPABASE_URL not found in .env.local');
-  console.error('   Make sure NEXT_PUBLIC_SUPABASE_URL is set in .env.local');
+  console.error('❌ Error: SUPABASE_URL not found in .env.local');
+  console.error('   Make sure SUPABASE_URL is set in .env.local');
   process.exit(1);
 }
 

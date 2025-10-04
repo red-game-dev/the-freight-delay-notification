@@ -24,9 +24,26 @@ export async function createTemporalWorker(): Promise<Worker> {
     }
 
     // Create connection to Temporal server
-    const connection = await NativeConnection.connect({
+    // For Temporal Cloud, include TLS and authentication
+    const connectionOptions: any = {
       address: env.TEMPORAL_ADDRESS,
-    });
+    };
+
+    // Add Temporal Cloud authentication if API key is provided
+    if (env.TEMPORAL_API_KEY) {
+      logger.info('🔐 Connecting to Temporal Cloud with API key authentication');
+      connectionOptions.tls = {
+        // Temporal Cloud uses TLS by default
+      };
+      connectionOptions.metadata = {
+        'temporal-namespace': env.TEMPORAL_NAMESPACE,
+        'authorization': `Bearer ${env.TEMPORAL_API_KEY}`,
+      };
+    } else {
+      logger.info('🔌 Connecting to local Temporal server');
+    }
+
+    const connection = await NativeConnection.connect(connectionOptions);
 
     // Enable worker versioning via environment variable
     // Set TEMPORAL_WORKER_VERSIONING=true to enable (recommended for production)
