@@ -22,8 +22,8 @@ export interface ViewModeRendererProps<T> {
   /** Unique page key for view mode persistence */
   pageKey: string;
 
-  /** Array of items to render */
-  items: T[];
+  /** Array of items to render (or object for multi-section rendering) */
+  items: T;
 
   /** Loading state */
   isLoading?: boolean;
@@ -35,13 +35,13 @@ export interface ViewModeRendererProps<T> {
   onPageChange?: (page: number) => void;
 
   /** Render function for list view (detailed table/list) */
-  renderList: (items: T[]) => ReactNode;
+  renderList: (items: T) => ReactNode;
 
   /** Render function for grid view (cards) */
-  renderGrid: (items: T[]) => ReactNode;
+  renderGrid: (items: T) => ReactNode;
 
   /** Render function for compact view (dense list) */
-  renderCompact: (items: T[]) => ReactNode;
+  renderCompact: (items: T) => ReactNode;
 
   /** Loading skeleton component */
   loadingComponent?: ReactNode;
@@ -81,8 +81,8 @@ export function ViewModeRenderer<T>({
     return <>{loadingComponent}</>;
   }
 
-  // Show empty state
-  if (!items || items.length === 0) {
+  // Show empty state (only for arrays)
+  if (!items || (Array.isArray(items) && items.length === 0)) {
     return emptyComponent ? <>{emptyComponent}</> : null;
   }
 
