@@ -15,31 +15,32 @@ import {
   Home,
   Settings
 } from 'lucide-react';
+import { ROUTES } from '@/core/config/constants/app.constants';
 
 const navigation = [
   {
     name: 'Home',
-    href: '/',
+    href: ROUTES.HOME,
     icon: Home,
   },
   {
     name: 'Deliveries',
-    href: '/deliveries',
+    href: ROUTES.DELIVERIES,
     icon: Package,
   },
   {
     name: 'Monitoring',
-    href: '/monitoring',
+    href: ROUTES.MONITORING,
     icon: Activity,
   },
   {
     name: 'Notifications',
-    href: '/notifications',
+    href: ROUTES.NOTIFICATIONS,
     icon: Bell,
   },
   {
     name: 'Workflows',
-    href: '/workflows',
+    href: ROUTES.WORKFLOWS,
     icon: Workflow,
   },
   {
@@ -49,7 +50,7 @@ const navigation = [
   },
   {
     name: 'How to use',
-    href: '/how-to-use',
+    href: ROUTES.HOW_TO_USE,
     icon: Workflow,
   },
 ];
