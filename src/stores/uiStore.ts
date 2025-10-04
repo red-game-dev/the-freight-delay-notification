@@ -179,13 +179,14 @@ export const useUIStore = create<UIStore>()(
           theme: state.theme,
         }),
         // Custom deserialization for Sets
-        merge: (persistedState: any, currentState) => ({
+        merge: (persistedState: unknown, currentState) => ({
           ...currentState,
-          ...persistedState,
+          ...(persistedState as Record<string, unknown>),
           expandedItems: Object.fromEntries(
-            Object.entries(persistedState.expandedItems || {}).map(
-              ([key, arr]) => [key, new Set(arr as string[])],
-            ),
+            Object.entries(
+              (persistedState as { expandedItems?: Record<string, unknown> })
+                .expandedItems || {},
+            ).map(([key, arr]) => [key, new Set(arr as string[])]),
           ),
         }),
       },

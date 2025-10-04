@@ -8,6 +8,7 @@
 
 import { LayoutGrid, LayoutList, List } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/core/base/utils/cn";
 import { useViewMode } from "@/stores";
 
@@ -40,7 +41,7 @@ export function ViewModeSwitcher({
   // Use local state to prevent hydration mismatch
   // Initialize with default 'list' on both server and client
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [_isHydrated, setIsHydrated] = useState(false);
 
   // Sync with store after hydration
   useEffect(() => {
@@ -54,32 +55,28 @@ export function ViewModeSwitcher({
   };
 
   return (
-    <div
+    <fieldset
       className={cn(
-        "inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1",
+        "inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1",
         className,
       )}
-      role="group"
       aria-label="View mode"
     >
       {modes.map(({ value, icon: Icon, label }) => (
-        <button
+        <Button
           key={value}
           onClick={() => handleSetViewMode(value)}
-          className={cn(
-            "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-            viewMode === value
-              ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50",
-          )}
+          variant={viewMode === value ? "default" : "ghost"}
+          size="sm"
+          leftIcon={<Icon className="h-4 w-4" />}
+          className={cn("transition-colors", !showLabels && "px-2")}
           aria-label={`${label} view`}
           aria-pressed={viewMode === value}
         >
-          <Icon className="h-4 w-4" />
-          {showLabels && <span>{label}</span>}
-        </button>
+          {showLabels && label}
+        </Button>
       ))}
-    </div>
+    </fieldset>
   );
 }
 

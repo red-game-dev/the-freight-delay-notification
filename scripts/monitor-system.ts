@@ -3,15 +3,15 @@
  * Continuously monitors traffic snapshots, notifications, and workflows
  */
 
+import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
-import { resolve } from "path";
 
 // Load environment variables
 config({ path: resolve(process.cwd(), ".env.local") });
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error("Missing Supabase credentials");
@@ -82,8 +82,12 @@ async function checkForUpdates() {
       if (latest.delay_minutes) {
         console.log(`   Delay: ${latest.delay_minutes} minutes`);
       }
-      if ((latest as any).retry_count > 0) {
-        console.log(`   Retries: ${(latest as any).retry_count}`);
+      if (
+        "retry_count" in latest &&
+        typeof latest.retry_count === "number" &&
+        latest.retry_count > 0
+      ) {
+        console.log(`   Retries: ${latest.retry_count}`);
       }
     }
   }

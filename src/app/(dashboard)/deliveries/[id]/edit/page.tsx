@@ -13,7 +13,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import { Dropdown } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/ui/DropDown";
 import { FormField, FormRow, FormSection } from "@/components/ui/FormField";
 import { InfoBox } from "@/components/ui/InfoBox";
 import { Input, Textarea } from "@/components/ui/Input";
@@ -39,6 +39,34 @@ const statusOptions = [
   { label: "Delayed", value: "delayed" },
   { label: "Delivered", value: "delivered" },
   { label: "Cancelled", value: "cancelled" },
+];
+
+const checkIntervalOptions = [
+  {
+    label: "Minutes",
+    options: [
+      { label: "Every 15 minutes", value: 15 },
+      { label: "Every 30 minutes", value: 30 },
+    ],
+  },
+  {
+    label: "Hours",
+    options: [
+      { label: "Every 1 hour", value: 60 },
+      { label: "Every 2 hours", value: 120 },
+      { label: "Every 3 hours", value: 180 },
+      { label: "Every 6 hours", value: 360 },
+      { label: "Every 12 hours", value: 720 },
+    ],
+  },
+  {
+    label: "Days/Weeks",
+    options: [
+      { label: "Daily (every 24 hours)", value: 1440 },
+      { label: "Weekly (every 7 days)", value: 10080 },
+      { label: "Monthly (every 30 days)", value: 43200 },
+    ],
+  },
 ];
 
 export default function EditDeliveryPage() {
@@ -354,39 +382,17 @@ export default function EditDeliveryPage() {
               <>
                 <FormRow columns={2}>
                   <FormField>
-                    <label className="block text-sm font-medium mb-1.5">
-                      Check Interval
-                      <span className="text-red-600 dark:text-red-400 ml-1">
-                        *
-                      </span>
-                    </label>
-                    <select
+                    <Select
                       {...register("check_interval_minutes", {
                         required: watch("enable_recurring_checks"),
                         valueAsNumber: true,
                       })}
-                      className="w-full px-3 py-2 border rounded-lg bg-background"
-                    >
-                      <optgroup label="Minutes">
-                        <option value="15">Every 15 minutes</option>
-                        <option value="30">Every 30 minutes</option>
-                      </optgroup>
-                      <optgroup label="Hours">
-                        <option value="60">Every 1 hour</option>
-                        <option value="120">Every 2 hours</option>
-                        <option value="180">Every 3 hours</option>
-                        <option value="360">Every 6 hours</option>
-                        <option value="720">Every 12 hours</option>
-                      </optgroup>
-                      <optgroup label="Days/Weeks">
-                        <option value="1440">Daily (every 24 hours)</option>
-                        <option value="10080">Weekly (every 7 days)</option>
-                        <option value="43200">Monthly (every 30 days)</option>
-                      </optgroup>
-                    </select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      How often to check traffic conditions
-                    </p>
+                      label="Check Interval"
+                      optionGroups={checkIntervalOptions}
+                      helperText="How often to check traffic conditions"
+                      required={watch("enable_recurring_checks")}
+                      fullWidth
+                    />
                   </FormField>
 
                   <FormField>

@@ -15,14 +15,11 @@ import { getErrorMessage, logger } from "@/core/base/utils/Logger";
 import { Result } from "@/core/base/utils/Result";
 import { createApiHandler } from "@/core/infrastructure/http";
 import type { TrafficCondition } from "@/core/types";
-import { getCurrentISOTimestamp, subtractHours } from "@/core/utils/dateUtils";
+import { getCurrentISOTimestamp } from "@/core/utils/dateUtils";
 import { capitalizeFirstLetter } from "@/core/utils/stringUtils";
-import { createWorkflowId, WorkflowType } from "@/core/utils/workflowUtils";
 import { TrafficService } from "@/infrastructure/adapters/traffic/TrafficService";
 import { env } from "@/infrastructure/config/EnvValidator";
 import { getDatabaseService } from "@/infrastructure/database";
-import { getTemporalClient } from "@/infrastructure/temporal/TemporalClient";
-import { DelayNotificationWorkflow } from "@/workflows/workflows";
 
 // Prevent response caching
 export const dynamic = "force-dynamic";

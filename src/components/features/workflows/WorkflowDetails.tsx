@@ -5,9 +5,7 @@
 
 "use client";
 
-import { Clock } from "lucide-react";
 import Link from "next/link";
-import * as React from "react";
 import { Badge } from "@/components/ui/Badge";
 import { CountdownTimerInline } from "@/components/ui/CountdownTimer";
 import { calculateNextRunTime } from "@/core/utils/dateUtils";

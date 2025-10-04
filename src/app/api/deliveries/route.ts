@@ -9,10 +9,11 @@ import {
   getCustomerEmailFromRequest,
   setAuditContext,
 } from "@/app/api/middleware/auditContext";
+import { ValidationError } from "@/core/base/errors/BaseError";
 import { logger } from "@/core/base/utils/Logger";
 import { Result } from "@/core/base/utils/Result";
 import { WORKFLOW } from "@/core/config/constants/app.constants";
-import { createApiHandler, getQueryParam } from "@/core/infrastructure/http";
+import { createApiHandler } from "@/core/infrastructure/http";
 import {
   createDeliverySchema,
   listDeliveriesQuerySchema,
@@ -24,7 +25,6 @@ import { createWorkflowId, WorkflowType } from "@/core/utils/workflowUtils";
 import { getGeocodingService } from "@/infrastructure/adapters/geocoding/GeocodingService";
 import { env } from "@/infrastructure/config/EnvValidator";
 import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
-import type { DeliveryStatus } from "@/infrastructure/database/types/database.types";
 import { getTemporalClient } from "@/infrastructure/temporal/TemporalClient";
 
 /**
@@ -157,7 +157,7 @@ export const POST = createApiHandler(
         return createCustomerResult;
       }
       customer = createCustomerResult;
-      logger.info(`✅ Created new customer: ${customer.value!.email}`);
+      logger.info(`✅ Created new customer: ${customer.value?.email}`);
     } else {
       // Customer exists - update if details changed
       const existingCustomer = customer.value;
@@ -180,7 +180,7 @@ export const POST = createApiHandler(
           // Don't fail the delivery creation, just log the warning
         } else {
           customer = updateCustomerResult;
-          logger.info(`✅ Updated existing customer: ${customer.value!.email}`);
+          logger.info(`✅ Updated existing customer: ${customer.value?.email}`);
         }
       } else {
         logger.info(`ℹ️ Using existing customer: ${customer.value.email}`);
@@ -231,9 +231,16 @@ export const POST = createApiHandler(
     }
 
     // Step 4: Create delivery
+    // At this point, customer.value is guaranteed to exist from the checks above
+    if (!customer.value) {
+      throw new ValidationError(
+        "Customer data is missing after creation/update",
+      );
+    }
+
     const deliveryResult = await db.createDelivery({
       tracking_number,
-      customer_id: customer.value!.id,
+      customer_id: customer.value.id,
       route_id: routeResult.value.id,
       scheduled_delivery: new Date(scheduled_delivery),
       status: "pending",
@@ -272,9 +279,9 @@ export const POST = createApiHandler(
         const baseWorkflowInput = {
           deliveryId: deliveryResult.value.id,
           routeId: routeResult.value.id,
-          customerId: customer.value!.id,
-          customerEmail: customer.value!.email,
-          customerPhone: customer.value!.phone || undefined,
+          customerId: customer.value.id,
+          customerEmail: customer.value.email,
+          customerPhone: customer.value.phone || undefined,
           origin: {
             address: routeResult.value.origin_address,
             coordinates: {
@@ -289,9 +296,11 @@ export const POST = createApiHandler(
               lng: routeResult.value.destination_coords.lng,
             },
           },
-          scheduledTime: ensureDateISO(
-            deliveryResult.value.scheduled_delivery,
-          )!,
+          scheduledTime:
+            ensureDateISO(deliveryResult.value.scheduled_delivery) ||
+            (() => {
+              throw new ValidationError("Scheduled delivery time is required");
+            })(),
           thresholdMinutes: deliveryResult.value.delay_threshold_minutes ?? 30,
         };
 

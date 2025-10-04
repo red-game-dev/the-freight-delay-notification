@@ -49,7 +49,7 @@ export class OpenAIAdapter implements AIAdapter {
       // to extract structured data for further manipulation (e.g., translation, formatting, A/B testing).
       // However, in this case, we don't manipulate the message afterwards - it's sent directly to the customer.
       // Plain text is simpler and sufficient for our SMS notification use case.
-      const completion = await this.client!.chat.completions.create({
+      const completion = await this.client?.chat.completions.create({
         model: this.model,
         messages: [
           {
@@ -65,6 +65,11 @@ export class OpenAIAdapter implements AIAdapter {
         temperature: 0.7,
         max_tokens: 80, // Shorter max tokens for concise SMS messages
       });
+
+      if (!completion) {
+        logger.warn("⚠️ OpenAI client returned undefined, using fallback");
+        return this.generateFallbackMessage(input);
+      }
 
       const message =
         completion.choices[0].message.content ||

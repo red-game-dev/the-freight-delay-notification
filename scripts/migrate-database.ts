@@ -3,7 +3,7 @@
  * Links to Supabase and runs migrations
  */
 
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
 import { config } from "dotenv";
 
 // Load environment variables
@@ -37,7 +37,7 @@ console.log(`   Supabase URL: ${supabaseUrl}`);
 console.log("");
 
 // Check if already linked
-const fs = require("fs");
+const fs = require("node:fs");
 const isLinked = fs.existsSync(".supabase/config.toml");
 
 if (!isLinked) {
@@ -66,7 +66,7 @@ if (!isLinked) {
     execSync(linkCommand, { stdio: "inherit" });
     console.log("");
     console.log("✅ Successfully linked to Supabase project");
-  } catch (error) {
+  } catch (_error) {
     console.error("");
     console.error("❌ Failed to link to Supabase project");
     process.exit(1);
@@ -89,7 +89,7 @@ try {
   console.log("📊 View your database:");
   console.log(`   https://supabase.com/dashboard/project/${projectRef}/editor`);
   console.log("");
-} catch (error) {
+} catch (_error) {
   console.error("");
   console.error("❌ Failed to push migrations");
   console.error("");

@@ -60,7 +60,7 @@ export const PATCH = createParamApiHandler(async (request, { params }) => {
     return thresholdResult;
   }
 
-  if (thresholdResult.value && thresholdResult.value.is_system) {
+  if (thresholdResult.value?.is_system) {
     return Result.fail(new HttpError("Cannot edit system threshold", 400));
   }
 

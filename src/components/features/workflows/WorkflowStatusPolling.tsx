@@ -264,10 +264,7 @@ export const WorkflowStatusPolling: FC<WorkflowStatusPollingProps> = ({
                 a new workflow.
               </>
             ) : (
-              <>
-                The workflow encountered an error and could not complete. Check
-                the details below for more information.
-              </>
+              "The workflow encountered an error and could not complete. Check the details below for more information."
             )}
           </Alert>
         )}

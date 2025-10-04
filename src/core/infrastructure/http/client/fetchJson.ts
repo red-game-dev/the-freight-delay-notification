@@ -57,7 +57,6 @@ export async function fetchJson<T>(
           throw new BadRequestError(errorMessage, errorContext);
         case 404:
           throw new NotFoundHttpError(errorMessage, errorContext);
-        case 500:
         default:
           throw new InternalServerError(errorMessage, errorContext);
       }

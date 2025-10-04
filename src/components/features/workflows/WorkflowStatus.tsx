@@ -13,7 +13,6 @@ import {
   StopCircle,
   XCircle,
 } from "lucide-react";
-import * as React from "react";
 import { SkeletonStats } from "@/components/ui/Skeleton";
 import { StatCard, StatGrid } from "@/components/ui/StatCard";
 import { useWorkflowStats } from "@/core/infrastructure/http/services/workflows";

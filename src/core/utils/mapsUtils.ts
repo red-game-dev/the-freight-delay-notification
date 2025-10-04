@@ -88,8 +88,8 @@ export function isValidCoordinate(lat: number, lng: number): boolean {
   return (
     typeof lat === "number" &&
     typeof lng === "number" &&
-    isFinite(lat) &&
-    isFinite(lng) &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
     lat >= -90 &&
     lat <= 90 &&
     lng >= -180 &&

@@ -6,7 +6,7 @@
 
 import { InfrastructureError } from "../../core/base/errors/BaseError";
 import { getErrorMessage, logger } from "../../core/base/utils/Logger";
-import { failure, type Result, success } from "../../core/base/utils/Result";
+import { failure, type Result } from "../../core/base/utils/Result";
 import type { DatabaseAdapter } from "./adapters/DatabaseAdapter.interface";
 import { MockDatabaseAdapter } from "./adapters/MockDatabaseAdapter";
 import { SupabaseDatabaseAdapter } from "./adapters/SupabaseDatabaseAdapter";

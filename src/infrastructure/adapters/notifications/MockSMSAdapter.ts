@@ -56,6 +56,6 @@ export class MockSMSAdapter implements NotificationAdapter {
       return shortMessage;
     }
 
-    return shortMessage.substring(0, 157) + "...";
+    return `${shortMessage.substring(0, 157)}...`;
   }
 }

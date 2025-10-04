@@ -31,10 +31,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { InfoBox } from "@/components/ui/InfoBox";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SkeletonDetail } from "@/components/ui/Skeleton";
-import { CompactTimeline } from "@/components/ui/Timeline";
 import { Toggle } from "@/components/ui/Toggle";
 import {
   useDeleteDelivery,
@@ -82,7 +80,6 @@ export default function DeliveryDetailPage() {
 
   // Use workflow polling hook
   const {
-    workflowStatus,
     isWorkflowRunning,
     shouldEnablePolling,
     notifyWorkflowStarted,

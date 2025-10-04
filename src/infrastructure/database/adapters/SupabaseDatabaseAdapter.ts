@@ -5,14 +5,7 @@
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import {
-  getErrorMessage,
-  hasCause,
-  hasCode,
-  hasMessage,
-  hasName,
-  logger,
-} from "@/core/base/utils/Logger";
+import { getErrorMessage, logger } from "@/core/base/utils/Logger";
 import { pointToCoordinates } from "@/core/utils/coordinateUtils";
 import { InfrastructureError } from "../../../core/base/errors/BaseError";
 import { failure, type Result, success } from "../../../core/base/utils/Result";
@@ -76,17 +69,17 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       return;
     }
 
+    // isConfigured() already validates these are not undefined
+    const url = env.SUPABASE_URL as string;
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY as string;
+
     try {
-      this.client = createClient(
-        env.SUPABASE_URL!,
-        env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
+      this.client = createClient(url, serviceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
         },
-      );
+      });
     } catch (error: unknown) {
       logger.error(
         "Failed to initialize Supabase client:",

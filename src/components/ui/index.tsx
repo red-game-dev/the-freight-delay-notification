@@ -10,7 +10,7 @@ export * from "./Card";
 export * from "./Checkbox";
 export * from "./DateTimePicker";
 export * from "./Drawer";
-export { Dropdown, type DropdownOption, type DropdownProps } from "./Dropdown";
+export { Dropdown, type DropdownOption, type DropdownProps } from "./DropDown";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export * from "./Filters";
 export * from "./FormField";

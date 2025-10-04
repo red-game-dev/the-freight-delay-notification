@@ -18,7 +18,7 @@ import { handleResult } from "./handleResult";
  *   return await db.listDeliveries();
  * });
  */
-export function createApiHandler<T = any>(
+export function createApiHandler<T = unknown>(
   handler: (
     request: NextRequest,
     context?: Record<string, unknown>,

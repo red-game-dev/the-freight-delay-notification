@@ -11,6 +11,7 @@ import { listNotificationsQuerySchema } from "@/core/schemas/notification";
 import { createPaginatedResponse } from "@/core/utils/paginationUtils";
 import { validateQuery } from "@/core/utils/validation";
 import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
+import type { Notification } from "@/infrastructure/database/types/database.types";
 
 /**
  * GET /api/notifications
@@ -40,7 +41,7 @@ export const GET = createApiHandler(async (request) => {
     includeStats,
   } = queryResult.value;
 
-  let notificationsResult;
+  let notificationsResult: Result<Notification[]>;
 
   if (deliveryId) {
     logger.info(

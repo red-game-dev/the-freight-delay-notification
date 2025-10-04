@@ -7,8 +7,9 @@
  *   npm run cron:prod   # Uses 600s (10 minutes) regardless of env var
  */
 
+import { resolve } from "node:path";
 import { config } from "dotenv";
-import { resolve } from "path";
+import { InfrastructureError } from "@/core/base/errors/BaseError";
 
 // Load environment variables
 config({ path: resolve(process.cwd(), ".env.local") });
@@ -59,7 +60,9 @@ async function runTrafficCheck() {
     const duration = Date.now() - startTime;
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new InfrastructureError(
+        `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -84,17 +87,17 @@ async function runTrafficCheck() {
         console.log(`⚠️  Errors encountered:`, apiResult.result.errors);
       }
     } else {
-      throw new Error(data.error?.message || data.error || "Unknown error");
+      throw new InfrastructureError(
+        data.error?.message || data.error || "Unknown error",
+      );
     }
-  } catch (error: any) {
+  } catch (error) {
     errorCount++;
     const duration = Date.now() - startTime;
-    console.error(
-      `❌ Run #${runCount} failed after ${duration}ms:`,
-      error.message,
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Run #${runCount} failed after ${duration}ms:`, message);
 
-    if (error.cause) {
+    if (error instanceof Error && error.cause) {
       console.error("   Cause:", error.cause);
     }
   }

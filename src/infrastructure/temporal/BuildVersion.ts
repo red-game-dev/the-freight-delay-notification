@@ -49,7 +49,7 @@ export function getBuildId(): string {
     const dirtySuffix = isDirty ? "-dirty" : "";
 
     return `${gitBranch}-${gitHash}-${timestamp}${dirtySuffix}`;
-  } catch (error) {
+  } catch (_error) {
     // Fallback for non-git environments (CI/CD, Docker, etc.)
     console.warn("⚠️  Git not available, using timestamp-based build ID");
     return `build-${Date.now()}`;
@@ -88,7 +88,7 @@ export function getBuildInfo(): BuildInfo {
       timestamp,
       isDirty,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       buildId: `build-${Date.now()}`,
       gitHash: "unknown",
@@ -113,7 +113,7 @@ export function getPreviousBuildId(): string | undefined {
 
     // Note: Timestamp won't match exactly, but hash is the key identifier
     return `${gitBranch}-${prevHash}`;
-  } catch (error) {
+  } catch (_error) {
     return undefined;
   }
 }

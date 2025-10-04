@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import * as React from "react";
 import { ROUTES } from "@/core/config/constants/app.constants";
 
 const navigation = [
@@ -61,7 +60,7 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95">
       <nav className="flex flex-1 flex-col gap-y-7 px-6 py-4">
-        <ul role="list" className="flex flex-1 flex-col gap-y-1">
+        <ul className="flex flex-1 flex-col gap-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (

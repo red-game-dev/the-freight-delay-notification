@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { sanitizeString } from "@/core/utils/validation";
-import { emailSchema, isoDateSchema, phoneSchema, uuidSchema } from "./common";
+import { emailSchema, phoneSchema, uuidSchema } from "./common";
 
 /**
  * Delivery status enum

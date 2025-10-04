@@ -126,7 +126,7 @@ export interface CreateDeliveryInput {
   checks_performed?: number;
   min_delay_change_threshold?: number;
   min_hours_between_notifications?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UpdateDeliveryInput {
@@ -143,7 +143,7 @@ export interface UpdateDeliveryInput {
   checks_performed?: number;
   min_delay_change_threshold?: number;
   min_hours_between_notifications?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   // Frontend convenience fields (will be converted to metadata)
   notes?: string;
   origin?: string;

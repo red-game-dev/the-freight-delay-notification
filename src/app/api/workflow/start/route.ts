@@ -3,7 +3,7 @@
  * POST /api/workflow/start
  */
 
-import { WorkflowIdReusePolicy } from "@temporalio/client";
+import { type WorkflowHandle, WorkflowIdReusePolicy } from "@temporalio/client";
 import type { NextRequest } from "next/server";
 import {
   InfrastructureError,
@@ -183,7 +183,7 @@ export const POST = createApiHandler(async (request: NextRequest) => {
   // Try to start the workflow
   // ALLOW_DUPLICATE: Creates a new workflow run even if previous exists (completed, failed, cancelled, terminated)
   // Only prevents duplicate if a workflow is currently RUNNING
-  let handle;
+  let handle: WorkflowHandle;
   try {
     handle = await client.workflow.start(workflowName, {
       taskQueue: process.env.TEMPORAL_TASK_QUEUE || "freight-delay-queue",

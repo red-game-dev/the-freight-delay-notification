@@ -20,6 +20,7 @@ import {
   useContext,
   useState,
 } from "react";
+import { InfrastructureError } from "@/core/base/errors/BaseError";
 import { generateShortId } from "@/core/utils/idUtils";
 import { Button } from "./Button";
 
@@ -47,7 +48,7 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error("useToast must be used within ToastProvider");
+    throw new InfrastructureError("useToast must be used within ToastProvider");
   }
   return context;
 };

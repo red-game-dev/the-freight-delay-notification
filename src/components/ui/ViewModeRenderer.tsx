@@ -83,7 +83,7 @@ export function ViewModeRenderer<T>({
 
   // Show empty state (only for arrays)
   if (!items || (Array.isArray(items) && items.length === 0)) {
-    return emptyComponent ? <>{emptyComponent}</> : null;
+    return emptyComponent ? emptyComponent : null;
   }
 
   // Render content based on view mode

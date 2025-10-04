@@ -8,6 +8,7 @@
 
 import { type Libraries, useLoadScript } from "@react-google-maps/api";
 import { createContext, type ReactNode, useContext } from "react";
+import { InfrastructureError } from "@/core/base/errors/BaseError";
 import { clientEnv } from "@/infrastructure/config/ClientEnv";
 
 interface GoogleMapsContextValue {
@@ -46,7 +47,9 @@ export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
 export function useGoogleMaps() {
   const context = useContext(GoogleMapsContext);
   if (context === undefined) {
-    throw new Error("useGoogleMaps must be used within GoogleMapsProvider");
+    throw new InfrastructureError(
+      "useGoogleMaps must be used within GoogleMapsProvider",
+    );
   }
   return context;
 }

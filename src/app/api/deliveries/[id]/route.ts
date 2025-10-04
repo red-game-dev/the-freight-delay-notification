@@ -14,10 +14,7 @@ import { createParamApiHandler } from "@/core/infrastructure/http";
 import { updateDeliverySchema } from "@/core/schemas/delivery";
 import { validateBody } from "@/core/utils/validation";
 import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
-import type {
-  DeliveryStatus,
-  UpdateDeliveryInput,
-} from "@/infrastructure/database/types/database.types";
+import type { UpdateDeliveryInput } from "@/infrastructure/database/types/database.types";
 
 /**
  * GET /api/deliveries/[id]

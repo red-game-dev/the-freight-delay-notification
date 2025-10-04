@@ -6,7 +6,6 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import * as React from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";

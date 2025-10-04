@@ -6,24 +6,17 @@
 import { NextResponse } from "next/server";
 import { toHttpError } from "@/core/base/errors/HttpError";
 import { isDevelopment } from "@/core/base/utils/environment";
-import {
-  getErrorMessage,
-  hasCause,
-  hasCode,
-  hasMessage,
-  hasName,
-  logger,
-} from "@/core/base/utils/Logger";
+import { logger } from "@/core/base/utils/Logger";
 import type { ApiHandlerOptions, ApiResponse } from "../types";
 
 /**
  * Create a standardized error response
  * Converts any error to HttpError and logs it
  */
-export function createErrorResponse(
+export function createErrorResponse<T = unknown>(
   error: Error,
   options?: ApiHandlerOptions,
-): NextResponse<ApiResponse> {
+): NextResponse<ApiResponse<T>> {
   // Convert to HttpError
   const httpError = toHttpError(error);
 
@@ -38,7 +31,7 @@ export function createErrorResponse(
     context: httpError.context,
   });
 
-  const response: ApiResponse = {
+  const response: ApiResponse<T> = {
     success: false,
     error: {
       message: httpError.message,

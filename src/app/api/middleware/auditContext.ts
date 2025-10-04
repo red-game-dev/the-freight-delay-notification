@@ -61,7 +61,7 @@ export async function getCustomerEmailFromRequest(
     return (
       body?.customer_email || body?.email || body?.customerEmail || undefined
     );
-  } catch (error) {
+  } catch (_error) {
     // Body might not be JSON or might already be consumed
     return undefined;
   }

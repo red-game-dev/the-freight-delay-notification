@@ -18,7 +18,7 @@ import { handleResult } from "./handleResult";
  *   return await db.getDeliveryById(params.id);
  * });
  */
-export function createParamApiHandler<T = any>(
+export function createParamApiHandler<T = unknown>(
   handler: (
     request: NextRequest,
     context: { params: Record<string, string> },

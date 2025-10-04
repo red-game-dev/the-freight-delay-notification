@@ -1,5 +1,9 @@
-import { NativeConnection, Worker } from "@temporalio/worker";
-import path from "path";
+import path from "node:path";
+import {
+  NativeConnection,
+  type NativeConnectionOptions,
+  Worker,
+} from "@temporalio/worker";
 import { InfrastructureError } from "../../core/base/errors/BaseError";
 import { logger } from "../../core/base/utils/Logger";
 import * as activities from "../../workflows/activities";
@@ -25,7 +29,7 @@ export async function createTemporalWorker(): Promise<Worker> {
 
     // Create connection to Temporal server
     // For Temporal Cloud, include TLS and authentication
-    const connectionOptions: any = {
+    const connectionOptions: NativeConnectionOptions = {
       address: env.TEMPORAL_ADDRESS,
     };
 

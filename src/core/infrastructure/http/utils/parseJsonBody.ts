@@ -10,7 +10,9 @@ import { HttpError } from "@/core/base/errors/HttpError";
  * Validate request body and parse JSON
  * Throws BadRequestError if body is invalid
  */
-export async function parseJsonBody<T = any>(request: NextRequest): Promise<T> {
+export async function parseJsonBody<T = unknown>(
+  request: NextRequest,
+): Promise<T> {
   try {
     const body = await request.json();
     return body as T;

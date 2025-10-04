@@ -12,7 +12,9 @@ import { getCustomer } from "./getCustomer";
 export function useCustomer(id: string | null) {
   return useQuery({
     queryKey: queryKeys.customers.detail(id || ""),
-    queryFn: () => getCustomer(id!),
+    queryFn: async () => {
+      return getCustomer(id || "");
+    },
     enabled: !!id,
   });
 }

@@ -1,4 +1,4 @@
-import { Client, Connection } from "@temporalio/client";
+import { Client, Connection, type ConnectionOptions } from "@temporalio/client";
 import { InfrastructureError } from "@/core/base/errors/BaseError";
 import { logger } from "@/core/base/utils/Logger";
 import { env } from "../config/EnvValidator";
@@ -14,7 +14,7 @@ export async function createTemporalClient(): Promise<Client> {
   try {
     // Create connection to Temporal server
     // For Temporal Cloud, include TLS and authentication
-    const connectionOptions: any = {
+    const connectionOptions: ConnectionOptions = {
       address: env.TEMPORAL_ADDRESS,
     };
 

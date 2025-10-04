@@ -7,7 +7,7 @@
  * Standard API Response format
  * Ensures consistent response structure across all endpoints
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {

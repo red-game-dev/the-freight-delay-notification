@@ -85,7 +85,7 @@ export class Coordinates {
     const cleaned = point.replace(/POINT\(|\(|\)/gi, "");
     const parts = cleaned.split(/[,\s]+/).map(Number);
 
-    if (parts.length !== 2 || parts.some(isNaN)) {
+    if (parts.length !== 2 || parts.some(Number.isNaN)) {
       throw new DomainError("Invalid POINT format", { point });
     }
 

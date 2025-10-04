@@ -749,54 +749,53 @@ export const EMAIL_BLACKLIST = {
 };
 
 /**
- * Email validation utility
+ * Email validation utilities
  */
-export class EmailBlacklistChecker {
-  /**
-   * Check if an email is blacklisted
-   */
-  static isBlacklisted(email: string): boolean {
-    const [localPart, domain] = email.toLowerCase().split("@");
 
-    if (!localPart || !domain) {
-      return true; // Invalid email format
-    }
+/**
+ * Check if an email is blacklisted
+ */
+export function isEmailBlacklisted(email: string): boolean {
+  const [localPart, domain] = email.toLowerCase().split("@");
 
-    // Check if domain is in disposable list
-    if (EMAIL_BLACKLIST.disposable.includes(domain)) {
+  if (!localPart || !domain) {
+    return true; // Invalid email format
+  }
+
+  // Check if domain is in disposable list
+  if (EMAIL_BLACKLIST.disposable.includes(domain)) {
+    return true;
+  }
+
+  // Check if email is role-based (optional check)
+  if (process.env.BLOCK_ROLE_BASED_EMAILS === "true") {
+    if (EMAIL_BLACKLIST.roleBased.includes(localPart)) {
       return true;
     }
-
-    // Check if email is role-based (optional check)
-    if (process.env.BLOCK_ROLE_BASED_EMAILS === "true") {
-      if (EMAIL_BLACKLIST.roleBased.includes(localPart)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
-  /**
-   * Get the reason why an email is blacklisted
-   */
-  static getBlacklistReason(email: string): string | null {
-    const [localPart, domain] = email.toLowerCase().split("@");
+  return false;
+}
 
-    if (!localPart || !domain) {
-      return "Invalid email format";
-    }
+/**
+ * Get the reason why an email is blacklisted
+ */
+export function getEmailBlacklistReason(email: string): string | null {
+  const [localPart, domain] = email.toLowerCase().split("@");
 
-    if (EMAIL_BLACKLIST.disposable.includes(domain)) {
-      return "Disposable email domain not allowed";
-    }
-
-    if (process.env.BLOCK_ROLE_BASED_EMAILS === "true") {
-      if (EMAIL_BLACKLIST.roleBased.includes(localPart)) {
-        return "Role-based email addresses not allowed";
-      }
-    }
-
-    return null;
+  if (!localPart || !domain) {
+    return "Invalid email format";
   }
+
+  if (EMAIL_BLACKLIST.disposable.includes(domain)) {
+    return "Disposable email domain not allowed";
+  }
+
+  if (process.env.BLOCK_ROLE_BASED_EMAILS === "true") {
+    if (EMAIL_BLACKLIST.roleBased.includes(localPart)) {
+      return "Role-based email addresses not allowed";
+    }
+  }
+
+  return null;
 }

@@ -22,10 +22,14 @@ const sizeClasses = {
 };
 
 export const Label = forwardRef<HTMLLabelElement, LabelProps>(
-  ({ children, required, size = "md", disabled, className, ...props }, ref) => {
+  (
+    { children, required, size = "md", disabled, className, htmlFor, ...props },
+    ref,
+  ) => {
     return (
       <label
         ref={ref}
+        htmlFor={htmlFor}
         className={cn(
           "block font-medium",
           sizeClasses[size],

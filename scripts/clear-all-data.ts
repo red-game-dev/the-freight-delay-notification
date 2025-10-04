@@ -3,9 +3,9 @@
  * Deletes all data while preserving schema and default threshold
  */
 
+import * as readline from "node:readline";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
-import * as readline from "readline";
 
 // Load environment variables
 config({ path: ".env.local" });
@@ -168,8 +168,9 @@ async function clearAllData() {
           `   ✅ ${table.padEnd(25)} ${deleted.toString().padStart(5)} deleted`,
         );
       }
-    } catch (error: any) {
-      console.log(`   ❌ ${table.padEnd(25)} Failed: ${error.message}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.log(`   ❌ ${table.padEnd(25)} Failed: ${message}`);
     }
   }
 
@@ -194,9 +195,10 @@ async function clearAllData() {
 async function main() {
   try {
     await clearAllData();
-  } catch (error: any) {
+  } catch (error) {
     console.error("");
-    console.error("❌ Failed to clear data:", error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("❌ Failed to clear data:", message);
     console.error("");
     console.error("💡 Alternative: Run in Dashboard SQL Editor:");
     console.error("   scripts/clear-data.sql");

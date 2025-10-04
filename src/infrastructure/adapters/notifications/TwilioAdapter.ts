@@ -52,19 +52,19 @@ export class TwilioAdapter implements NotificationAdapter {
       // Truncate message if too long (SMS has 160 char limit per segment)
       const smsMessage = this.formatSMSMessage(input.message, input.deliveryId);
 
-      const message = await this.client!.messages.create({
+      const message = await this.client?.messages.create({
         body: smsMessage,
         from: this.fromPhone,
         to: input.to,
       });
 
       logger.info(`✅ [Twilio] SMS sent successfully`);
-      logger.info(`   Message SID: ${message.sid}`);
-      logger.info(`   Status: ${message.status}`);
+      logger.info(`   Message SID: ${message?.sid}`);
+      logger.info(`   Status: ${message?.status}`);
 
       return success({
         success: true,
-        messageId: message.sid,
+        messageId: message?.sid,
         channel: this.channel,
       });
     } catch (error: unknown) {
@@ -92,6 +92,6 @@ export class TwilioAdapter implements NotificationAdapter {
       return shortMessage;
     }
 
-    return shortMessage.substring(0, 157) + "...";
+    return `${shortMessage.substring(0, 157)}...`;
   }
 }

@@ -87,7 +87,7 @@ export const GET = createApiHandler(async (request) => {
           `⚠️ Unexpected workflow status: ${description.status.name} for ${workflowId}`,
         );
       }
-    } catch (err) {}
+    } catch (_err) {}
   }
 
   // Add DB workflows that aren't in Temporal (historical only)

@@ -16,7 +16,7 @@ function parseArgs() {
   const options = {
     origin: process.env.TEST_ORIGIN || "Times Square, Manhattan, NY",
     destination: process.env.TEST_DESTINATION || "JFK Airport, Queens, NY",
-    threshold: parseInt(process.env.TEST_THRESHOLD || "30"),
+    threshold: parseInt(process.env.TEST_THRESHOLD || "30", 10),
     email: process.env.TEST_EMAIL || "test@example.com",
     phone: process.env.TEST_PHONE || "+1234567890",
   };
@@ -30,7 +30,7 @@ function parseArgs() {
       options.destination = args[i + 1];
       i++;
     } else if (args[i] === "--threshold" && args[i + 1]) {
-      options.threshold = parseInt(args[i + 1]);
+      options.threshold = parseInt(args[i + 1], 10);
       i++;
     }
   }
@@ -195,7 +195,7 @@ async function testCompleteWorkflow() {
       }
     }
 
-    console.log("\n" + "=".repeat(50));
+    console.log(`\n${"=".repeat(50)}`);
     console.log("\n✨ All 4 steps of the PDF workflow completed!");
     console.log(
       `   View in Temporal UI: http://localhost:8233/namespaces/default/workflows/${handle.workflowId}\n`,
@@ -203,8 +203,9 @@ async function testCompleteWorkflow() {
 
     await connection.close();
     process.exit(0);
-  } catch (error: any) {
-    console.error("\n❌ Workflow test failed:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("\n❌ Workflow test failed:", message);
     console.error("\nMake sure:");
     console.error("  1. Temporal server is running: npm run temporal");
     console.error("  2. Worker is running: npm run temporal:worker");

@@ -5,15 +5,7 @@
 
 "use client";
 
-import {
-  Bell,
-  CheckCircle,
-  Edit,
-  Plus,
-  Star,
-  Trash2,
-  User,
-} from "lucide-react";
+import { Bell, CheckCircle, Edit, Plus, Star, Trash2 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Alert } from "@/components/ui/Alert";
@@ -22,12 +14,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { FormField, FormRow, FormSection } from "@/components/ui/FormField";
-import { InfoBox } from "@/components/ui/InfoBox";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import {
+  type CreateCustomerInput,
   type UpdateCustomerInput,
   useCreateCustomer,
   useCustomer,
@@ -166,7 +158,7 @@ export default function SettingsPage() {
       } else {
         // Create new customer (or get existing if email already exists)
         const savedCustomer = await createCustomerMutation.mutateAsync(
-          data as any,
+          data as CreateCustomerInput,
         );
         // Store customer ID in localStorage
         setCustomerId(savedCustomer.id);
@@ -537,7 +529,7 @@ function ThresholdModal({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                delay_minutes: parseInt(e.target.value) || 0,
+                delay_minutes: parseInt(e.target.value, 10) || 0,
               }))
             }
             helperText="Notify customers if delay exceeds this amount"
@@ -548,9 +540,9 @@ function ThresholdModal({
         </FormField>
 
         <FormField>
-          <label className="block text-sm font-medium mb-2">
+          <div className="block text-sm font-medium mb-2">
             Notification Channels
-          </label>
+          </div>
           <div className="flex gap-3">
             <Checkbox
               label="Email"

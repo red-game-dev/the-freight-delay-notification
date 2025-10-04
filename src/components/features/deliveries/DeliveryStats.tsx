@@ -6,7 +6,6 @@
 "use client";
 
 import { CheckCircle2, Clock, Package, TruckIcon } from "lucide-react";
-import * as React from "react";
 import { SkeletonStats } from "@/components/ui/Skeleton";
 import { StatCard, StatGrid } from "@/components/ui/StatCard";
 import { useDeliveryStats } from "@/core/infrastructure/http/services/deliveries";

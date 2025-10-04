@@ -44,10 +44,11 @@ export const Tooltip: FC<TooltipProps> = ({
   };
 
   return (
-    <div
+    <span
       className="relative inline-block"
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
+      role="tooltip"
     >
       {children}
       {isVisible && (
@@ -62,7 +63,7 @@ export const Tooltip: FC<TooltipProps> = ({
           {content}
         </div>
       )}
-    </div>
+    </span>
   );
 };
 

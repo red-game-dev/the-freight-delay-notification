@@ -8,7 +8,7 @@ import type { FC } from "react";
 import { cn } from "@/core/base/utils/cn";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import { Select, SelectOption, type SelectOptionGroup } from "./Select";
+import { Select, type SelectOptionGroup } from "./Select";
 
 export interface FilterOption {
   label: string;
@@ -113,9 +113,7 @@ export const Filters: FC<FiltersProps> = ({
 
             {filter.type === "button-group" && (
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium">
-                  {filter.label}
-                </label>
+                <div className="block text-sm font-medium">{filter.label}</div>
                 <div className="flex flex-wrap gap-2">
                   {filter.options?.map((option) => (
                     <Button

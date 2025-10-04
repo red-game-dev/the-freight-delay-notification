@@ -145,9 +145,9 @@ export const GET = createApiHandler(async (request) => {
           if (dbWorkflow && dbWorkflow.status !== status) {
             // Update DB status in background (don't await)
             db.updateWorkflowExecution(dbWorkflow.id, {
-              status: status as any,
+              status,
               completed_at: description.closeTime || undefined,
-            }).catch((err) => {
+            }).catch(() => {
               // Ignore errors - DB sync is best-effort
             });
           }
@@ -304,13 +304,13 @@ export const GET = createApiHandler(async (request) => {
           if (dbWorkflow && dbWorkflow.status !== status) {
             // Update DB status in background (don't await)
             db.updateWorkflowExecution(dbWorkflow.id, {
-              status: status as any,
+              status,
               completed_at: description.closeTime || undefined,
-            }).catch((err) => {
+            }).catch(() => {
               // Ignore errors - DB sync is best-effort
             });
           }
-        } catch (err) {}
+        } catch (_err) {}
       }
     }
   }

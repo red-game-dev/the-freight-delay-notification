@@ -36,7 +36,7 @@ export function pointToCoordinates(
     const parts = cleaned
       .split(/[,\s]+/)
       .map((s) => parseFloat(s.trim()))
-      .filter((n) => !isNaN(n));
+      .filter((n) => !Number.isNaN(n));
 
     if (parts.length === 2) {
       const [lng, lat] = parts;
@@ -105,7 +105,7 @@ export function isValidCoordinates(
   if (typeof lat !== "number" || typeof lng !== "number") return false;
 
   // Check if not NaN
-  if (isNaN(lat) || isNaN(lng)) return false;
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return false;
 
   // Check if within valid ranges (-90 to 90 for lat, -180 to 180 for lng)
   if (lat < -90 || lat > 90) return false;

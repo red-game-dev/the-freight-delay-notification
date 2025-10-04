@@ -41,11 +41,7 @@ import type {
 import type { TrafficConditionFilter } from "@/core/types";
 import { buildGoogleMapsDirectionsUrl } from "@/core/utils/mapsUtils";
 import { getDeliveryStatusVariant } from "@/core/utils/statusUtils";
-import {
-  countByCondition,
-  enrichSnapshot,
-  TRAFFIC_CONFIG,
-} from "@/core/utils/trafficUtils";
+import { countByCondition, enrichSnapshot } from "@/core/utils/trafficUtils";
 import { useExpandedItems } from "@/stores";
 
 export default function MonitoringPage() {

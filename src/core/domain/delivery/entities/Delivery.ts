@@ -18,7 +18,7 @@ interface DeliveryProps {
   actualDelivery?: Date;
   currentLocation?: Coordinates;
   delayThresholdMinutes: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,7 +29,7 @@ export class Delivery extends Entity<DeliveryProps> {
    */
   static create(
     props: Omit<DeliveryProps, "createdAt" | "updatedAt" | "metadata"> & {
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     },
     id: string,
   ): Delivery {
@@ -85,7 +85,7 @@ export class Delivery extends Entity<DeliveryProps> {
     return this.props.delayThresholdMinutes;
   }
 
-  get metadata(): Record<string, any> {
+  get metadata(): Record<string, unknown> {
     return this.props.metadata;
   }
 
@@ -194,7 +194,7 @@ export class Delivery extends Entity<DeliveryProps> {
   /**
    * Update metadata
    */
-  public updateMetadata(metadata: Record<string, any>): void {
+  public updateMetadata(metadata: Record<string, unknown>): void {
     this.props.metadata = {
       ...this.props.metadata,
       ...metadata,

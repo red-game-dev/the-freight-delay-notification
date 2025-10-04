@@ -92,7 +92,13 @@ export const CircularProgress: FC<CircularProgressProps> = ({
 
   return (
     <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
+      <svg
+        width={size}
+        height={size}
+        className="transform -rotate-90"
+        aria-label={`Progress: ${value}%`}
+        role="img"
+      >
         <circle
           cx={size / 2}
           cy={size / 2}

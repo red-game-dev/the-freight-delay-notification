@@ -103,29 +103,23 @@ export function Alert({
   id,
   pageKey = "alerts",
 }: AlertProps) {
-  // Use persistent state if ID provided, otherwise use local state
-  const expandedStore = id ? useExpandedItems(pageKey) : null;
+  // Always call hooks unconditionally (Rules of Hooks)
+  const expandedStore = useExpandedItems(pageKey);
   const [localExpanded, setLocalExpanded] = useState(defaultExpanded);
 
   // Get expanded state from store if ID provided, otherwise use local state
-  const isExpanded =
-    id && expandedStore ? expandedStore.isExpanded(id) : localExpanded;
+  const isExpanded = id ? expandedStore.isExpanded(id) : localExpanded;
 
   // Initialize store state if ID provided and not yet set
   useEffect(() => {
-    if (
-      id &&
-      expandedStore &&
-      defaultExpanded &&
-      !expandedStore.isExpanded(id)
-    ) {
+    if (id && defaultExpanded && !expandedStore.isExpanded(id)) {
       expandedStore.set(id, true);
     }
   }, [id, defaultExpanded, expandedStore]);
 
   // Toggle function that uses store or local state
   const toggleExpanded = () => {
-    if (id && expandedStore) {
+    if (id) {
       expandedStore.toggle(id);
     } else {
       setLocalExpanded(!localExpanded);
@@ -195,9 +189,9 @@ export function Alert({
             styles.border,
           )}
         >
-          {actions.map((action, index) => (
+          {actions.map((action) => (
             <Button
-              key={index}
+              key={action.label}
               onClick={action.onClick}
               variant={action.variant === "primary" ? "primary" : "ghost"}
               size="sm"

@@ -159,9 +159,11 @@ export const Pagination: FC<PaginationProps> = ({
         <div className="flex items-center gap-1">
           {pageNumbers.map((page, index) => {
             if (page === "ellipsis") {
+              // Create a unique key based on the previous page number
+              const prevPage = index > 0 ? pageNumbers[index - 1] : "start";
               return (
                 <span
-                  key={`ellipsis-${index}`}
+                  key={`ellipsis-after-${prevPage}`}
                   className="px-3 py-2 text-muted-foreground"
                   aria-hidden="true"
                 >

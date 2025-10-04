@@ -42,7 +42,7 @@ export const useUserSettingsStore = create<UserSettingsStore>()(
       setCustomerId: (customerId) =>
         set((state) => ({
           settings: {
-            ...state.settings!,
+            ...(state.settings || defaultSettings),
             customerId,
           },
         })),
@@ -50,9 +50,9 @@ export const useUserSettingsStore = create<UserSettingsStore>()(
       updatePreference: (key, value) =>
         set((state) => ({
           settings: {
-            ...state.settings!,
+            ...(state.settings || defaultSettings),
             preferences: {
-              ...state.settings!.preferences,
+              ...state.settings?.preferences,
               [key]: value,
             },
           },
@@ -65,13 +65,16 @@ export const useUserSettingsStore = create<UserSettingsStore>()(
     {
       name: "freight-delay-user-settings", // localStorage key
       version: 4,
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: unknown, version: number) => {
         // Migrate from older versions to version 4
         if (version < 4) {
           // Reset to default structure for any version < 4
+          const state = persistedState as {
+            settings?: { customerId?: string | null };
+          };
           return {
             settings: {
-              customerId: persistedState?.settings?.customerId || null,
+              customerId: state?.settings?.customerId || null,
               preferences: {},
             },
           };

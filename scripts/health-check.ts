@@ -3,8 +3,8 @@
  * Quick verification that all components are running and accessible
  */
 
+import { resolve } from "node:path";
 import { config } from "dotenv";
-import { resolve } from "path";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -12,7 +12,7 @@ interface HealthCheckResult {
   component: string;
   status: "healthy" | "unhealthy" | "unknown";
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 const results: HealthCheckResult[] = [];
@@ -36,12 +36,13 @@ async function checkNextJs() {
         message: `Server returned ${response.status}`,
       });
     }
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     results.push({
       component: "Next.js Dev Server",
       status: "unhealthy",
       message: "Server is not accessible",
-      details: { error: error.message },
+      details: { error: message },
     });
   }
 }
@@ -74,12 +75,13 @@ async function checkCronEndpoint() {
         message: data.error || "Unknown error",
       });
     }
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     results.push({
       component: "Traffic Monitoring Endpoint",
       status: "unhealthy",
       message: "Endpoint check failed",
-      details: { error: error.message },
+      details: { error: message },
     });
   }
 }
@@ -103,7 +105,7 @@ async function checkTemporal() {
         message: "Temporal UI returned unexpected status",
       });
     }
-  } catch (error: any) {
+  } catch {
     results.push({
       component: "Temporal UI (Optional)",
       status: "unknown",
@@ -131,7 +133,7 @@ async function checkSupabase() {
     component: "Supabase (Remote)",
     status: "healthy",
     message: "Credentials configured",
-    details: { url: supabaseUrl.substring(0, 30) + "..." },
+    details: { url: `${supabaseUrl.substring(0, 30)}...` },
   });
 }
 

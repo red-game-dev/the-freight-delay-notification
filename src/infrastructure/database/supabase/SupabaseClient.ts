@@ -36,10 +36,11 @@ let _supabaseAdmin: SupabaseClient | null = null;
  * Subject to Row Level Security policies
  */
 export const supabase = (() => {
-  if (!_supabase && isSupabaseConfigured()) {
-    _supabase = createClient(env.SUPABASE_URL!, env.SUPABASE_ANON_KEY!);
+  if (!_supabase && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    _supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
   }
-  return _supabase!;
+  // Return null if not configured - consumers should check isSupabaseConfigured()
+  return _supabase as SupabaseClient;
 })();
 
 /**
@@ -47,11 +48,12 @@ export const supabase = (() => {
  * Bypasses Row Level Security policies - use with caution
  */
 export const supabaseAdmin = (() => {
-  if (!_supabaseAdmin && isSupabaseAdminConfigured()) {
+  if (!_supabaseAdmin && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
     _supabaseAdmin = createClient(
-      env.SUPABASE_URL!,
-      env.SUPABASE_SERVICE_ROLE_KEY!,
+      env.SUPABASE_URL,
+      env.SUPABASE_SERVICE_ROLE_KEY,
     );
   }
-  return _supabaseAdmin!;
+  // Return null if not configured - consumers should check isSupabaseAdminConfigured()
+  return _supabaseAdmin as SupabaseClient;
 })();

@@ -9,6 +9,7 @@
  */
 
 import {
+  ApplicationFailure,
   defineQuery,
   defineSignal,
   patched,
@@ -380,7 +381,9 @@ export async function RecurringTrafficCheckWorkflow(
     // VERSION 1 (2025-10-04): Added delivery details caching to reduce DB calls
     // Reason: Supabase timeout issues with repeated getDeliveryDetails calls in loop
     // Safe to remove after: All workflows started before 2025-10-04 are completed
-    let cachedDeliveryDetails: any = null;
+    let cachedDeliveryDetails:
+      | Awaited<ReturnType<typeof getDeliveryDetails>>["delivery"]
+      | null = null;
 
     if (patched("cache-delivery-details-2025-10-04")) {
       // NEW CODE PATH: Fetch delivery details ONCE at start and cache
@@ -392,7 +395,10 @@ export async function RecurringTrafficCheckWorkflow(
       if (!initialDetailsResult.success || !initialDetailsResult.delivery) {
         console.error(`❌ Failed to fetch initial delivery details`);
         result.error = "Failed to fetch delivery details at start";
-        throw new Error("Failed to fetch delivery details");
+        throw ApplicationFailure.nonRetryable(
+          "Failed to fetch delivery details at workflow start",
+          "DeliveryDetailsError",
+        );
       }
 
       cachedDeliveryDetails = initialDetailsResult.delivery;
@@ -431,7 +437,9 @@ export async function RecurringTrafficCheckWorkflow(
 
       // Use cached data if refresh fails (Supabase timeout protection)
       // For old workflows (no cache), this will be the first getDeliveryDetails call
-      let deliveryDetails;
+      let deliveryDetails: Awaited<
+        ReturnType<typeof getDeliveryDetails>
+      >["delivery"];
       if (deliveryDetailsResult.success && deliveryDetailsResult.delivery) {
         deliveryDetails = deliveryDetailsResult.delivery;
         if (cachedDeliveryDetails !== null) {
@@ -446,7 +454,10 @@ export async function RecurringTrafficCheckWorkflow(
         console.error(
           `❌ Failed to fetch delivery details and no cache available`,
         );
-        throw new Error("Failed to fetch delivery details");
+        throw ApplicationFailure.nonRetryable(
+          "Failed to fetch delivery details and no cache available",
+          "DeliveryDetailsError",
+        );
       }
 
       // Check stop condition 3: Delivery status changed to terminal state

@@ -6,12 +6,10 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import * as React from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import type { Notification } from "@/core/infrastructure/http/services/notifications";
 import { useNotifications } from "@/core/infrastructure/http/services/notifications";
 import {
   getNotificationChannelConfig,

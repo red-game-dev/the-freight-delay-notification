@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { sanitizeString } from "@/core/utils/validation";
-import { emailSchema, uuidSchema } from "./common";
+import { uuidSchema } from "./common";
 
 /**
  * Notification channel enum

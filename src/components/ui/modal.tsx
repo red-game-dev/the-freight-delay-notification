@@ -42,6 +42,7 @@ export const Modal: FC<ModalProps> = ({
   showCloseButton = true,
   position = "center",
 }) => {
+  // Handle body scroll lock
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -52,6 +53,22 @@ export const Modal: FC<ModalProps> = ({
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -64,14 +81,19 @@ export const Modal: FC<ModalProps> = ({
       />
 
       {/* Modal Container - Handles clicks */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Backdrop click is mouse-only; keyboard users use ESC or close button */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop click is mouse-only; keyboard users use ESC or close button */}
       <div
         className={`fixed inset-0 flex overflow-y-auto p-4 z-[1021] min-h-screen ${positionStyles[position]}`}
         onClick={onClose}
       >
         {/* Modal Content */}
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: Click handler only prevents backdrop clicks from closing modal */}
         <div
           className={`modal-panel relative rounded-lg shadow-lg w-full pointer-events-auto border ${sizeStyles[size]}`}
           onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
         >
           {/* Header */}
           {(title || showCloseButton) && (

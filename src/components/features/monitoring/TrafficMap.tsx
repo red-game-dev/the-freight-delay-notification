@@ -211,24 +211,28 @@ export function TrafficMap({
 
         const hasValidLat =
           typeof snapshot.incident_location.x === "number" &&
-          isFinite(snapshot.incident_location.x) &&
+          Number.isFinite(snapshot.incident_location.x) &&
           snapshot.incident_location.x !== 0;
 
         const hasValidLng =
           typeof snapshot.incident_location.y === "number" &&
-          isFinite(snapshot.incident_location.y) &&
+          Number.isFinite(snapshot.incident_location.y) &&
           snapshot.incident_location.y !== 0;
 
         return hasValidLat && hasValidLng;
       })
-      .map((snapshot) => ({
-        id: snapshot.id,
-        position: {
-          lat: snapshot.incident_location!.x,
-          lng: snapshot.incident_location!.y,
-        },
-        snapshot,
-      }));
+      .map((snapshot) => {
+        // TypeScript doesn't know filter guarantees non-null, so we assert it
+        const location = snapshot.incident_location as { x: number; y: number };
+        return {
+          id: snapshot.id,
+          position: {
+            lat: location.x,
+            lng: location.y,
+          },
+          snapshot,
+        };
+      });
   }, [trafficSnapshots]);
 
   // Create polylines for ALL routes (simple origin → destination lines)
@@ -246,15 +250,15 @@ export function TrafficMap({
           route.origin_coords &&
           typeof route.origin_coords.x === "number" &&
           typeof route.origin_coords.y === "number" &&
-          isFinite(route.origin_coords.x) &&
-          isFinite(route.origin_coords.y);
+          Number.isFinite(route.origin_coords.x) &&
+          Number.isFinite(route.origin_coords.y);
 
         const hasValidDestination =
           route.destination_coords &&
           typeof route.destination_coords.x === "number" &&
           typeof route.destination_coords.y === "number" &&
-          isFinite(route.destination_coords.x) &&
-          isFinite(route.destination_coords.y);
+          Number.isFinite(route.destination_coords.x) &&
+          Number.isFinite(route.destination_coords.y);
 
         if (!hasValidOrigin || !hasValidDestination) {
           console.log("🗺️ [TrafficMap] Invalid route:", {
@@ -510,9 +514,9 @@ export function TrafficMap({
 
         {/* Detailed directions for selected route only (uses Directions API) */}
         {selectedRoute &&
-          directions.map((direction, index) => (
+          directions.map((direction) => (
             <DirectionsRenderer
-              key={index}
+              key={`direction-${selectedRoute}`}
               directions={direction}
               options={{
                 suppressMarkers: false,

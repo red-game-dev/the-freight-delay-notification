@@ -56,7 +56,7 @@ export class MockTrafficAdapter implements TrafficAdapter {
         default:
           // Try to parse as number
           delayMinutes = parseInt(scenario, 10);
-          if (isNaN(delayMinutes)) delayMinutes = 0;
+          if (Number.isNaN(delayMinutes)) delayMinutes = 0;
           // Determine condition based on delay
           if (delayMinutes < 20) {
             trafficCondition = "light";

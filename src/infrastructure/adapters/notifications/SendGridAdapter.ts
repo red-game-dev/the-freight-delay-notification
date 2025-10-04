@@ -7,7 +7,10 @@ import sgMail from "@sendgrid/mail";
 import { getErrorMessage, hasCode, logger } from "@/core/base/utils/Logger";
 import { InfrastructureError } from "../../../core/base/errors/BaseError";
 import { failure, type Result, success } from "../../../core/base/utils/Result";
-import { EmailBlacklistChecker } from "../../../core/shared/constants/email-blacklist";
+import {
+  getEmailBlacklistReason,
+  isEmailBlacklisted,
+} from "../../../core/shared/constants/email-blacklist";
 import { env } from "../../config/EnvValidator";
 import type {
   NotificationAdapter,
@@ -48,8 +51,8 @@ export class SendGridAdapter implements NotificationAdapter {
     }
 
     // Check email blacklist
-    if (EmailBlacklistChecker.isBlacklisted(input.to)) {
-      const reason = EmailBlacklistChecker.getBlacklistReason(input.to);
+    if (isEmailBlacklisted(input.to)) {
+      const reason = getEmailBlacklistReason(input.to);
       logger.info(`⚠️ [${this.providerName}] Email blocked: ${input.to}`);
       logger.info(`   Reason: ${reason}`);
 

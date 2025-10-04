@@ -5,18 +5,7 @@
 
 "use client";
 
-import {
-  Activity,
-  Bell,
-  BookOpen,
-  Github,
-  Home,
-  Mail,
-  Package,
-  Shield,
-  TruckIcon,
-  Workflow,
-} from "lucide-react";
+import { Github, Mail, Package, Shield, TruckIcon } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
 import {

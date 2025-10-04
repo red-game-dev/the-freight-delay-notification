@@ -4,7 +4,7 @@
  * Supports optgroups and react-hook-form integration
  */
 
-import { AlertCircle, CheckCircle2, ChevronDown } from "lucide-react";
+import { AlertCircle, ChevronDown } from "lucide-react";
 import { forwardRef, type SelectHTMLAttributes, useId } from "react";
 import { cn } from "@/core/base/utils/cn";
 
