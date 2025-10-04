@@ -11,6 +11,6 @@ export async function startWorkflow(deliveryId: string): Promise<StartWorkflowRe
   const url = `${env.NEXT_PUBLIC_API_URL}/api/workflow/start`;
   return fetchJson<StartWorkflowResponse>(url, {
     method: 'POST',
-    body: JSON.stringify({ deliveryId }),
+    body: JSON.stringify({ delivery_id: deliveryId }),
   });
 }

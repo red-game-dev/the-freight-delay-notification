@@ -33,7 +33,7 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useDelivery, useDeleteDelivery } from '@/core/infrastructure/http/services/deliveries';
-import { useStartWorkflow, useCancelWorkflow, useWorkflowStatus } from '@/core/infrastructure/http/services/workflows';
+import { useStartWorkflow, useCancelWorkflow, useWorkflowPolling } from '@/core/infrastructure/http/services/workflows';
 import { WorkflowStatusPolling } from '@/components/features/workflows/WorkflowStatusPolling';
 import { DeliveryMap } from '@/components/features/deliveries/DeliveryMap';
 import { DeliveryWorkflowsList } from '@/components/features/deliveries/DeliveryWorkflowsList';
@@ -71,21 +71,26 @@ export default function DeliveryDetailPage() {
       )
     : null;
 
-  // Query workflow status for button state management
-  const { data: workflowStatus } = useWorkflowStatus(workflowId || '', {
-    refetchInterval: workflowId ? 3000 : undefined, // Poll every 3 seconds when workflow exists
-  });
+  // Use workflow polling hook
+  const {
+    workflowStatus,
+    isWorkflowRunning,
+    shouldEnablePolling,
+    notifyWorkflowStarted,
+    resetWorkflowStarted,
+  } = useWorkflowPolling({ workflowId });
 
   // Compute button states
-  const isWorkflowRunning = workflowStatus?.status === 'running';
   const isRecurringAndRunning = delivery?.enable_recurring_checks && isWorkflowRunning;
 
   const handleStartWorkflow = async () => {
     if (!delivery) return;
     try {
+      notifyWorkflowStarted();
       await startWorkflow.mutateAsync(delivery.id);
     } catch (error) {
       console.error('Failed to start workflow:', error);
+      resetWorkflowStarted();
     }
   };
 
@@ -305,10 +310,11 @@ export default function DeliveryDetailPage() {
       </Card>
 
       {/* Workflow Status - Real-time polling */}
-      {/* Always show WorkflowStatusPolling - it will detect if workflow exists or not */}
+      {/* Only poll when workflow is running (not in terminal state) */}
       {workflowId && (
         <WorkflowStatusPolling
           workflowId={workflowId}
+          enabled={shouldEnablePolling}
           showActivities={true}
           trackingNumber={delivery.tracking_number}
           settings={{
@@ -320,6 +326,7 @@ export default function DeliveryDetailPage() {
             min_delay_change_threshold: delivery.min_delay_change_threshold,
             min_hours_between_notifications: delivery.min_hours_between_notifications,
             scheduled_delivery: delivery.scheduled_delivery,
+            last_check_time: delivery.updated_at, // For accurate next run calculation
           }}
         />
       )}
