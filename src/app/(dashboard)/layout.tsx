@@ -3,10 +3,11 @@
  * Provides consistent header, sidebar, and footer for all dashboard pages
  */
 
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { Header } from '@/components/shared/Header';
 import { Sidebar } from '@/components/shared/Sidebar';
 import { Footer } from '@/components/shared/Footer';
+import { SkeletonWorkflow } from '@/components/ui/Skeleton';
 
 export default function DashboardLayout({
   children,
@@ -20,7 +21,9 @@ export default function DashboardLayout({
         <Sidebar />
         <main className="flex-1 p-4 sm:p-6 max-w-full overflow-x-hidden">
           <div className="max-w-7xl mx-auto">
-            {children}
+            <Suspense fallback={<SkeletonWorkflow items={5} />}>
+              {children}
+            </Suspense>
           </div>
         </main>
       </div>
