@@ -37,23 +37,48 @@ export function subtractHours(date: Date | string, hours: number): Date {
 // ===== Scheduling Utilities =====
 
 /**
+ * Calculate the next scheduled run timestamp
+ * @param startTime - Start timestamp (or last check time if provided)
+ * @param intervalMinutes - Interval between runs in minutes
+ * @param completedRuns - Number of runs already completed (unused if lastCheckTime provided)
+ * @param lastCheckTime - Optional: timestamp of last check (more accurate for running workflows)
+ * @returns Unix timestamp (milliseconds) of the next scheduled run
+ */
+export function calculateNextRunTime(
+  startTime: string,
+  intervalMinutes: number,
+  completedRuns: number,
+  lastCheckTime?: string
+): number {
+  const intervalMs = intervalMinutes * TIME_CONSTANTS.MILLISECONDS_PER_MINUTE;
+
+  // If we have the last check time, use it for accuracy (especially for restarted workflows)
+  if (lastCheckTime) {
+    const lastCheckMs = new Date(lastCheckTime).getTime();
+    return lastCheckMs + intervalMs;
+  }
+
+  // Fallback: calculate based on start time + completed runs
+  // This is less accurate for workflows that were stopped/restarted
+  const startTimeMs = new Date(startTime).getTime();
+  return startTimeMs + ((completedRuns + 1) * intervalMs);
+}
+
+/**
  * Calculate and format the next scheduled run time
  * @param startTime - Start timestamp
  * @param intervalMinutes - Interval between runs in minutes
  * @param completedRuns - Number of runs already completed
  * @returns Formatted string like "in 2h 15m" or null if next run is past
+ * @deprecated Use calculateNextRunTime with CountdownTimer component instead
  */
 export function formatNextScheduledTime(
   startTime: string,
   intervalMinutes: number,
   completedRuns: number
 ): string | null {
-  const intervalMs = intervalMinutes * TIME_CONSTANTS.MILLISECONDS_PER_MINUTE;
-  const startTimeMs = new Date(startTime).getTime();
+  const nextRunTime = calculateNextRunTime(startTime, intervalMinutes, completedRuns);
   const now = Date.now();
-
-  // Next run is: start time + (completed runs + 1) * interval
-  const nextRunTime = startTimeMs + ((completedRuns + 1) * intervalMs);
   const timeUntilNext = nextRunTime - now;
 
   if (timeUntilNext < 0) {
