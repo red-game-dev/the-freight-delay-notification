@@ -180,6 +180,10 @@ export class DatabaseService {
     return this.writeToAll('createCustomer', (adapter) => adapter.createCustomer(input));
   }
 
+  async updateCustomer(id: string, input: Parameters<DatabaseAdapter['updateCustomer']>[1]) {
+    return this.writeToAll('updateCustomer', (adapter) => adapter.updateCustomer(id, input));
+  }
+
   async listCustomers(limit?: number, offset?: number) {
     return this.readWithFallback('listCustomers', (adapter) => adapter.listCustomers(limit, offset));
   }
@@ -299,6 +303,12 @@ export class DatabaseService {
   async getWorkflowExecutionByWorkflowId(workflowId: string) {
     return this.readWithFallback('getWorkflowExecutionByWorkflowId', (adapter) =>
       adapter.getWorkflowExecutionByWorkflowId(workflowId)
+    );
+  }
+
+  async getWorkflowExecutionByWorkflowIdAndRunId(workflowId: string, runId: string) {
+    return this.readWithFallback('getWorkflowExecutionByWorkflowIdAndRunId', (adapter) =>
+      adapter.getWorkflowExecutionByWorkflowIdAndRunId(workflowId, runId)
     );
   }
 

@@ -567,6 +567,25 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     }
   }
 
+  async updateCustomer(id: string, input: Partial<CreateCustomerInput>): Promise<Result<Customer>> {
+    try {
+      const existing = this.customers.get(id);
+      if (!existing) {
+        return failure(new InfrastructureError(`Mock: Customer not found: ${id}`));
+      }
+
+      const updated: Customer = {
+        ...existing,
+        ...input,
+        updated_at: new Date(),
+      };
+      this.customers.set(id, updated);
+      return success(updated);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to update customer: ${getErrorMessage(error)}`));
+    }
+  }
+
   async listCustomers(limit = 100, offset = 0): Promise<Result<Customer[]>> {
     try {
       const customers = Array.from(this.customers.values()).slice(offset, offset + limit);
@@ -668,15 +687,15 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
         scheduled_delivery: input.scheduled_delivery,
         actual_delivery: null,
         current_location: null,
-        delay_threshold_minutes: input.delay_threshold_minutes || 30,
-        auto_check_traffic: input.auto_check_traffic || false,
-        enable_recurring_checks: input.enable_recurring_checks || false,
-        check_interval_minutes: input.check_interval_minutes || 30,
-        max_checks: input.max_checks || 10,
-        checks_performed: input.checks_performed || 0,
-        min_delay_change_threshold: input.min_delay_change_threshold || 15,
-        min_hours_between_notifications: input.min_hours_between_notifications || 1.0,
-        metadata: input.metadata || {},
+        delay_threshold_minutes: input.delay_threshold_minutes ?? 30,
+        auto_check_traffic: input.auto_check_traffic ?? false,
+        enable_recurring_checks: input.enable_recurring_checks ?? false,
+        check_interval_minutes: input.check_interval_minutes ?? 30,
+        max_checks: input.max_checks ?? 10,
+        checks_performed: input.checks_performed ?? 0,
+        min_delay_change_threshold: input.min_delay_change_threshold ?? 15,
+        min_hours_between_notifications: input.min_hours_between_notifications ?? 1.0,
+        metadata: input.metadata ?? {},
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -898,6 +917,17 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       return success(execution || null);
     } catch (error: unknown) {
       return failure(new InfrastructureError(`Mock: Failed to get workflow execution by workflow ID: ${getErrorMessage(error)}`));
+    }
+  }
+
+  async getWorkflowExecutionByWorkflowIdAndRunId(workflowId: string, runId: string): Promise<Result<WorkflowExecution | null>> {
+    try {
+      const execution = Array.from(this.workflowExecutions.values()).find(
+        (e) => e.workflow_id === workflowId && e.run_id === runId
+      );
+      return success(execution || null);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Mock: Failed to get workflow execution by workflow ID and run ID: ${getErrorMessage(error)}`));
     }
   }
 

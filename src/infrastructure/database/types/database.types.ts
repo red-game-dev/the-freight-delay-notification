@@ -170,6 +170,9 @@ export interface CreateNotificationInput {
   recipient: string;
   message: string;
   delay_minutes?: number;
+  status?: NotificationStatus;
+  message_id?: string;
+  error_message?: string;
 }
 
 export interface UpdateNotificationInput {

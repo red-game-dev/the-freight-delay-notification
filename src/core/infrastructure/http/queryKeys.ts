@@ -29,6 +29,12 @@ export const queryKeys = {
     list: () => ['thresholds', 'list'] as const,
     detail: (id: string) => ['thresholds', 'detail', id] as const,
   },
+  customers: {
+    all: ['customers'] as const,
+    list: () => ['customers', 'list'] as const,
+    detail: (id: string) => ['customers', 'detail', id] as const,
+    byEmail: (email: string) => ['customers', 'email', email] as const,
+  },
   activities: {
     all: ['activities'] as const,
     byWorkflow: (workflowId: string) => ['activities', 'workflow', workflowId] as const,

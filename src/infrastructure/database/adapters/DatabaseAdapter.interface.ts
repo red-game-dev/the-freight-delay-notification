@@ -45,6 +45,7 @@ export interface DatabaseAdapter {
   getCustomerById(id: string): Promise<Result<Customer | null>>;
   getCustomerByEmail(email: string): Promise<Result<Customer | null>>;
   createCustomer(input: CreateCustomerInput): Promise<Result<Customer>>;
+  updateCustomer(id: string, input: Partial<CreateCustomerInput>): Promise<Result<Customer>>;
   listCustomers(limit?: number, offset?: number): Promise<Result<Customer[]>>;
 
   // ===== Route Operations =====
@@ -78,6 +79,7 @@ export interface DatabaseAdapter {
   // ===== Workflow Execution Operations =====
   getWorkflowExecutionById(id: string): Promise<Result<WorkflowExecution | null>>;
   getWorkflowExecutionByWorkflowId(workflowId: string): Promise<Result<WorkflowExecution | null>>;
+  getWorkflowExecutionByWorkflowIdAndRunId(workflowId: string, runId: string): Promise<Result<WorkflowExecution | null>>;
   createWorkflowExecution(input: CreateWorkflowExecutionInput): Promise<Result<WorkflowExecution>>;
   updateWorkflowExecution(id: string, input: UpdateWorkflowExecutionInput): Promise<Result<WorkflowExecution>>;
   listWorkflowExecutions(limit?: number, offset?: number): Promise<Result<WorkflowExecution[]>>;

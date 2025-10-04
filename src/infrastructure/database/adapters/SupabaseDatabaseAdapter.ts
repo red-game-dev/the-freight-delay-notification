@@ -162,7 +162,7 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async createCustomer(input: CreateCustomerInput): Promise<Result<Customer>> {
     try {
-      const { data, error } = await this.ensureClient()
+      const { data, error} = await this.ensureClient()
         .from('customers')
         .insert(input)
         .select()
@@ -175,6 +175,25 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       return success(data as Customer);
     } catch (error: unknown) {
       return failure(new InfrastructureError(`Failed to create customer: ${getErrorMessage(error)}`, { error }));
+    }
+  }
+
+  async updateCustomer(id: string, input: Partial<CreateCustomerInput>): Promise<Result<Customer>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('customers')
+        .update(input)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return failure(new InfrastructureError(`Failed to update customer: ${getErrorMessage(error)}`, { error }));
+      }
+
+      return success(data as Customer);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to update customer: ${getErrorMessage(error)}`, { error }));
     }
   }
 
@@ -596,9 +615,23 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
 
   async createNotification(input: CreateNotificationInput): Promise<Result<Notification>> {
     try {
+      // Map message_id to external_id for database column
+      const dbInput = {
+        delivery_id: input.delivery_id,
+        customer_id: input.customer_id,
+        channel: input.channel,
+        recipient: input.recipient,
+        message: input.message,
+        delay_minutes: input.delay_minutes,
+        status: input.status || 'pending', // Explicitly set status, default to 'pending' if not provided
+        external_id: input.message_id, // Map message_id → external_id
+        error_message: input.error_message,
+        sent_at: input.status === 'sent' ? new Date().toISOString() : null, // Set sent_at timestamp when successfully sent
+      };
+
       const { data, error } = await this.ensureClient()
         .from('notifications')
-        .insert(input)
+        .insert(dbInput)
         .select()
         .single();
 
@@ -776,6 +809,28 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
         .from('workflow_executions')
         .select('*')
         .eq('workflow_id', workflowId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return success(null);
+        }
+        return failure(new InfrastructureError(`Failed to get workflow execution: ${getErrorMessage(error)}`, { error }));
+      }
+
+      return success(data as WorkflowExecution);
+    } catch (error: unknown) {
+      return failure(new InfrastructureError(`Failed to get workflow execution: ${getErrorMessage(error)}`, { error }));
+    }
+  }
+
+  async getWorkflowExecutionByWorkflowIdAndRunId(workflowId: string, runId: string): Promise<Result<WorkflowExecution | null>> {
+    try {
+      const { data, error } = await this.ensureClient()
+        .from('workflow_executions')
+        .select('*')
+        .eq('workflow_id', workflowId)
+        .eq('run_id', runId)
         .single();
 
       if (error) {
