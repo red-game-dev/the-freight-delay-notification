@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useWorkflowStatus } from '../queries/useWorkflowStatus';
+import { useWorkflowStatus } from './useWorkflowStatus';
 
 interface UseWorkflowPollingOptions {
   workflowId: string | null;

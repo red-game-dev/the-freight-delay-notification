@@ -9,6 +9,7 @@ export interface Threshold {
   delay_minutes: number;
   notification_channels: Array<'email' | 'sms'>;
   is_default: boolean;
+  is_system?: boolean; // System thresholds cannot be edited or deleted
   created_at: string;
   updated_at: string;
 }
