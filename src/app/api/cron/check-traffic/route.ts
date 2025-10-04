@@ -76,28 +76,6 @@ export const GET = createApiHandler(async (request: NextRequest) => {
       destination: routes[0]?.destination_coords,
     });
 
-    // 2. Get active deliveries (in_transit or delayed status)
-    const inTransitResult = await db.listDeliveriesByStatus('in_transit');
-    const delayedResult = await db.listDeliveriesByStatus('delayed');
-
-    if (!inTransitResult.success || !delayedResult.success) {
-      throw new InfrastructureError('Failed to fetch active deliveries', {
-        inTransitError: inTransitResult.success ? null : inTransitResult.error,
-        delayedError: delayedResult.success ? null : delayedResult.error
-      });
-    }
-
-    const activeDeliveries = [...inTransitResult.value, ...delayedResult.value];
-    logger.info(`📦 [Traffic Monitor] Found ${activeDeliveries.length} active deliveries`);
-
-    // Create a map of route_id to deliveries for quick lookup
-    const deliveriesByRoute = new Map<string, typeof activeDeliveries>();
-    for (const delivery of activeDeliveries) {
-      const existing = deliveriesByRoute.get(delivery.route_id) || [];
-      existing.push(delivery);
-      deliveriesByRoute.set(delivery.route_id, existing);
-    }
-
     // 3. Check traffic for each route
     for (const route of routes) {
       try {
@@ -210,74 +188,6 @@ export const GET = createApiHandler(async (request: NextRequest) => {
 
         result.snapshotsSaved++;
 
-        // 6. Check if any deliveries on this route are delayed
-        const deliveriesOnRoute = deliveriesByRoute.get(route.id) || [];
-
-        for (const delivery of deliveriesOnRoute) {
-          // Only process if delay exceeds threshold
-          if (trafficData.delayMinutes >= delivery.delay_threshold_minutes) {
-            result.delaysDetected++;
-
-            // Check if we should notify (avoid duplicate notifications)
-            const notificationsResult = await db.listNotificationsByDelivery(delivery.id);
-
-            if (!notificationsResult.success) {
-              logger.warn(`⚠️ [Traffic Monitor] Could not fetch notifications for delivery ${delivery.id}`);
-              continue;
-            }
-
-            // Only trigger if no notification was sent in the last hour
-            const oneHourAgo = subtractHours(new Date(), 1);
-            const recentNotification = notificationsResult.value.find(
-              n => n.created_at && new Date(n.created_at) > oneHourAgo
-            );
-
-            if (!recentNotification) {
-              try {
-                // Get Temporal client
-                const temporalClient = await getTemporalClient();
-
-                // Trigger delay notification workflow
-                await temporalClient.workflow.start(DelayNotificationWorkflow, {
-                  taskQueue: env.TEMPORAL_TASK_QUEUE || 'freight-delay-notifications',
-                  workflowId: createWorkflowId(WorkflowType.DELAY_NOTIFICATION, delivery.tracking_number),
-                  args: [{
-                    deliveryId: delivery.id,
-                    trackingNumber: delivery.tracking_number,
-                    customerId: delivery.customer_id,
-                    routeId: delivery.route_id,
-                    scheduledTime: delivery.scheduled_delivery instanceof Date
-                      ? delivery.scheduled_delivery.toISOString()
-                      : delivery.scheduled_delivery,
-                    origin: {
-                      address: route.origin_address,
-                      coordinates: route.origin_coords ? {
-                        lat: route.origin_coords.x,
-                        lng: route.origin_coords.y,
-                      } : undefined,
-                    },
-                    destination: {
-                      address: route.destination_address,
-                      coordinates: route.destination_coords ? {
-                        lat: route.destination_coords.x,
-                        lng: route.destination_coords.y,
-                      } : undefined,
-                    },
-                    thresholdMinutes: delivery.delay_threshold_minutes,
-                  }],
-                });
-
-                result.notificationsTriggered++;
-                logger.info(`📧 [Traffic Monitor] Triggered notification for delivery ${delivery.tracking_number} (${trafficData.delayMinutes}min delay)`);
-              } catch (workflowError: unknown) {
-                logger.error(`❌ [Traffic Monitor] Failed to trigger workflow for ${delivery.tracking_number}:`, getErrorMessage(workflowError));
-                result.errors.push(`Workflow trigger failed for ${delivery.tracking_number}: ${getErrorMessage(workflowError)}`);
-              }
-            } else {
-              logger.info(`⏭️ [Traffic Monitor] Skipping notification for ${delivery.tracking_number} (recently notified)`);
-            }
-          }
-        }
       } catch (routeError: unknown) {
         logger.error(`❌ [Traffic Monitor] Error processing route ${route.id}:`, getErrorMessage(routeError));
         result.errors.push(`Route ${route.id}: ${getErrorMessage(routeError)}`);
