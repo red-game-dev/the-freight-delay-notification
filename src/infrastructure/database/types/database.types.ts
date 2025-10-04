@@ -236,6 +236,7 @@ export interface Threshold {
   delay_minutes: number;
   notification_channels: NotificationChannel[];
   is_default: boolean;
+  is_system: boolean;
   created_at: Date;
   updated_at: Date;
 }
