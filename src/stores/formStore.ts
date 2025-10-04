@@ -14,6 +14,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import type { Delivery, UpdateDeliveryInput, CreateDeliveryInput } from '@/core/infrastructure/http/services/deliveries';
 import type { Threshold, CreateThresholdInput } from '@/core/infrastructure/http/services/thresholds';
+import type { Customer, UpdateCustomerInput } from '@/core/infrastructure/http/services/customers';
 
 // ============================================================================
 // Form Type Definitions
@@ -28,6 +29,7 @@ export interface FormTypeRegistry {
   'delivery-edit': UpdateDeliveryInput;
   'threshold-create': CreateThresholdInput;
   'threshold-edit': CreateThresholdInput;
+  'customer-settings': UpdateCustomerInput;
 }
 
 export type FormType = keyof FormTypeRegistry;
@@ -48,8 +50,14 @@ const INITIAL_DELIVERY_DEFAULTS: Partial<CreateDeliveryInput> = {
 const INITIAL_THRESHOLD_DEFAULTS: Partial<CreateThresholdInput> = {
   name: '',
   delay_minutes: 30,
-  notification_channels: ['email'],
+  notification_channels: ['email', 'sms'],
   is_default: false,
+};
+
+const INITIAL_CUSTOMER_DEFAULTS: Partial<UpdateCustomerInput> = {
+  name: '',
+  email: '',
+  phone: '',
 };
 
 /**
@@ -63,6 +71,7 @@ const FORM_DEFAULTS_REGISTRY: {
   'delivery-edit': INITIAL_DELIVERY_DEFAULTS,
   'threshold-create': INITIAL_THRESHOLD_DEFAULTS,
   'threshold-edit': INITIAL_THRESHOLD_DEFAULTS,
+  'customer-settings': INITIAL_CUSTOMER_DEFAULTS,
 };
 
 // ============================================================================
@@ -104,6 +113,10 @@ interface FormStore {
 
   // Threshold-specific transformations
   thresholdToFormValues: (threshold: Threshold) => CreateThresholdInput;
+
+  // Customer-specific transformations
+  customerToFormValues: (customer: Customer) => Partial<CreateDeliveryInput>;
+  customerToSettingsFormValues: (customer: Customer) => UpdateCustomerInput;
 }
 
 // ============================================================================
@@ -240,15 +253,15 @@ export const useFormStore = create<FormStore>()(
             customer_name: delivery.customer_name,
             customer_email: delivery.customer_email,
             customer_phone: delivery.customer_phone || '',
-            notes: delivery.notes || '',
-            auto_check_traffic: delivery.auto_check_traffic || false,
-            enable_recurring_checks: delivery.enable_recurring_checks || false,
-            check_interval_minutes: delivery.check_interval_minutes || 30,
+            notes: delivery.notes ?? '',
+            auto_check_traffic: delivery.auto_check_traffic ?? false,
+            enable_recurring_checks: delivery.enable_recurring_checks ?? false,
+            check_interval_minutes: delivery.check_interval_minutes ?? 30,
             // Don't set max_checks if it's -1 (unlimited)
             max_checks: delivery.max_checks && delivery.max_checks !== -1 ? delivery.max_checks : undefined,
-            delay_threshold_minutes: delivery.delay_threshold_minutes || 30,
-            min_delay_change_threshold: delivery.min_delay_change_threshold || 15,
-            min_hours_between_notifications: delivery.min_hours_between_notifications || 1.0,
+            delay_threshold_minutes: delivery.delay_threshold_minutes ?? 30,
+            min_delay_change_threshold: delivery.min_delay_change_threshold ?? 15,
+            min_hours_between_notifications: delivery.min_hours_between_notifications ?? 1.0,
           };
         },
 
@@ -280,9 +293,33 @@ export const useFormStore = create<FormStore>()(
             is_default: threshold.is_default,
           };
         },
+
+        // Transform customer to delivery form values (customer_name, customer_email, customer_phone)
+        customerToFormValues: (customer) => {
+          const phone = customer.phone || '';
+          const formattedPhone = phone && !phone.startsWith('+') ? `+${phone}` : phone;
+
+          return {
+            customer_name: customer.name,
+            customer_email: customer.email,
+            customer_phone: formattedPhone,
+          };
+        },
+
+        // Transform customer to settings form values (name, email, phone)
+        customerToSettingsFormValues: (customer) => {
+          const phone = customer.phone || '';
+          const formattedPhone = phone && !phone.startsWith('+') ? `+${phone}` : phone;
+
+          return {
+            name: customer.name,
+            email: customer.email,
+            phone: formattedPhone,
+          };
+        },
       }),
       {
-        name: 'form-store',
+        name: 'freight-delay-form-store',
         // Only persist drafts and defaults
         partialize: (state) => ({
           drafts: state.drafts,

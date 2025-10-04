@@ -143,7 +143,7 @@ export const useNotificationStore = create<NotificationStore>()(
       },
     }),
     {
-      name: 'notification-store',
+      name: 'freight-delay-notification-store',
     }
   )
 );

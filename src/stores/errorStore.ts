@@ -115,7 +115,7 @@ export const useErrorStore = create<ErrorStore>()(
       },
     }),
     {
-      name: 'error-store',
+      name: 'freight-delay-error-store',
     }
   )
 );

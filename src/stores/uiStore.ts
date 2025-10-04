@@ -165,7 +165,7 @@ export const useUIStore = create<UIStore>()(
         },
       }),
       {
-        name: 'ui-store',
+        name: 'freight-delay-ui-store',
         // Custom serialization for Sets
         partialize: (state) => ({
           expandedItems: Object.fromEntries(
