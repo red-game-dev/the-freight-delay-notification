@@ -11,6 +11,7 @@ import { Result, failure } from '../../../core/base/utils/Result';
 import { InfrastructureError } from '../../../core/base/errors/BaseError';
 import { TrafficData, RouteInput } from '../../../types/shared/traffic.types';
 import { logger } from '@/core/base/utils/Logger';
+import { env } from '../../config/EnvValidator';
 
 export class TrafficService {
   private adapters: TrafficAdapter[] = [];
@@ -21,6 +22,13 @@ export class TrafficService {
   }
 
   private initializeAdapters(): void {
+    // Check if we should force use of MockTrafficAdapter for testing
+    if (env.FORCE_TRAFFIC_MOCK_ADAPTER) {
+      logger.info(`🧪 [TrafficService] TESTING MODE: Forcing MockTrafficAdapter`);
+      this.adapters = [new MockTrafficAdapter()];
+      return;
+    }
+
     // Add all available adapters
     const allAdapters = [
       new GoogleMapsAdapter(),
