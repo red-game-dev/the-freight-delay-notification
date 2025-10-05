@@ -311,7 +311,14 @@ export const GET = createApiHandler(async (request) => {
               // Ignore errors - DB sync is best-effort
             });
           }
-        } catch (_err) {}
+        } catch (err) {
+          // Workflow doesn't exist in Temporal Cloud (likely purged) or error fetching it
+          // It may still exist in database, so we'll show it from there
+          logger.warn(
+            `Failed to fetch workflow ${workflowId} from Temporal:`,
+            err,
+          );
+        }
       }
     }
   }

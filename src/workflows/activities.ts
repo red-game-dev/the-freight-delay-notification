@@ -481,7 +481,7 @@ export async function saveWorkflowExecution(input: {
   workflowId: string;
   runId: string;
   deliveryId: string;
-  status: Exclude<WorkflowStatus, "cancelled" | "timed_out">;
+  status: Exclude<WorkflowStatus, "timed_out">; // Allow cancelled status
   steps?: unknown;
   error?: string;
 }): Promise<{ success: boolean; id: string }> {

@@ -31,4 +31,5 @@ export type WorkflowStep =
   | "message_generation"
   | "notification_delivery"
   | "completed"
-  | "failed";
+  | "failed"
+  | "cancelled";

@@ -19,6 +19,7 @@ import {
   workflowInfo,
 } from "@temporalio/workflow";
 import { getCurrentISOTimestamp } from "../core/utils/dateUtils";
+import { generateShortId } from "../core/utils/idUtils";
 import { createWorkflowId, WorkflowType } from "../core/utils/workflowUtils";
 import {
   DATABASE_ACTIVITY_CONFIG,
@@ -270,21 +271,26 @@ export async function DelayNotificationWorkflow(
       }
     }
 
-    // Mark workflow as completed
-    currentStep = "completed";
+    // Determine final status
+    let finalStatus: "completed" | "cancelled" = "completed";
     result.success = !canceled;
 
     if (canceled) {
+      finalStatus = "cancelled";
+      currentStep = "cancelled";
       result.error = `Workflow canceled: ${cancelReason}`;
       console.log(`❌ Workflow canceled for delivery ${input.deliveryId}`);
-    } else if (!result.steps.delayEvaluation?.exceedsThreshold) {
-      console.log(
-        `✅ Workflow completed: No notification needed (delay within threshold)`,
-      );
     } else {
-      console.log(
-        `✅ Workflow completed successfully for delivery ${input.deliveryId}`,
-      );
+      currentStep = "completed";
+      if (!result.steps.delayEvaluation?.exceedsThreshold) {
+        console.log(
+          `✅ Workflow completed: No notification needed (delay within threshold)`,
+        );
+      } else {
+        console.log(
+          `✅ Workflow completed successfully for delivery ${input.deliveryId}`,
+        );
+      }
     }
 
     // Save workflow execution to database
@@ -296,8 +302,9 @@ export async function DelayNotificationWorkflow(
       ),
       runId: wfInfo.runId,
       deliveryId: input.deliveryId,
-      status: "completed",
+      status: finalStatus,
       steps: result.steps,
+      ...(canceled ? { error: result.error } : {}),
     });
   } catch (error) {
     currentStep = "failed";
@@ -525,6 +532,9 @@ export async function RecurringTrafficCheckWorkflow(
         `[Recurring] Delay evaluation: ${result.steps.delayEvaluation.exceedsThreshold ? "EXCEEDS" : "WITHIN"} threshold`,
       );
 
+      // Track if we saved this check to DB (to avoid double-saving)
+      let savedToDB = false;
+
       // Only notify if threshold exceeded
       if (result.steps.delayEvaluation.exceedsThreshold) {
         console.log(
@@ -696,7 +706,7 @@ export async function RecurringTrafficCheckWorkflow(
                 true,
                 checksPerformed + 1,
               ),
-              runId: `run-check-${checksPerformed + 1}-${Date.now()}`,
+              runId: `${wfInfo.runId}-${checksPerformed + 1}-${generateShortId()}`,
               deliveryId: input.deliveryId,
               status: "completed",
               steps: {
@@ -710,6 +720,7 @@ export async function RecurringTrafficCheckWorkflow(
             console.log(
               `✅ Saved workflow execution for check #${checksPerformed + 1}`,
             );
+            savedToDB = true;
           } catch (saveError) {
             console.error(
               `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
@@ -721,11 +732,77 @@ export async function RecurringTrafficCheckWorkflow(
           console.log(
             `⏭️ Skipping notification for this check (deduplication rules)`,
           );
+
+          // Save workflow execution even when notification is skipped
+          try {
+            await saveWorkflowExecution({
+              workflowId: createWorkflowId(
+                WorkflowType.RECURRING_CHECK,
+                input.deliveryId,
+                true,
+                checksPerformed + 1,
+              ),
+              runId: `${wfInfo.runId}-${checksPerformed + 1}-${generateShortId()}`,
+              deliveryId: input.deliveryId,
+              status: "completed",
+              steps: {
+                checkNumber: checksPerformed + 1,
+                trafficCheck: result.steps.trafficCheck,
+                delayEvaluation: result.steps.delayEvaluation,
+                messageGeneration: result.steps.messageGeneration,
+                // Notification was skipped due to deduplication
+                notificationSkipped: true,
+              },
+            });
+            console.log(
+              `✅ Saved workflow execution for check #${checksPerformed + 1} (notification skipped)`,
+            );
+            savedToDB = true;
+          } catch (saveError) {
+            console.error(
+              `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
+              saveError,
+            );
+          }
         }
       } else {
         console.log(
           `✅ No notification needed - delay within threshold (${result.steps.trafficCheck.delayMinutes} ≤ ${thresholdMinutes})`,
         );
+      }
+
+      // Save workflow execution for ALL checks (not just notifications)
+      // This gives users visibility into every traffic check performed
+      if (!savedToDB) {
+        // Only save if we didn't already save above (in the shouldNotify block)
+        try {
+          await saveWorkflowExecution({
+            workflowId: createWorkflowId(
+              WorkflowType.RECURRING_CHECK,
+              input.deliveryId,
+              true,
+              checksPerformed + 1,
+            ),
+            runId: `${wfInfo.runId}-${checksPerformed + 1}-${generateShortId()}`,
+            deliveryId: input.deliveryId,
+            status: "completed",
+            steps: {
+              checkNumber: checksPerformed + 1,
+              trafficCheck: result.steps.trafficCheck,
+              delayEvaluation: result.steps.delayEvaluation,
+              // No notification sent for this check
+            },
+          });
+          console.log(
+            `✅ Saved workflow execution for check #${checksPerformed + 1} (no notification)`,
+          );
+        } catch (saveError) {
+          console.error(
+            `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
+            saveError,
+          );
+          // Don't fail the workflow if save fails - just log and continue
+        }
       }
 
       // Increment checks_performed counter
@@ -755,29 +832,43 @@ export async function RecurringTrafficCheckWorkflow(
       await sleep(sleepDurationMs);
     }
 
-    // Mark workflow as completed
-    currentStep = "completed";
+    // Determine final workflow status
+    let finalStatus: "completed" | "cancelled" = "completed";
+    let finalReason = "Workflow completed naturally";
 
-    // Update delivery status when workflow completes
-    // Only update if delivery is still in a non-terminal status
-    const finalDeliveryResult = await getDeliveryDetails({
-      deliveryId: input.deliveryId,
-    });
-    if (finalDeliveryResult.success && finalDeliveryResult.delivery) {
-      const currentStatus = finalDeliveryResult.delivery.status;
-      const terminalStatuses = ["delivered", "cancelled", "failed"];
+    if (canceled) {
+      finalStatus = "cancelled";
+      finalReason = cancelReason || "Workflow cancelled by user";
+      currentStep = "cancelled";
+      console.log(`🛑 Workflow cancelled: ${finalReason}`);
+    } else {
+      currentStep = "completed";
+      finalReason = checksPerformed >= input.maxChecks
+        ? `Max checks reached (${checksPerformed}/${input.maxChecks})`
+        : "Cutoff time reached or delivery terminal status";
+    }
 
-      if (!terminalStatuses.includes(currentStatus)) {
-        // If workflow completed due to cutoff time being reached, mark as in_transit
-        // Unless it's already marked as delayed
-        if (currentStatus !== "delayed") {
-          await updateDeliveryStatusInDb({
-            deliveryId: input.deliveryId,
-            status: "in_transit",
-          });
-          console.log(
-            `✅ Updated delivery status to 'in_transit' as workflow completed`,
-          );
+    // Update delivery status when workflow completes (only if not cancelled)
+    if (!canceled) {
+      const finalDeliveryResult = await getDeliveryDetails({
+        deliveryId: input.deliveryId,
+      });
+      if (finalDeliveryResult.success && finalDeliveryResult.delivery) {
+        const currentStatus = finalDeliveryResult.delivery.status;
+        const terminalStatuses = ["delivered", "cancelled", "failed"];
+
+        if (!terminalStatuses.includes(currentStatus)) {
+          // If workflow completed due to cutoff time being reached, mark as in_transit
+          // Unless it's already marked as delayed
+          if (currentStatus !== "delayed") {
+            await updateDeliveryStatusInDb({
+              deliveryId: input.deliveryId,
+              status: "in_transit",
+            });
+            console.log(
+              `✅ Updated delivery status to 'in_transit' as workflow completed`,
+            );
+          }
         }
       }
     }
@@ -793,13 +884,14 @@ export async function RecurringTrafficCheckWorkflow(
       ),
       runId: wfInfo.runId,
       deliveryId: input.deliveryId,
-      status: "completed",
+      status: finalStatus,
       steps: {
         checksPerformed,
         totalChecks: checksPerformed,
-        reason: "Workflow completed naturally",
+        reason: finalReason,
         ...result.steps,
       },
+      ...(canceled ? { error: finalReason } : {}),
     });
   } catch (error) {
     currentStep = "failed";
