@@ -44,7 +44,7 @@ const navigation = [
   },
   {
     name: "Settings",
-    href: "/settings",
+    href: ROUTES.SETTINGS,
     icon: Settings,
   },
   {

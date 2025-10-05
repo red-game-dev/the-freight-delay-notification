@@ -40,6 +40,7 @@ export const ROUTES = {
   DELIVERIES: "/deliveries",
   MONITORING: "/monitoring",
   NOTIFICATIONS: "/notifications",
+  SETTINGS: "/settings",
   WORKFLOWS: "/workflows",
   HOW_TO_USE: "/how-to-use",
 } as const;
