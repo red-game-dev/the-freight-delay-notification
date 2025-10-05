@@ -14,5 +14,7 @@ export function useWorkflows(filters?: WorkflowFilters) {
   return useQuery({
     queryKey: queryKeys.workflows.list(filters),
     queryFn: () => listWorkflows(filters),
+    // Enable refetch on window focus for real-time updates
+    refetchOnWindowFocus: true,
   });
 }

@@ -15,6 +15,8 @@ export function useDeliveries(filters?: Record<string, string>) {
   return useQuery({
     queryKey: queryKeys.deliveries.list(filters),
     queryFn: () => listDeliveries(filters),
+    // Enable refetch on window focus for real-time updates
+    refetchOnWindowFocus: true,
     // Auto-refresh every 30 seconds if there are active deliveries (not delivered/cancelled)
     refetchInterval: (query) => {
       const response = query.state.data as
@@ -31,6 +33,5 @@ export function useDeliveries(filters?: Record<string, string>) {
 
       return hasActiveDeliveries ? 30000 : false; // 30 seconds if active, no refresh if all terminal
     },
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 }

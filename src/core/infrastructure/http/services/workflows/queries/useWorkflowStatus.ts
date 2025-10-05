@@ -17,6 +17,7 @@ export function useWorkflowStatus(
     queryKey: queryKeys.workflows.detail(workflowId),
     queryFn: () => getWorkflowStatus(workflowId),
     enabled: !!workflowId,
+    refetchOnWindowFocus: true,
     refetchInterval: options?.refetchInterval,
   });
 }
