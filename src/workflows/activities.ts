@@ -22,6 +22,10 @@ import {
   capitalizeFirstLetter,
   extractFirstPart,
 } from "@/core/utils/stringUtils";
+import {
+  createNextRunId,
+  createNextWorkflowId,
+} from "@/core/utils/workflowUtils";
 import { AIService } from "@/infrastructure/adapters/ai/AIService";
 import { NotificationService } from "@/infrastructure/adapters/notifications/NotificationService";
 import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
@@ -500,16 +504,18 @@ export async function saveWorkflowExecution(input: {
     );
 
     if (existingResult.success && existingResult.value) {
-      // Update existing record
+      // Existing record found - UPDATE it to completed/failed
       logger.info(
-        `[Database] Updating existing workflow execution: ${existingResult.value.id} (workflow_id: ${input.workflowId}, run_id: ${input.runId})`,
+        `[Database] Updating workflow execution: ${existingResult.value.id} (${existingResult.value.status} -> ${input.status})`,
       );
       const updateResult = await db.updateWorkflowExecution(
         existingResult.value.id,
         {
           status: input.status,
           completed_at:
-            input.status === "completed" || input.status === "failed"
+            input.status === "completed" ||
+            input.status === "failed" ||
+            input.status === "cancelled"
               ? new Date()
               : undefined,
           error_message: input.error || undefined,
@@ -518,8 +524,43 @@ export async function saveWorkflowExecution(input: {
 
       if (updateResult.success) {
         logger.info(
-          `✅ Workflow execution updated: ${updateResult.value.id} -> status: ${input.status}`,
+          `✅ Workflow execution updated: ${updateResult.value.id} -> ${input.status}`,
         );
+
+        // After completing successfully, create NEXT workflow iteration as "running"
+        // This shows the next scheduled check in "Active Workflows"
+        // NOTE: Only for "completed" - not failed/cancelled (user needs to manually retry)
+        if (
+          input.status === "completed" &&
+          input.workflowId.includes("recurring-check")
+        ) {
+          const nextWorkflowId = createNextWorkflowId(input.workflowId);
+          const nextRunId = createNextRunId(input.runId);
+
+          if (nextWorkflowId && nextRunId) {
+            logger.info(
+              `[Database] Creating next workflow iteration as running`,
+            );
+
+            const nextResult = await db.createWorkflowExecution({
+              workflow_id: nextWorkflowId,
+              run_id: nextRunId,
+              delivery_id: input.deliveryId,
+              status: "running",
+            });
+
+            if (nextResult.success) {
+              logger.info(
+                `✅ Next workflow created: ${nextResult.value.id} (${nextWorkflowId})`,
+              );
+            } else {
+              logger.error(
+                `❌ Failed to create next workflow: ${nextResult.error.message}`,
+              );
+            }
+          }
+        }
+
         return { success: true, id: updateResult.value.id };
       } else {
         logger.error(
@@ -528,9 +569,9 @@ export async function saveWorkflowExecution(input: {
         return { success: false, id: "" };
       }
     } else {
-      // Create new record (should only happen if workflow wasn't saved at start time)
+      // No existing record - CREATE new one directly with the specified status
       logger.info(
-        `[Database] Creating new workflow execution (workflow_id: ${input.workflowId}, run_id: ${input.runId})`,
+        `[Database] Creating workflow execution (workflow_id: ${input.workflowId}, run_id: ${input.runId}, status: ${input.status})`,
       );
       const createResult = await db.createWorkflowExecution({
         workflow_id: input.workflowId,
@@ -540,7 +581,38 @@ export async function saveWorkflowExecution(input: {
       });
 
       if (createResult.success) {
-        logger.info(`✅ Workflow execution created: ${createResult.value.id}`);
+        logger.info(
+          `✅ Workflow execution created: ${createResult.value.id} (${input.status})`,
+        );
+
+        // If completed successfully, create NEXT iteration as "running"
+        if (
+          input.status === "completed" &&
+          input.workflowId.includes("recurring-check")
+        ) {
+          const nextWorkflowId = createNextWorkflowId(input.workflowId);
+          const nextRunId = createNextRunId(input.runId);
+
+          if (nextWorkflowId && nextRunId) {
+            logger.info(
+              `[Database] Creating next workflow iteration as running`,
+            );
+
+            const nextResult = await db.createWorkflowExecution({
+              workflow_id: nextWorkflowId,
+              run_id: nextRunId,
+              delivery_id: input.deliveryId,
+              status: "running",
+            });
+
+            if (nextResult.success) {
+              logger.info(
+                `✅ Next workflow created: ${nextResult.value.id} (${nextWorkflowId})`,
+              );
+            }
+          }
+        }
+
         return { success: true, id: createResult.value.id };
       } else {
         logger.error(

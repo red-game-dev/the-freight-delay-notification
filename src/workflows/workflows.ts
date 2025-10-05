@@ -12,7 +12,6 @@ import {
   ApplicationFailure,
   defineQuery,
   defineSignal,
-  patched,
   proxyActivities,
   setHandler,
   sleep,
@@ -384,35 +383,23 @@ export async function RecurringTrafficCheckWorkflow(
   }));
 
   try {
-    // VERSION 1 (2025-10-04): Added delivery details caching to reduce DB calls
-    // Reason: Supabase timeout issues with repeated getDeliveryDetails calls in loop
-    // Safe to remove after: All workflows started before 2025-10-04 are completed
-    let cachedDeliveryDetails:
-      | Awaited<ReturnType<typeof getDeliveryDetails>>["delivery"]
-      | null = null;
+    // Fetch delivery details ONCE at start and cache to reduce DB calls
+    // Prevents Supabase timeout issues with repeated getDeliveryDetails calls in loop
+    const initialDetailsResult = await getDeliveryDetails({
+      deliveryId: input.deliveryId,
+    });
 
-    if (patched("cache-delivery-details-2025-10-04")) {
-      // NEW CODE PATH: Fetch delivery details ONCE at start and cache
-      console.log(`🆕 Using delivery caching (v1)`);
-      const initialDetailsResult = await getDeliveryDetails({
-        deliveryId: input.deliveryId,
-      });
-
-      if (!initialDetailsResult.success || !initialDetailsResult.delivery) {
-        console.error(`❌ Failed to fetch initial delivery details`);
-        result.error = "Failed to fetch delivery details at start";
-        throw ApplicationFailure.nonRetryable(
-          "Failed to fetch delivery details at workflow start",
-          "DeliveryDetailsError",
-        );
-      }
-
-      cachedDeliveryDetails = initialDetailsResult.delivery;
-      console.log(`✅ Cached delivery details for ${input.deliveryId}`);
-    } else {
-      // OLD CODE PATH: No caching, fetch on demand (replaying old workflows)
-      console.log(`⚠️ Replaying old workflow - no delivery caching`);
+    if (!initialDetailsResult.success || !initialDetailsResult.delivery) {
+      console.error(`❌ Failed to fetch initial delivery details`);
+      result.error = "Failed to fetch delivery details at start";
+      throw ApplicationFailure.nonRetryable(
+        "Failed to fetch delivery details at workflow start",
+        "DeliveryDetailsError",
+      );
     }
+
+    let cachedDeliveryDetails = initialDetailsResult.delivery;
+    console.log(`✅ Cached delivery details for ${input.deliveryId}`);
 
     // Main recurring check loop
     while (true) {
@@ -436,34 +423,22 @@ export async function RecurringTrafficCheckWorkflow(
         break;
       }
 
-      // Refresh delivery status (only status, not full details)
+      // Refresh delivery status (updates cache with latest status)
       const deliveryDetailsResult = await getDeliveryDetails({
         deliveryId: input.deliveryId,
       });
 
       // Use cached data if refresh fails (Supabase timeout protection)
-      // For old workflows (no cache), this will be the first getDeliveryDetails call
       let deliveryDetails: Awaited<
         ReturnType<typeof getDeliveryDetails>
       >["delivery"];
       if (deliveryDetailsResult.success && deliveryDetailsResult.delivery) {
         deliveryDetails = deliveryDetailsResult.delivery;
-        if (cachedDeliveryDetails !== null) {
-          cachedDeliveryDetails = deliveryDetails; // Update cache (v1 only)
-        }
-      } else if (cachedDeliveryDetails !== null) {
-        // V1: Use cached data if refresh fails
+        cachedDeliveryDetails = deliveryDetails; // Update cache
+      } else {
+        // Use cached data if refresh fails
         deliveryDetails = cachedDeliveryDetails;
         console.warn(`⚠️ Failed to refresh delivery details, using cached data`);
-      } else {
-        // Old workflow: No cache, and fetch failed - must throw
-        console.error(
-          `❌ Failed to fetch delivery details and no cache available`,
-        );
-        throw ApplicationFailure.nonRetryable(
-          "Failed to fetch delivery details and no cache available",
-          "DeliveryDetailsError",
-        );
       }
 
       // Check stop condition 3: Delivery status changed to terminal state
@@ -530,9 +505,6 @@ export async function RecurringTrafficCheckWorkflow(
       console.log(
         `[Recurring] Delay evaluation: ${result.steps.delayEvaluation.exceedsThreshold ? "EXCEEDS" : "WITHIN"} threshold`,
       );
-
-      // Track if we saved this check to DB (to avoid double-saving)
-      let savedToDB = false;
 
       // Only notify if threshold exceeded
       if (result.steps.delayEvaluation.exceedsThreshold) {
@@ -693,76 +665,10 @@ export async function RecurringTrafficCheckWorkflow(
               delayMinutes: result.steps.trafficCheck.delayMinutes,
             });
           }
-
-          // Save workflow execution for this check iteration
-          // This creates a completed workflow record for each notification sent
-          // Gives users visibility into each check cycle
-          try {
-            await saveWorkflowExecution({
-              workflowId: createWorkflowId(
-                WorkflowType.RECURRING_CHECK,
-                input.deliveryId,
-                true,
-                checksPerformed + 1,
-              ),
-              runId: `${wfInfo.runId}-check-${checksPerformed + 1}`,
-              deliveryId: input.deliveryId,
-              status: "completed",
-              steps: {
-                checkNumber: checksPerformed + 1,
-                trafficCheck: result.steps.trafficCheck,
-                delayEvaluation: result.steps.delayEvaluation,
-                messageGeneration: result.steps.messageGeneration,
-                notificationDelivery: result.steps.notificationDelivery,
-              },
-            });
-            console.log(
-              `✅ Saved workflow execution for check #${checksPerformed + 1}`,
-            );
-            savedToDB = true;
-          } catch (saveError) {
-            console.error(
-              `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
-              saveError,
-            );
-            // Don't fail the workflow if save fails - just log and continue
-          }
         } else {
           console.log(
             `⏭️ Skipping notification for this check (deduplication rules)`,
           );
-
-          // Save workflow execution even when notification is skipped
-          try {
-            await saveWorkflowExecution({
-              workflowId: createWorkflowId(
-                WorkflowType.RECURRING_CHECK,
-                input.deliveryId,
-                true,
-                checksPerformed + 1,
-              ),
-              runId: `${wfInfo.runId}-check-${checksPerformed + 1}`,
-              deliveryId: input.deliveryId,
-              status: "completed",
-              steps: {
-                checkNumber: checksPerformed + 1,
-                trafficCheck: result.steps.trafficCheck,
-                delayEvaluation: result.steps.delayEvaluation,
-                messageGeneration: result.steps.messageGeneration,
-                // Notification was skipped due to deduplication
-                notificationSkipped: true,
-              },
-            });
-            console.log(
-              `✅ Saved workflow execution for check #${checksPerformed + 1} (notification skipped)`,
-            );
-            savedToDB = true;
-          } catch (saveError) {
-            console.error(
-              `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
-              saveError,
-            );
-          }
         }
       } else {
         console.log(
@@ -770,38 +676,37 @@ export async function RecurringTrafficCheckWorkflow(
         );
       }
 
-      // Save workflow execution for ALL checks (not just notifications)
-      // This gives users visibility into every traffic check performed
-      if (!savedToDB) {
-        // Only save if we didn't already save above (in the shouldNotify block)
-        try {
-          await saveWorkflowExecution({
-            workflowId: createWorkflowId(
-              WorkflowType.RECURRING_CHECK,
-              input.deliveryId,
-              true,
-              checksPerformed + 1,
-            ),
-            runId: `${wfInfo.runId}-check-${checksPerformed + 1}`,
-            deliveryId: input.deliveryId,
-            status: "completed",
-            steps: {
-              checkNumber: checksPerformed + 1,
-              trafficCheck: result.steps.trafficCheck,
-              delayEvaluation: result.steps.delayEvaluation,
-              // No notification sent for this check
-            },
-          });
-          console.log(
-            `✅ Saved workflow execution for check #${checksPerformed + 1} (no notification)`,
-          );
-        } catch (saveError) {
-          console.error(
-            `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
-            saveError,
-          );
-          // Don't fail the workflow if save fails - just log and continue
-        }
+      // Save workflow execution for this check iteration (always, after all logic)
+      try {
+        await saveWorkflowExecution({
+          workflowId: createWorkflowId(
+            WorkflowType.RECURRING_CHECK,
+            input.deliveryId,
+            true,
+            checksPerformed + 1,
+          ),
+          runId: `${wfInfo.runId}-check-${checksPerformed + 1}`,
+          deliveryId: input.deliveryId,
+          status: "completed",
+          steps: {
+            checkNumber: checksPerformed + 1,
+            ...result.steps, // All steps (traffic, delay, message?, notification?)
+            // Flag if message generated but notification skipped (deduplication)
+            ...(result.steps.messageGeneration &&
+            !result.steps.notificationDelivery
+              ? { notificationSkipped: true }
+              : {}),
+          },
+        });
+        console.log(
+          `✅ Saved workflow execution for check #${checksPerformed + 1}`,
+        );
+      } catch (saveError) {
+        console.error(
+          `❌ Failed to save workflow execution for check #${checksPerformed + 1}:`,
+          saveError,
+        );
+        // Don't fail the workflow if save fails - just log and continue
       }
 
       // Increment checks_performed counter
@@ -842,9 +747,10 @@ export async function RecurringTrafficCheckWorkflow(
       console.log(`🛑 Workflow cancelled: ${finalReason}`);
     } else {
       currentStep = "completed";
-      finalReason = checksPerformed >= input.maxChecks
-        ? `Max checks reached (${checksPerformed}/${input.maxChecks})`
-        : "Cutoff time reached or delivery terminal status";
+      finalReason =
+        checksPerformed >= input.maxChecks
+          ? `Max checks reached (${checksPerformed}/${input.maxChecks})`
+          : "Cutoff time reached or delivery terminal status";
     }
 
     // Update delivery status when workflow completes (only if not cancelled)

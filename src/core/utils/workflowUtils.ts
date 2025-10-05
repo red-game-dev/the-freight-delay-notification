@@ -222,3 +222,88 @@ export function getWorkflowTypeName(type: WorkflowType): string {
       return "Unknown";
   }
 }
+
+/**
+ * Extract check number from a recurring workflow ID
+ * @param workflowId - The workflow ID (e.g., "recurring-check-3-abc123")
+ * @returns Check number or null if not a recurring workflow with check number
+ * @example
+ * extractCheckNumber("recurring-check-3-abc123") // 3
+ * extractCheckNumber("recurring-check-abc123-check3") // 3
+ */
+export function extractCheckNumber(workflowId: string): number | null {
+  // Match pattern: recurring-check-{number}-{deliveryId}
+  const match1 = workflowId.match(/recurring-check-(\d+)-/);
+  if (match1) {
+    return parseInt(match1[1], 10);
+  }
+
+  // Match pattern: recurring-check-{deliveryId}-check{number}
+  const match2 = workflowId.match(/-check(\d+)/);
+  if (match2) {
+    return parseInt(match2[1], 10);
+  }
+
+  return null;
+}
+
+/**
+ * Create the next workflow ID by incrementing the check number
+ * @param currentWorkflowId - The current workflow ID
+ * @returns Next workflow ID or null if not applicable
+ * @example
+ * createNextWorkflowId("recurring-check-3-abc123") // "recurring-check-4-abc123"
+ */
+export function createNextWorkflowId(currentWorkflowId: string): string | null {
+  if (!currentWorkflowId.includes("recurring-check")) {
+    return null;
+  }
+
+  const checkNum = extractCheckNumber(currentWorkflowId);
+  if (checkNum === null) {
+    return null;
+  }
+
+  const nextCheckNum = checkNum + 1;
+
+  // Replace check number in workflow ID
+  // Pattern: recurring-check-{number}-{deliveryId}
+  const match1 = currentWorkflowId.match(/recurring-check-(\d+)-/);
+  if (match1) {
+    return currentWorkflowId.replace(
+      `recurring-check-${checkNum}-`,
+      `recurring-check-${nextCheckNum}-`,
+    );
+  }
+
+  // Pattern: recurring-check-{deliveryId}-check{number}
+  const match2 = currentWorkflowId.match(/-check(\d+)/);
+  if (match2) {
+    return currentWorkflowId.replace(
+      `-check${checkNum}`,
+      `-check${nextCheckNum}`,
+    );
+  }
+
+  return null;
+}
+
+/**
+ * Create the next run ID by incrementing the check number
+ * @param currentRunId - The current run ID (e.g., "run-abc-check-3")
+ * @returns Next run ID or null if not applicable
+ * @example
+ * createNextRunId("run-abc-check-3") // "run-abc-check-4"
+ */
+export function createNextRunId(currentRunId: string): string | null {
+  // Match pattern: {anything}-check-{number}
+  const match = currentRunId.match(/-check-(\d+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const checkNum = parseInt(match[1], 10);
+  const nextCheckNum = checkNum + 1;
+
+  return currentRunId.replace(`-check-${checkNum}`, `-check-${nextCheckNum}`);
+}
