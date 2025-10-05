@@ -54,14 +54,25 @@ export default function MonitoringPage() {
 
   const { data: routes, isLoading: routesLoading } = useRoutes();
   const routeMap = useRouteMap(routes);
+
+  // Fetch filtered traffic snapshots for display
   const { data: trafficResponse, isLoading: trafficLoading } =
     useTrafficSnapshots({
       page: page.toString(),
       limit: "10",
       includeStats: "true",
+      ...(filter !== "all" && { condition: filter }),
     });
 
+  // Fetch all traffic snapshots (no filter) for accurate counts in filter buttons
+  const { data: allTrafficResponse } = useTrafficSnapshots({
+    page: "1",
+    limit: "1000",
+    includeStats: "false",
+  });
+
   const trafficSnapshots: TrafficSnapshot[] = trafficResponse?.data || [];
+  const allTrafficSnapshots: TrafficSnapshot[] = allTrafficResponse?.data || [];
   const trafficPagination = trafficResponse?.pagination;
   const trafficStats = trafficResponse?.stats;
 
@@ -73,17 +84,13 @@ export default function MonitoringPage() {
     avgDelay: trafficStats?.avg_delay || 0,
   };
 
-  // Filter traffic snapshots by selected condition
-  const filteredSnapshots = useMemo(() => {
-    if (!trafficSnapshots) return [];
-    if (filter === "all") return trafficSnapshots;
-    return trafficSnapshots.filter((s) => s.traffic_condition === filter);
-  }, [trafficSnapshots, filter]);
+  // No need for frontend filtering anymore - API handles it
+  const filteredSnapshots = trafficSnapshots;
 
-  // Count by traffic condition using utility
+  // Count by traffic condition from ALL snapshots (for accurate filter button counts)
   const conditionCounts = useMemo(() => {
-    return countByCondition(trafficSnapshots);
-  }, [trafficSnapshots]);
+    return countByCondition(allTrafficSnapshots);
+  }, [allTrafficSnapshots]);
 
   return (
     <div className="space-y-6">
@@ -164,14 +171,20 @@ export default function MonitoringPage() {
         <Button
           variant={filter === "all" ? "primary" : "outline"}
           size="sm"
-          onClick={() => setFilter("all")}
+          onClick={() => {
+            setFilter("all");
+            setPage(1);
+          }}
         >
           All ({conditionCounts.all})
         </Button>
         <Button
           variant={filter === "severe" ? "primary" : "outline"}
           size="sm"
-          onClick={() => setFilter("severe")}
+          onClick={() => {
+            setFilter(filter === "severe" ? "all" : "severe");
+            setPage(1);
+          }}
           className={
             filter === "severe"
               ? ""
@@ -183,7 +196,10 @@ export default function MonitoringPage() {
         <Button
           variant={filter === "heavy" ? "primary" : "outline"}
           size="sm"
-          onClick={() => setFilter("heavy")}
+          onClick={() => {
+            setFilter(filter === "heavy" ? "all" : "heavy");
+            setPage(1);
+          }}
           className={
             filter === "heavy"
               ? ""
@@ -195,7 +211,10 @@ export default function MonitoringPage() {
         <Button
           variant={filter === "moderate" ? "primary" : "outline"}
           size="sm"
-          onClick={() => setFilter("moderate")}
+          onClick={() => {
+            setFilter(filter === "moderate" ? "all" : "moderate");
+            setPage(1);
+          }}
           className={
             filter === "moderate"
               ? ""
@@ -207,7 +226,10 @@ export default function MonitoringPage() {
         <Button
           variant={filter === "light" ? "primary" : "outline"}
           size="sm"
-          onClick={() => setFilter("light")}
+          onClick={() => {
+            setFilter(filter === "light" ? "all" : "light");
+            setPage(1);
+          }}
           className={
             filter === "light"
               ? ""

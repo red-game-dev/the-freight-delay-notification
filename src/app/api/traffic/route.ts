@@ -31,7 +31,7 @@ export const GET = createApiHandler(async (request) => {
     return queryResult;
   }
 
-  const { page, limit, deliveryStatus } = queryResult.value;
+  const { page, limit, deliveryStatus, condition } = queryResult.value;
   const includeStats =
     request.nextUrl.searchParams.get("includeStats") === "true";
   const deliveryStatuses = (deliveryStatus || "in_transit,delayed")
@@ -41,6 +41,7 @@ export const GET = createApiHandler(async (request) => {
 
   logger.info(
     "🚦 [Traffic API] Fetching traffic snapshots via DatabaseService",
+    { condition, page, limit }
   );
 
   // Fetch traffic snapshots
@@ -48,6 +49,16 @@ export const GET = createApiHandler(async (request) => {
   if (!snapshotsResult.success) {
     return snapshotsResult;
   }
+
+  // Filter by traffic condition if specified
+  const filteredSnapshots = condition
+    ? snapshotsResult.value.filter((s) => s.traffic_condition === condition)
+    : snapshotsResult.value;
+
+  logger.info(
+    `🚦 [Traffic API] Filtered ${filteredSnapshots.length} snapshots` +
+    (condition ? ` with condition: ${condition}` : "")
+  );
 
   // Fetch deliveries by each status
   const deliveryResults = await Promise.all(
@@ -58,18 +69,16 @@ export const GET = createApiHandler(async (request) => {
   const failedResult = deliveryResults.find((r) => !r.success);
   if (failedResult) {
     logger.error("🚦 [Traffic API] Failed to fetch deliveries");
-    return Result.map(snapshotsResult, (snapshots) => {
-      const sanitizedSnapshots = snapshots.map((snapshot) => ({
-        id: snapshot.id,
-        route_id: snapshot.route_id,
-        traffic_condition: snapshot.traffic_condition,
-        delay_minutes: snapshot.delay_minutes,
-        duration_seconds: snapshot.duration_seconds,
-        snapshot_at: snapshot.snapshot_at,
-        affected_deliveries: [],
-      }));
-      return createPaginatedResponse(sanitizedSnapshots, page, limit);
-    });
+    const sanitizedSnapshots = filteredSnapshots.map((snapshot) => ({
+      id: snapshot.id,
+      route_id: snapshot.route_id,
+      traffic_condition: snapshot.traffic_condition,
+      delay_minutes: snapshot.delay_minutes,
+      duration_seconds: snapshot.duration_seconds,
+      snapshot_at: snapshot.snapshot_at,
+      affected_deliveries: [],
+    }));
+    return Result.ok(createPaginatedResponse(sanitizedSnapshots, page, limit));
   }
 
   // Combine all deliveries (filter out failures)
@@ -77,7 +86,7 @@ export const GET = createApiHandler(async (request) => {
     r.success ? r.value : [],
   );
   logger.info(
-    `🚦 [Traffic API] Retrieved ${snapshotsResult.value.length} snapshots and ${activeDeliveries.length} deliveries with statuses: ${deliveryStatuses.join(", ")}`,
+    `🚦 [Traffic API] Retrieved ${filteredSnapshots.length} snapshots and ${activeDeliveries.length} deliveries with statuses: ${deliveryStatuses.join(", ")}`,
   );
 
   // Build map of deliveries by route_id
@@ -89,7 +98,7 @@ export const GET = createApiHandler(async (request) => {
   }
 
   // Add affected deliveries to each snapshot
-  const sanitizedSnapshots = snapshotsResult.value.map((snapshot) => ({
+  const sanitizedSnapshots = filteredSnapshots.map((snapshot) => ({
     id: snapshot.id,
     route_id: snapshot.route_id,
     traffic_condition: snapshot.traffic_condition,
