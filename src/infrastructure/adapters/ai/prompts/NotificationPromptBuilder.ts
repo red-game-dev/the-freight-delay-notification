@@ -16,28 +16,28 @@ export interface NotificationContext {
 }
 
 /**
- * Build prompt for SMS notifications (ultra-short, max 80 chars)
- * Twilio overhead: ~20 chars, so safe limit is 80 chars total
+ * Build prompt for SMS notifications (ultra-short, max 60 chars)
+ * Twilio TRIAL adds ~40 char prefix, so safe limit is 60 chars total
  */
 export function buildSMSPrompt(context: NotificationContext): {
   prompt: string;
   systemPrompt: string;
 } {
   const deliveryRef =
-    context.trackingNumber || context.deliveryId.substring(0, 8);
+    context.trackingNumber || context.deliveryId.substring(0, 6);
   const newETA = new Date(context.estimatedArrival).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  // Shorten location names for SMS
-  const shortOrigin = context.origin.split(",")[0]; // Just city name
-  const shortDest = context.destination.split(",")[0]; // Just city name
+  // Ultra-short city names (first word only, max 8 chars)
+  const shortOrigin = context.origin.split(",")[0].substring(0, 8).trim();
+  const shortDest = context.destination.split(",")[0].substring(0, 8).trim();
 
   return {
     systemPrompt:
-      "You are a freight delivery SMS system. Generate ULTRA-SHORT traffic delay messages under 80 characters. Use abbreviations. NO greetings, NO sign-offs. Direct only.",
-    prompt: `Generate ultra-concise traffic delay SMS (MAX 80 chars):
+      "You are a freight delivery SMS system. Generate ULTRA-SHORT traffic delay messages under 60 characters. Use extreme abbreviations. NO greetings, NO sign-offs.",
+    prompt: `Generate ultra-concise traffic delay SMS (MAX 60 chars):
 
 Route: ${shortOrigin} → ${shortDest}
 Tracking: ${deliveryRef}
@@ -45,12 +45,12 @@ Delay: ${context.delayMinutes}min
 ETA: ${newETA}
 
 Requirements:
-- MAX 80 characters total (strict limit for Twilio)
-- Use abbreviations (min=m, ETA, etc)
-- Include tracking, delay time, new ETA
-- NO formalities, NO extra words
+- MAX 60 characters (Twilio trial adds 40 char prefix!)
+- Use extreme abbreviations (m=min, → for arrow, etc)
+- Format: "{City}→{City} {Ref}: XXm delay, ETA HH:MM"
+- Shorten city names if needed
 
-Example (67 chars): "${deliveryRef}: ${context.delayMinutes}m delay. Heavy traffic. ETA ${newETA}"
+Example: "${shortOrigin}→${shortDest} ${deliveryRef}: ${context.delayMinutes}m delay, ETA ${newETA}"
 
 Generate similar ultra-short message.`,
   };
@@ -120,25 +120,23 @@ export function buildEmailSubject(context: NotificationContext): string {
 
 /**
  * Build fallback template for SMS (when AI is disabled or fails)
- * MAX 80 chars to account for Twilio overhead (~20 chars)
+ * MAX 60 chars to account for Twilio TRIAL prefix (~40 chars)
  */
 export function buildSMSFallback(context: NotificationContext): string {
   const deliveryRef =
-    context.trackingNumber || context.deliveryId.substring(0, 8);
+    context.trackingNumber || context.deliveryId.substring(0, 6);
   const newETA = new Date(context.estimatedArrival).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  // Ultra-short format: max 80 chars
-  // Example: "ABC12345: 45m delay. Heavy traffic. ETA 3:30 PM" (50 chars)
-  const trafficShort = context.trafficCondition.includes("heavy")
-    ? "Heavy"
-    : context.trafficCondition.includes("moderate")
-      ? "Mod"
-      : "Light";
+  // Ultra-short city names (first word only, max 8 chars)
+  const shortOrigin = context.origin.split(",")[0].substring(0, 8).trim();
+  const shortDest = context.destination.split(",")[0].substring(0, 8).trim();
 
-  return `${deliveryRef}: ${context.delayMinutes}m delay. ${trafficShort} traffic. ETA ${newETA}`;
+  // Ultra-minimal format with route: max 60 chars
+  // Example: "NYC→LA ABC123: 45m delay, ETA 3:30 PM" (38 chars)
+  return `${shortOrigin}→${shortDest} ${deliveryRef}: ${context.delayMinutes}m delay, ETA ${newETA}`;
 }
 
 /**
