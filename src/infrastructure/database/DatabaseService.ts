@@ -5,6 +5,7 @@
  */
 
 import { InfrastructureError } from "../../core/base/errors/BaseError";
+import { isProduction } from "../../core/base/utils/environment";
 import { getErrorMessage, logger } from "../../core/base/utils/Logger";
 import { failure, type Result } from "../../core/base/utils/Result";
 import type { DatabaseAdapter } from "./adapters/DatabaseAdapter.interface";
@@ -60,11 +61,16 @@ export class DatabaseService {
     //   adapters.push(postgresAdapter);
     // }
 
-    // Always add Mock as final fallback
+    // Add Mock adapter ONLY as fallback when no adapters available OR in development
     if (adapters.length === 0) {
       logger.warn("No database adapters configured, using Mock adapter");
+      adapters.push(new MockDatabaseAdapter(true)); // Seed with mock data
+    } else if (!isProduction()) {
+      // In non-production (development/test), add Mock for testing alongside real adapters
+      logger.info("✅ Mock Database Adapter added (non-production mode)");
+      adapters.push(new MockDatabaseAdapter(true));
     }
-    adapters.push(new MockDatabaseAdapter(true)); // Seed with mock data
+    // In production: Only use Supabase (or other configured adapters), no Mock
 
     return adapters;
   }
