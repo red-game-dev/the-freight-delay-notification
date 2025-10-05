@@ -19,7 +19,6 @@ import {
   workflowInfo,
 } from "@temporalio/workflow";
 import { getCurrentISOTimestamp } from "../core/utils/dateUtils";
-import { generateShortId } from "../core/utils/idUtils";
 import { createWorkflowId, WorkflowType } from "../core/utils/workflowUtils";
 import {
   DATABASE_ACTIVITY_CONFIG,
@@ -706,7 +705,7 @@ export async function RecurringTrafficCheckWorkflow(
                 true,
                 checksPerformed + 1,
               ),
-              runId: `${wfInfo.runId}-${checksPerformed + 1}-${generateShortId()}`,
+              runId: `${wfInfo.runId}-check-${checksPerformed + 1}`,
               deliveryId: input.deliveryId,
               status: "completed",
               steps: {
@@ -742,7 +741,7 @@ export async function RecurringTrafficCheckWorkflow(
                 true,
                 checksPerformed + 1,
               ),
-              runId: `${wfInfo.runId}-${checksPerformed + 1}-${generateShortId()}`,
+              runId: `${wfInfo.runId}-check-${checksPerformed + 1}`,
               deliveryId: input.deliveryId,
               status: "completed",
               steps: {
@@ -783,7 +782,7 @@ export async function RecurringTrafficCheckWorkflow(
               true,
               checksPerformed + 1,
             ),
-            runId: `${wfInfo.runId}-${checksPerformed + 1}-${generateShortId()}`,
+            runId: `${wfInfo.runId}-check-${checksPerformed + 1}`,
             deliveryId: input.deliveryId,
             status: "completed",
             steps: {
