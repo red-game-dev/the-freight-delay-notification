@@ -19,7 +19,8 @@ export const GET = createApiHandler(async (request) => {
 
   logger.info("🗺️ [Routes API] Fetching routes via DatabaseService");
 
-  return Result.map(await db.listRoutes(50), (routes) => {
+  // Fetch same limit as cron job to ensure all routes with traffic snapshots are available
+  return Result.map(await db.listRoutes(1000, 0), (routes) => {
     logger.info(`🗺️ [Routes API] Retrieved ${routes.length} routes`);
     return routes.map((route) => ({
       id: route.id,
