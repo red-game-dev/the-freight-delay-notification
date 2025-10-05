@@ -34,6 +34,7 @@ import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SkeletonDetail } from "@/components/ui/Skeleton";
 import { Toggle } from "@/components/ui/Toggle";
+import { logger } from "@/core/base/utils/Logger";
 import {
   useDeleteDelivery,
   useDelivery,
@@ -96,7 +97,7 @@ export default function DeliveryDetailPage() {
       notifyWorkflowStarted();
       await startWorkflow.mutateAsync(delivery.id);
     } catch (error) {
-      console.error("Failed to start workflow:", error);
+      logger.error("Failed to start workflow:", error);
       resetWorkflowStarted();
     }
   };
@@ -113,7 +114,7 @@ export default function DeliveryDetailPage() {
       setShowCancelWorkflowModal(false);
       setForceCancel(false);
     } catch (error) {
-      console.error("Failed to cancel recurring workflow:", error);
+      logger.error("Failed to cancel recurring workflow:", error);
     }
   };
 
@@ -125,7 +126,7 @@ export default function DeliveryDetailPage() {
       setShowDeleteModal(false);
       router.push("/deliveries");
     } catch (error) {
-      console.error("Failed to delete delivery:", error);
+      logger.error("Failed to delete delivery:", error);
     }
   };
 

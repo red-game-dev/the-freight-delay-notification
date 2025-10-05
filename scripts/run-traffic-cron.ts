@@ -10,6 +10,7 @@
 import { resolve } from "node:path";
 import { config } from "dotenv";
 import { InfrastructureError } from "@/core/base/errors/BaseError";
+import { logger } from "@/core/base/utils/Logger";
 
 // Load environment variables
 config({ path: resolve(process.cwd(), ".env.local") });
@@ -26,15 +27,15 @@ const ENDPOINT = `${API_URL}/api/cron/check-traffic`;
 const isProd = process.argv.includes("--prod");
 const intervalSeconds = isProd ? 600 : CRON_INTERVAL_SECONDS;
 
-console.log("🚦 Traffic Monitoring Cron Runner");
-console.log("================================");
-console.log(`📍 Endpoint: ${ENDPOINT}`);
-console.log(
+logger.info("🚦 Traffic Monitoring Cron Runner");
+logger.info("================================");
+logger.info(`📍 Endpoint: ${ENDPOINT}`);
+logger.info(
   `⏱️  Interval: ${intervalSeconds} seconds (${intervalSeconds / 60} minutes)`,
 );
-console.log(`🔐 Secret: ${CRON_SECRET.substring(0, 8)}...`);
-console.log(`🌍 Mode: ${isProd ? "Production" : "Development"}`);
-console.log("================================\n");
+logger.info(`🔐 Secret: ${CRON_SECRET.substring(0, 8)}...`);
+logger.info(`🌍 Mode: ${isProd ? "Production" : "Development"}`);
+logger.info("================================\n");
 
 let runCount = 0;
 let successCount = 0;
@@ -44,7 +45,7 @@ async function runTrafficCheck() {
   runCount++;
   const startTime = Date.now();
 
-  console.log(
+  logger.info(
     `\n[${new Date().toISOString()}] 🔄 Run #${runCount} - Starting traffic check...`,
   );
 
@@ -72,10 +73,10 @@ async function runTrafficCheck() {
 
     if (data.success && apiResult.result) {
       successCount++;
-      console.log(
+      logger.info(
         `✅ Run #${runCount} completed successfully in ${duration}ms`,
       );
-      console.log(`📊 Results:`, {
+      logger.info(`📊 Results:`, {
         routesChecked: apiResult.result.routesChecked,
         snapshotsSaved: apiResult.result.snapshotsSaved,
         delaysDetected: apiResult.result.delaysDetected,
@@ -84,7 +85,7 @@ async function runTrafficCheck() {
       });
 
       if (apiResult.result.errors && apiResult.result.errors.length > 0) {
-        console.log(`⚠️  Errors encountered:`, apiResult.result.errors);
+        logger.warn(`⚠️  Errors encountered:`, apiResult.result.errors);
       }
     } else {
       throw new InfrastructureError(
@@ -95,26 +96,26 @@ async function runTrafficCheck() {
     errorCount++;
     const duration = Date.now() - startTime;
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`❌ Run #${runCount} failed after ${duration}ms:`, message);
+    logger.error(`❌ Run #${runCount} failed after ${duration}ms:`, message);
 
     if (error instanceof Error && error.cause) {
-      console.error("   Cause:", error.cause);
+      logger.error("   Cause:", error.cause);
     }
   }
 
   // Print statistics
-  console.log(
+  logger.info(
     `📈 Stats: ${successCount} success, ${errorCount} errors, ${runCount} total`,
   );
 }
 
 // Initial run
-console.log("🚀 Starting initial traffic check...");
+logger.info("🚀 Starting initial traffic check...");
 runTrafficCheck();
 
 // Schedule recurring runs
 const intervalMs = intervalSeconds * 1000;
-console.log(`⏰ Scheduling checks every ${intervalSeconds} seconds...`);
+logger.info(`⏰ Scheduling checks every ${intervalSeconds} seconds...`);
 
 const intervalId = setInterval(() => {
   runTrafficCheck();
@@ -122,25 +123,25 @@ const intervalId = setInterval(() => {
 
 // Handle graceful shutdown
 process.on("SIGINT", () => {
-  console.log("\n\n🛑 Shutting down cron runner...");
+  logger.info("\n\n🛑 Shutting down cron runner...");
   clearInterval(intervalId);
-  console.log(`📊 Final Stats:`);
-  console.log(`   Total Runs: ${runCount}`);
-  console.log(
+  logger.info(`📊 Final Stats:`);
+  logger.info(`   Total Runs: ${runCount}`);
+  logger.info(
     `   Successful: ${successCount} (${((successCount / runCount) * 100).toFixed(1)}%)`,
   );
-  console.log(
+  logger.info(
     `   Failed: ${errorCount} (${((errorCount / runCount) * 100).toFixed(1)}%)`,
   );
-  console.log("👋 Goodbye!\n");
+  logger.info("👋 Goodbye!\n");
   process.exit(0);
 });
 
 process.on("SIGTERM", () => {
-  console.log("\n\n🛑 Received SIGTERM, shutting down...");
+  logger.info("\n\n🛑 Received SIGTERM, shutting down...");
   clearInterval(intervalId);
   process.exit(0);
 });
 
 // Keep the process running
-console.log("✨ Cron runner is active. Press Ctrl+C to stop.\n");
+logger.info("✨ Cron runner is active. Press Ctrl+C to stop.\n");

@@ -10,6 +10,7 @@
  */
 
 import type { NextRequest } from "next/server";
+import { logger } from "@/core/base/utils/Logger";
 import { generateId } from "@/core/utils/idUtils";
 import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
 
@@ -41,7 +42,7 @@ export async function setAuditContext(
   } catch (error) {
     // Don't fail the request if audit context fails
     // Just log it for debugging
-    console.error("[Audit Context] Failed to set audit context:", error);
+    logger.error("[Audit Context] Failed to set audit context:", error);
   }
 }
 
@@ -83,7 +84,7 @@ export async function getCustomerIdByEmail(
     }
     return null;
   } catch (error) {
-    console.error("[Audit Context] Failed to get customer by email:", error);
+    logger.error("[Audit Context] Failed to get customer by email:", error);
     return null;
   }
 }

@@ -5,6 +5,7 @@
 
 import { Client, Connection } from "@temporalio/client";
 import { config } from "dotenv";
+import { logger } from "../src/core/base/utils/Logger";
 import type { DelayNotificationWorkflowInput } from "../src/workflows/types";
 
 // Load .env.local file
@@ -41,12 +42,12 @@ function parseArgs() {
 async function testCompleteWorkflow() {
   const options = parseArgs();
 
-  console.log("🧪 Testing Complete 4-Step PDF Workflow");
-  console.log("==========================================\n");
+  logger.info("🧪 Testing Complete 4-Step PDF Workflow");
+  logger.info("==========================================\n");
 
   try {
     // Connect to Temporal
-    console.log("📡 Connecting to Temporal server...");
+    logger.info("📡 Connecting to Temporal server...");
     const connection = await Connection.connect({
       address: "localhost:7233",
     });
@@ -56,7 +57,7 @@ async function testCompleteWorkflow() {
       namespace: "default",
     });
 
-    console.log("✅ Connected to Temporal\n");
+    logger.info("✅ Connected to Temporal\n");
 
     // Prepare workflow input
     const workflowInput: DelayNotificationWorkflowInput = {
@@ -77,18 +78,18 @@ async function testCompleteWorkflow() {
       thresholdMinutes: options.threshold,
     };
 
-    console.log("📋 Workflow Input:");
-    console.log(`   Delivery ID: ${workflowInput.deliveryId}`);
-    console.log(
+    logger.info("📋 Workflow Input:");
+    logger.info(`   Delivery ID: ${workflowInput.deliveryId}`);
+    logger.info(
       `   Route: ${workflowInput.origin.address} → ${workflowInput.destination.address}`,
     );
-    console.log(`   Threshold: ${workflowInput.thresholdMinutes} minutes`);
-    console.log(`   Email: ${workflowInput.customerEmail}`);
-    console.log(`   Phone: ${workflowInput.customerPhone}`);
-    console.log("");
+    logger.info(`   Threshold: ${workflowInput.thresholdMinutes} minutes`);
+    logger.info(`   Email: ${workflowInput.customerEmail}`);
+    logger.info(`   Phone: ${workflowInput.customerPhone}`);
+    logger.info("");
 
     // Start workflow
-    console.log("🚀 Starting DelayNotificationWorkflow...\n");
+    logger.info("🚀 Starting DelayNotificationWorkflow...\n");
 
     const handle = await client.workflow.start("DelayNotificationWorkflow", {
       taskQueue: process.env.TEMPORAL_TASK_QUEUE || "freight-delay-queue",
@@ -96,108 +97,108 @@ async function testCompleteWorkflow() {
       args: [workflowInput],
     });
 
-    console.log(`✅ Workflow started: ${handle.workflowId}`);
-    console.log(`   Run ID: ${handle.firstExecutionRunId}`);
-    console.log("");
+    logger.info(`✅ Workflow started: ${handle.workflowId}`);
+    logger.info(`   Run ID: ${handle.firstExecutionRunId}`);
+    logger.info("");
 
     // Wait for workflow to complete
-    console.log("⏳ Waiting for workflow to complete...\n");
-    console.log("━".repeat(50));
+    logger.info("⏳ Waiting for workflow to complete...\n");
+    logger.info("━".repeat(50));
 
     const result = await handle.result();
 
-    console.log("━".repeat(50));
-    console.log("");
-    console.log("✅ Workflow completed successfully!\n");
+    logger.info("━".repeat(50));
+    logger.info("");
+    logger.info("✅ Workflow completed successfully!\n");
 
     // Display results
-    console.log("📊 Workflow Results:");
-    console.log("=".repeat(50));
+    logger.info("📊 Workflow Results:");
+    logger.info("=".repeat(50));
 
     if (result.steps.trafficCheck) {
-      console.log("\n🚦 Step 1: Traffic Check");
-      console.log(`   Provider: ${result.steps.trafficCheck.provider}`);
-      console.log(
+      logger.info("\n🚦 Step 1: Traffic Check");
+      logger.info(`   Provider: ${result.steps.trafficCheck.provider}`);
+      logger.info(
         `   Delay: ${result.steps.trafficCheck.delayMinutes} minutes`,
       );
-      console.log(
+      logger.info(
         `   Condition: ${result.steps.trafficCheck.trafficCondition}`,
       );
-      console.log(
+      logger.info(
         `   Normal Duration: ${result.steps.trafficCheck.normalDurationMinutes} min`,
       );
-      console.log(
+      logger.info(
         `   With Traffic: ${result.steps.trafficCheck.estimatedDurationMinutes} min`,
       );
     }
 
     if (result.steps.delayEvaluation) {
-      console.log("\n📊 Step 2: Delay Evaluation");
-      console.log(
+      logger.info("\n📊 Step 2: Delay Evaluation");
+      logger.info(
         `   Exceeds Threshold: ${result.steps.delayEvaluation.exceedsThreshold ? "YES" : "NO"}`,
       );
-      console.log(
+      logger.info(
         `   Delay: ${result.steps.delayEvaluation.delayMinutes} min vs Threshold: ${result.steps.delayEvaluation.thresholdMinutes} min`,
       );
-      console.log(`   Severity: ${result.steps.delayEvaluation.severity}`);
-      console.log(
+      logger.info(`   Severity: ${result.steps.delayEvaluation.severity}`);
+      logger.info(
         `   Notification Required: ${result.steps.delayEvaluation.requiresNotification ? "YES" : "NO"}`,
       );
     }
 
     if (result.steps.messageGeneration) {
-      console.log("\n🤖 Step 3: AI Message Generation");
-      console.log(`   Model: ${result.steps.messageGeneration.model}`);
-      console.log(`   Subject: ${result.steps.messageGeneration.subject}`);
-      console.log(
+      logger.info("\n🤖 Step 3: AI Message Generation");
+      logger.info(`   Model: ${result.steps.messageGeneration.model}`);
+      logger.info(`   Subject: ${result.steps.messageGeneration.subject}`);
+      logger.info(
         `   Fallback Used: ${result.steps.messageGeneration.fallbackUsed ? "YES" : "NO"}`,
       );
       if (result.steps.messageGeneration.tokens) {
-        console.log(`   Tokens: ${result.steps.messageGeneration.tokens}`);
+        logger.info(`   Tokens: ${result.steps.messageGeneration.tokens}`);
       }
-      console.log(`\n   Message Preview:`);
-      console.log(
+      logger.info(`\n   Message Preview:`);
+      logger.info(
         `   ${result.steps.messageGeneration.message.substring(0, 200)}...`,
       );
     }
 
     if (result.steps.notificationDelivery) {
-      console.log("\n📬 Step 4: Notification Delivery");
-      console.log(`   Channel: ${result.steps.notificationDelivery.channel}`);
-      console.log(
+      logger.info("\n📬 Step 4: Notification Delivery");
+      logger.info(`   Channel: ${result.steps.notificationDelivery.channel}`);
+      logger.info(
         `   Sent: ${result.steps.notificationDelivery.sent ? "YES" : "NO"}`,
       );
 
       if (result.steps.notificationDelivery.emailResult) {
         const email = result.steps.notificationDelivery.emailResult;
-        console.log(`\n   📧 Email:`);
-        console.log(`      Provider: ${email.provider}`);
-        console.log(`      Success: ${email.success ? "YES" : "NO"}`);
+        logger.info(`\n   📧 Email:`);
+        logger.info(`      Provider: ${email.provider}`);
+        logger.info(`      Success: ${email.success ? "YES" : "NO"}`);
         if (email.success && email.messageId) {
-          console.log(`      Message ID: ${email.messageId}`);
+          logger.info(`      Message ID: ${email.messageId}`);
         }
         if (!email.success && email.error) {
-          console.log(`      Error: ${email.error}`);
+          logger.info(`      Error: ${email.error}`);
         }
       }
 
       if (result.steps.notificationDelivery.smsResult) {
         const sms = result.steps.notificationDelivery.smsResult;
-        console.log(`\n   📱 SMS:`);
-        console.log(`      Provider: ${sms.provider}`);
-        console.log(`      Success: ${sms.success ? "YES" : "NO"}`);
+        logger.info(`\n   📱 SMS:`);
+        logger.info(`      Provider: ${sms.provider}`);
+        logger.info(`      Success: ${sms.success ? "YES" : "NO"}`);
         if (sms.success && sms.messageId) {
-          console.log(`      Message ID: ${sms.messageId}`);
+          logger.info(`      Message ID: ${sms.messageId}`);
         }
         if (!sms.success && sms.error) {
-          console.log(`      Error: ${sms.error}`);
+          logger.info(`      Error: ${sms.error}`);
         }
       }
     }
 
-    console.log(`\n${"=".repeat(50)}`);
-    console.log("\n✨ All 4 steps of the PDF workflow completed!");
-    console.log(
+    logger.info(`\n${"=".repeat(50)}`);
+    logger.info("\n✨ All 4 steps of the PDF workflow completed!");
+    logger.info(
       `   View in Temporal UI: http://localhost:8233/namespaces/default/workflows/${handle.workflowId}\n`,
     );
 
@@ -205,11 +206,11 @@ async function testCompleteWorkflow() {
     process.exit(0);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error("\n❌ Workflow test failed:", message);
-    console.error("\nMake sure:");
-    console.error("  1. Temporal server is running: npm run temporal");
-    console.error("  2. Worker is running: npm run temporal:worker");
-    console.error("  3. API keys are configured in .env.local\n");
+    logger.error("\n❌ Workflow test failed:", message);
+    logger.error("\nMake sure:");
+    logger.error("  1. Temporal server is running: npm run temporal");
+    logger.error("  2. Worker is running: npm run temporal:worker");
+    logger.error("  3. API keys are configured in .env.local\n");
     process.exit(1);
   }
 }

@@ -3,7 +3,7 @@
  * In-memory implementation for testing without real database
  */
 
-import { getErrorMessage } from "@/core/base/utils/Logger";
+import { getErrorMessage, logger } from "@/core/base/utils/Logger";
 import { generateId } from "@/core/utils/idUtils";
 import {
   InfrastructureError,
@@ -1448,7 +1448,7 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     requestId: string,
   ): Promise<Result<void>> {
     // Mock implementation - just log it
-    console.log(
+    logger.info(
       `[MockDB] Audit context set: user=${userId}, request=${requestId}`,
     );
     return success(undefined);

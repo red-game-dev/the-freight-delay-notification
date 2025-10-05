@@ -9,6 +9,7 @@
  */
 
 import { execSync } from "node:child_process";
+import { logger } from "@/core/base/utils/Logger";
 
 export interface BuildInfo {
   buildId: string;
@@ -51,7 +52,7 @@ export function getBuildId(): string {
     return `${gitBranch}-${gitHash}-${timestamp}${dirtySuffix}`;
   } catch (_error) {
     // Fallback for non-git environments (CI/CD, Docker, etc.)
-    console.warn("⚠️  Git not available, using timestamp-based build ID");
+    logger.warn("⚠️  Git not available, using timestamp-based build ID");
     return `build-${Date.now()}`;
   }
 }

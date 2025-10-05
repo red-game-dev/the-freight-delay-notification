@@ -18,6 +18,7 @@ import { Loader2 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { TrafficControlPanel } from "@/components/ui/TrafficControlPanel";
+import { logger } from "@/core/base/utils/Logger";
 import type {
   TrafficCondition,
   TrafficConditionFilter,
@@ -209,7 +210,7 @@ export function TrafficMap({
         );
         setDirections([result]);
       } catch (error) {
-        console.error("Failed to load route directions:", error);
+        logger.error("Failed to load route directions:", error);
         setDirections([]);
       }
     };
@@ -252,11 +253,14 @@ export function TrafficMap({
 
   // Create polylines for ALL routes (simple origin → destination lines)
   const routePolylines = useMemo(() => {
-    console.log("🗺️ [TrafficMap] Raw routes sample:", routes[0]);
-    console.log(
-      "🗺️ [TrafficMap] Raw traffic snapshots sample:",
-      trafficSnapshots[0],
-    );
+    // Development debug logging
+    if (process.env.NODE_ENV === "development") {
+      logger.debug("🗺️ [TrafficMap] Raw routes sample:", routes[0]);
+      logger.debug(
+        "🗺️ [TrafficMap] Raw traffic snapshots sample:",
+        trafficSnapshots[0],
+      );
+    }
 
     const allRoutes = routes
       .filter((route) => {
@@ -276,11 +280,14 @@ export function TrafficMap({
           Number.isFinite(route.destination_coords.y);
 
         if (!hasValidOrigin || !hasValidDestination) {
-          console.log("🗺️ [TrafficMap] Invalid route:", {
-            id: route.id,
-            origin_coords: route.origin_coords,
-            destination_coords: route.destination_coords,
-          });
+          // Development debug logging
+          if (process.env.NODE_ENV === "development") {
+            logger.debug("🗺️ [TrafficMap] Invalid route:", {
+              id: route.id,
+              origin_coords: route.origin_coords,
+              destination_coords: route.destination_coords,
+            });
+          }
         }
 
         return hasValidOrigin && hasValidDestination;
@@ -314,13 +321,15 @@ export function TrafficMap({
         };
       });
 
-    // Debug logging
-    console.log("🗺️ [TrafficMap] Filter:", trafficFilter);
-    console.log("🗺️ [TrafficMap] Total routes:", allRoutes.length);
-    console.log(
-      "🗺️ [TrafficMap] Traffic conditions:",
-      allRoutes.map((r) => r.trafficCondition),
-    );
+    // Development debug logging
+    if (process.env.NODE_ENV === "development") {
+      logger.debug("🗺️ [TrafficMap] Filter:", trafficFilter);
+      logger.debug("🗺️ [TrafficMap] Total routes:", allRoutes.length);
+      logger.debug(
+        "🗺️ [TrafficMap] Traffic conditions:",
+        allRoutes.map((r) => r.trafficCondition),
+      );
+    }
 
     // Filter by traffic condition
     const filtered =
@@ -330,7 +339,10 @@ export function TrafficMap({
             (polyline) => polyline.trafficCondition === trafficFilter,
           );
 
-    console.log("🗺️ [TrafficMap] After filter:", filtered.length, "routes");
+    // Development debug logging
+    if (process.env.NODE_ENV === "development") {
+      logger.debug("🗺️ [TrafficMap] After filter:", filtered.length, "routes");
+    }
 
     // Sort by severity using utility
     return filtered.sort((a, b) =>

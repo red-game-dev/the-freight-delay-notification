@@ -6,6 +6,7 @@
 import * as readline from "node:readline";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
+import { logger } from "@/core/base/utils/Logger";
 
 // Load environment variables
 config({ path: ".env.local" });
@@ -14,7 +15,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("❌ Missing Supabase credentials in .env.local");
+  logger.error("❌ Missing Supabase credentials in .env.local");
   process.exit(1);
 }
 
@@ -43,8 +44,8 @@ async function askConfirmation(): Promise<boolean> {
 }
 
 async function getTableCounts() {
-  console.log("📊 Current Data:");
-  console.log("");
+  logger.info("📊 Current Data:");
+  logger.info("");
 
   const tables = [
     "workflow_executions",
@@ -65,13 +66,13 @@ async function getTableCounts() {
 
     if (!error && count !== null) {
       counts[table] = count;
-      console.log(
+      logger.info(
         `   ${table.padEnd(25)} ${count.toString().padStart(5)} rows`,
       );
     }
   }
 
-  console.log("");
+  logger.info("");
   return counts;
 }
 
@@ -108,38 +109,38 @@ async function clearTable(
 }
 
 async function clearAllData() {
-  console.log("🗑️  Clear All Database Data");
-  console.log("════════════════════════════════════════════════════════════");
-  console.log("");
-  console.log(`📡 Database: ${supabaseUrl}`);
-  console.log("");
+  logger.info("🗑️  Clear All Database Data");
+  logger.info("════════════════════════════════════════════════════════════");
+  logger.info("");
+  logger.info(`📡 Database: ${supabaseUrl}`);
+  logger.info("");
 
   // Show current counts
   const beforeCounts = await getTableCounts();
   const totalRows = Object.values(beforeCounts).reduce((a, b) => a + b, 0);
 
   if (totalRows === 0) {
-    console.log("✅ Database is already empty!");
-    console.log("");
+    logger.info("✅ Database is already empty!");
+    logger.info("");
     return;
   }
 
-  console.log("⚠️  WARNING: This will delete ALL data from all tables!");
-  console.log("   Schema and default threshold will be preserved.");
-  console.log("");
+  logger.warn("⚠️  WARNING: This will delete ALL data from all tables!");
+  logger.info("   Schema and default threshold will be preserved.");
+  logger.info("");
 
   const confirmed = await askConfirmation();
 
   if (!confirmed) {
-    console.log("");
-    console.log("❌ Cancelled. No data was deleted.");
-    console.log("");
+    logger.info("");
+    logger.info("❌ Cancelled. No data was deleted.");
+    logger.info("");
     process.exit(0);
   }
 
-  console.log("");
-  console.log("🗑️  Deleting data (in dependency order)...");
-  console.log("");
+  logger.info("");
+  logger.info("🗑️  Deleting data (in dependency order)...");
+  logger.info("");
 
   // Delete in reverse dependency order
   const deletionOrder = [
@@ -160,49 +161,49 @@ async function clearAllData() {
       totalDeleted += deleted;
 
       if (keepDefault && table === "thresholds") {
-        console.log(
+        logger.info(
           `   ✅ ${table.padEnd(25)} ${deleted.toString().padStart(5)} deleted (kept default)`,
         );
       } else {
-        console.log(
+        logger.info(
           `   ✅ ${table.padEnd(25)} ${deleted.toString().padStart(5)} deleted`,
         );
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.log(`   ❌ ${table.padEnd(25)} Failed: ${message}`);
+      logger.error(`   ❌ ${table.padEnd(25)} Failed: ${message}`);
     }
   }
 
-  console.log("");
-  console.log("════════════════════════════════════════════════════════════");
-  console.log("");
+  logger.info("");
+  logger.info("════════════════════════════════════════════════════════════");
+  logger.info("");
 
   // Verify deletion
   const afterCounts = await getTableCounts();
   const remainingRows = Object.values(afterCounts).reduce((a, b) => a + b, 0);
 
-  console.log("✅ Data cleared successfully!");
-  console.log("");
-  console.log(`   Total deleted: ${totalDeleted} rows`);
-  console.log(`   Remaining:     ${remainingRows} rows (default threshold)`);
-  console.log("");
-  console.log("💡 To re-seed data:");
-  console.log("   Dashboard → SQL Editor → Run supabase/seed.sql");
-  console.log("");
+  logger.info("✅ Data cleared successfully!");
+  logger.info("");
+  logger.info(`   Total deleted: ${totalDeleted} rows`);
+  logger.info(`   Remaining:     ${remainingRows} rows (default threshold)`);
+  logger.info("");
+  logger.info("💡 To re-seed data:");
+  logger.info("   Dashboard → SQL Editor → Run supabase/seed.sql");
+  logger.info("");
 }
 
 async function main() {
   try {
     await clearAllData();
   } catch (error) {
-    console.error("");
+    logger.error("");
     const message = error instanceof Error ? error.message : String(error);
-    console.error("❌ Failed to clear data:", message);
-    console.error("");
-    console.error("💡 Alternative: Run in Dashboard SQL Editor:");
-    console.error("   scripts/clear-data.sql");
-    console.error("");
+    logger.error("❌ Failed to clear data:", message);
+    logger.error("");
+    logger.error("💡 Alternative: Run in Dashboard SQL Editor:");
+    logger.error("   scripts/clear-data.sql");
+    logger.error("");
     process.exit(1);
   }
 }

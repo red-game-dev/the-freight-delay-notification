@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { InfrastructureError } from "@/core/base/errors/BaseError";
+import { logger } from "@/core/base/utils/Logger";
 
 // Load environment variables
 config({ path: resolve(process.cwd(), ".env.local") });
@@ -44,15 +45,15 @@ async function checkForUpdates() {
         .eq("id", latest.route_id)
         .single();
 
-      console.log(`\n[${timestamp}] 🚦 NEW TRAFFIC SNAPSHOT`);
-      console.log(
+      logger.info(`\n[${timestamp}] 🚦 NEW TRAFFIC SNAPSHOT`);
+      logger.info(
         `   Route: ${route.data?.origin_address?.substring(0, 30)}... → ${route.data?.destination_address?.substring(0, 30)}...`,
       );
-      console.log(
+      logger.info(
         `   Condition: ${latest.traffic_condition} | Delay: ${latest.delay_minutes} min | Severity: ${latest.severity || "N/A"}`,
       );
       if (latest.description) {
-        console.log(`   Description: ${latest.description}`);
+        logger.info(`   Description: ${latest.description}`);
       }
     }
   }
@@ -74,21 +75,21 @@ async function checkForUpdates() {
         .eq("id", latest.delivery_id)
         .single();
 
-      console.log(`\n[${timestamp}] 📧 NEW NOTIFICATION`);
-      console.log(
+      logger.info(`\n[${timestamp}] 📧 NEW NOTIFICATION`);
+      logger.info(
         `   Tracking: ${delivery.data?.tracking_number || "Unknown"}`,
       );
-      console.log(`   Status: ${latest.status} | Channel: ${latest.channel}`);
-      console.log(`   Recipient: ${latest.recipient}`);
+      logger.info(`   Status: ${latest.status} | Channel: ${latest.channel}`);
+      logger.info(`   Recipient: ${latest.recipient}`);
       if (latest.delay_minutes) {
-        console.log(`   Delay: ${latest.delay_minutes} minutes`);
+        logger.info(`   Delay: ${latest.delay_minutes} minutes`);
       }
       if (
         "retry_count" in latest &&
         typeof latest.retry_count === "number" &&
         latest.retry_count > 0
       ) {
-        console.log(`   Retries: ${latest.retry_count}`);
+        logger.info(`   Retries: ${latest.retry_count}`);
       }
     }
   }
@@ -105,12 +106,12 @@ async function checkForUpdates() {
     if (latest.id !== lastWorkflowId) {
       lastWorkflowId = latest.id;
 
-      console.log(`\n[${timestamp}] ⚙️  NEW WORKFLOW EXECUTION`);
-      console.log(`   Workflow ID: ${latest.workflow_id}`);
-      console.log(`   Run ID: ${latest.run_id}`);
-      console.log(`   Status: ${latest.status}`);
+      logger.info(`\n[${timestamp}] ⚙️  NEW WORKFLOW EXECUTION`);
+      logger.info(`   Workflow ID: ${latest.workflow_id}`);
+      logger.info(`   Run ID: ${latest.run_id}`);
+      logger.info(`   Status: ${latest.status}`);
       if (latest.error_message) {
-        console.log(`   Error: ${latest.error_message}`);
+        logger.info(`   Error: ${latest.error_message}`);
       }
     }
   }
@@ -135,24 +136,24 @@ async function showStats() {
     .in("status", ["in_transit", "delayed"]);
 
   console.clear();
-  console.log("╔════════════════════════════════════════════════════════════╗");
-  console.log("║        🌍 TRAFFIC MONITORING SYSTEM - LIVE MONITOR        ║");
-  console.log("╚════════════════════════════════════════════════════════════╝");
-  console.log("");
-  console.log(`📊 Current Stats (as of ${new Date().toLocaleTimeString()})`);
-  console.log("────────────────────────────────────────────────────────────");
-  console.log(`   Traffic Snapshots: ${snapshotsCount || 0}`);
-  console.log(`   Notifications: ${notificationsCount || 0}`);
-  console.log(`   Workflow Executions: ${workflowsCount || 0}`);
-  console.log(`   Active Deliveries: ${activeDeliveriesCount || 0}`);
-  console.log("────────────────────────────────────────────────────────────");
-  console.log("");
-  console.log("👀 Monitoring for new events... (Press Ctrl+C to stop)");
-  console.log("");
+  logger.info("╔════════════════════════════════════════════════════════════╗");
+  logger.info("║        🌍 TRAFFIC MONITORING SYSTEM - LIVE MONITOR        ║");
+  logger.info("╚════════════════════════════════════════════════════════════╝");
+  logger.info("");
+  logger.info(`📊 Current Stats (as of ${new Date().toLocaleTimeString()})`);
+  logger.info("────────────────────────────────────────────────────────────");
+  logger.info(`   Traffic Snapshots: ${snapshotsCount || 0}`);
+  logger.info(`   Notifications: ${notificationsCount || 0}`);
+  logger.info(`   Workflow Executions: ${workflowsCount || 0}`);
+  logger.info(`   Active Deliveries: ${activeDeliveriesCount || 0}`);
+  logger.info("────────────────────────────────────────────────────────────");
+  logger.info("");
+  logger.info("👀 Monitoring for new events... (Press Ctrl+C to stop)");
+  logger.info("");
 }
 
 async function startMonitoring() {
-  console.log("🚀 Starting real-time system monitor...\n");
+  logger.info("🚀 Starting real-time system monitor...\n");
 
   // Initial stats
   await showStats();
@@ -166,13 +167,13 @@ async function startMonitoring() {
 
 // Handle graceful shutdown
 process.on("SIGINT", () => {
-  console.log("\n\n🛑 Stopping monitor...");
-  console.log("👋 Goodbye!\n");
+  logger.info("\n\n🛑 Stopping monitor...");
+  logger.info("👋 Goodbye!\n");
   process.exit(0);
 });
 
 // Start monitoring
 startMonitoring().catch((error) => {
-  console.error("Fatal error:", error);
+  logger.error("Fatal error:", error);
   process.exit(1);
 });

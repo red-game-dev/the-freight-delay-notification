@@ -5,6 +5,7 @@
 
 import { resolve } from "node:path";
 import { config } from "dotenv";
+import { logger } from "@/core/base/utils/Logger";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -179,10 +180,10 @@ function checkEnvVars() {
 
 function printResults() {
   console.clear();
-  console.log("╔════════════════════════════════════════════════════════════╗");
-  console.log("║           🏥 SYSTEM HEALTH CHECK RESULTS                   ║");
-  console.log("╚════════════════════════════════════════════════════════════╝");
-  console.log("");
+  logger.info("╔════════════════════════════════════════════════════════════╗");
+  logger.info("║           🏥 SYSTEM HEALTH CHECK RESULTS                   ║");
+  logger.info("╚════════════════════════════════════════════════════════════╝");
+  logger.info("");
 
   let healthyCount = 0;
   let unhealthyCount = 0;
@@ -194,56 +195,56 @@ function printResults() {
         : result.status === "unhealthy"
           ? "❌"
           : "⚠️ ";
-    console.log(`${icon} ${result.component}`);
-    console.log(`   ${result.message}`);
+    logger.info(`${icon} ${result.component}`);
+    logger.info(`   ${result.message}`);
 
     if (result.details) {
       const details = JSON.stringify(result.details, null, 2)
         .split("\n")
         .slice(1, -1)
         .join("\n   ");
-      console.log(`   ${details}`);
+      logger.info(`   ${details}`);
     }
 
-    console.log("");
+    logger.info("");
 
     if (result.status === "healthy") healthyCount++;
     if (result.status === "unhealthy") unhealthyCount++;
   }
 
-  console.log("────────────────────────────────────────────────────────────");
-  console.log(`Summary: ${healthyCount} healthy, ${unhealthyCount} unhealthy`);
-  console.log("────────────────────────────────────────────────────────────");
-  console.log("");
+  logger.info("────────────────────────────────────────────────────────────");
+  logger.info(`Summary: ${healthyCount} healthy, ${unhealthyCount} unhealthy`);
+  logger.info("────────────────────────────────────────────────────────────");
+  logger.info("");
 
   if (unhealthyCount === 0) {
-    console.log("🎉 All systems operational! Ready to start monitoring.");
-    console.log("");
-    console.log("Next steps:");
-    console.log("  1. Terminal 1: npm run dev");
-    console.log("  2. Terminal 2: npm run temporal:worker");
-    console.log("  3. Terminal 3: npm run cron:dev");
-    console.log("  4. Terminal 4: npm run monitor:system (optional)");
-    console.log("");
+    logger.info("🎉 All systems operational! Ready to start monitoring.");
+    logger.info("");
+    logger.info("Next steps:");
+    logger.info("  1. Terminal 1: npm run dev");
+    logger.info("  2. Terminal 2: npm run temporal:worker");
+    logger.info("  3. Terminal 3: npm run cron:dev");
+    logger.info("  4. Terminal 4: npm run monitor:system (optional)");
+    logger.info("");
   } else {
-    console.log(
+    logger.warn(
       "⚠️  Some components are not healthy. Please review the errors above.",
     );
-    console.log("");
+    logger.info("");
 
     if (
       results.find(
         (r) => r.component === "Next.js Dev Server" && r.status === "unhealthy",
       )
     ) {
-      console.log("💡 Start Next.js: npm run dev");
+      logger.info("💡 Start Next.js: npm run dev");
     }
     if (
       results.find(
         (r) => r.component.includes("Temporal") && r.status === "unhealthy",
       )
     ) {
-      console.log(
+      logger.info(
         "💡 Start Temporal: Ensure temporal worker is running (pnpm run temporal:worker)",
       );
     }
@@ -252,7 +253,7 @@ function printResults() {
         (r) => r.component === "Supabase (Remote)" && r.status === "unhealthy",
       )
     ) {
-      console.log("💡 Check Supabase credentials in .env.local");
+      logger.info("💡 Check Supabase credentials in .env.local");
     }
     if (
       results.find(
@@ -260,15 +261,15 @@ function printResults() {
           r.component === "Environment Variables" && r.status === "unhealthy",
       )
     ) {
-      console.log("💡 Check .env.local: Copy from .env.example if needed");
+      logger.info("💡 Check .env.local: Copy from .env.example if needed");
     }
 
-    console.log("");
+    logger.info("");
   }
 }
 
 async function runHealthCheck() {
-  console.log("🏥 Running system health check...\n");
+  logger.info("🏥 Running system health check...\n");
 
   // Check environment variables first (synchronous)
   checkEnvVars();
@@ -290,6 +291,6 @@ async function runHealthCheck() {
 }
 
 runHealthCheck().catch((error) => {
-  console.error("Fatal error:", error);
+  logger.error("Fatal error:", error);
   process.exit(1);
 });

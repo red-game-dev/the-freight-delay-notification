@@ -17,6 +17,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Select } from "@/components/ui/Select";
 import { Toggle } from "@/components/ui/Toggle";
+import { logger } from "@/core/base/utils/Logger";
 import { useCustomer } from "@/core/infrastructure/http/services/customers";
 import type { CreateDeliveryInput } from "@/core/infrastructure/http/services/deliveries";
 import { useCreateDelivery } from "@/core/infrastructure/http/services/deliveries";
@@ -84,7 +85,7 @@ export default function NewDeliveryPage() {
       router.push("/deliveries");
     } catch (error) {
       // Error handling is done by the mutation hook
-      console.error("Failed to create delivery:", error);
+      logger.error("Failed to create delivery:", error);
     }
   };
 

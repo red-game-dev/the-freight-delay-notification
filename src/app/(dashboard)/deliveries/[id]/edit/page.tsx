@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Select } from "@/components/ui/Select";
 import { SkeletonPage } from "@/components/ui/Skeleton";
 import { Toggle } from "@/components/ui/Toggle";
+import { logger } from "@/core/base/utils/Logger";
 import type {
   Delivery,
   UpdateDeliveryInput,
@@ -120,7 +121,7 @@ export default function EditDeliveryPage() {
       });
       router.push(`/deliveries/${deliveryId}`);
     } catch (error) {
-      console.error("Failed to update delivery:", error);
+      logger.error("Failed to update delivery:", error);
     }
   };
 

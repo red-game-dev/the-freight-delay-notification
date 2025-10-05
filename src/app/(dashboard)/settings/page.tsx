@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonCard } from "@/components/ui/Skeleton";
+import { logger } from "@/core/base/utils/Logger";
 import {
   type CreateCustomerInput,
   type UpdateCustomerInput,
@@ -106,7 +107,7 @@ export default function SettingsPage() {
       setIsDeleteModalOpen(false);
       setDeletingThreshold(null);
     } catch (error) {
-      console.error("Failed to delete threshold:", error);
+      logger.error("Failed to delete threshold:", error);
     }
   };
 
@@ -141,7 +142,7 @@ export default function SettingsPage() {
         data: { is_default: true },
       });
     } catch (error) {
-      console.error("Failed to set default threshold:", error);
+      logger.error("Failed to set default threshold:", error);
     }
   };
 
@@ -164,7 +165,7 @@ export default function SettingsPage() {
         setCustomerId(savedCustomer.id);
       }
     } catch (error) {
-      console.error("Failed to save customer:", error);
+      logger.error("Failed to save customer:", error);
     }
   };
 
@@ -478,7 +479,7 @@ function ThresholdModal({
 
       onClose();
     } catch (error) {
-      console.error("Failed to save threshold:", error);
+      logger.error("Failed to save threshold:", error);
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,20 @@
 /**
  * Simple Logger Utility
  * Provides consistent logging across the application
+ *
+ * FUTURE ENHANCEMENT: This logger can be extended to integrate with external
+ * monitoring services like Sentry for:
+ * - Error tracking and aggregation
+ * - Performance monitoring (APM)
+ * - Breadcrumbs for debugging
+ * - User context and session tracking
+ * - Release tracking and deployment monitoring
+ *
+ * When integrating Sentry:
+ * - error() -> Sentry.captureException()
+ * - warn() -> Sentry.captureMessage() with 'warning' level
+ * - info() -> Sentry.addBreadcrumb() for context
+ * - debug() -> Sentry.addBreadcrumb() in development only
  */
 
 import { isDevelopment } from "./environment";
@@ -14,18 +28,22 @@ class Logger {
     if (this.isDev) {
       console.debug(`[DEBUG] ${message}`, ...args);
     }
+    // TODO: Integrate Sentry breadcrumb in development
   }
 
   info(message: string, ...args: unknown[]): void {
     console.info(`[INFO] ${message}`, ...args);
+    // TODO: Integrate Sentry breadcrumb for context tracking
   }
 
   warn(message: string, ...args: unknown[]): void {
     console.warn(`[WARN] ${message}`, ...args);
+    // TODO: Integrate Sentry.captureMessage() with 'warning' level
   }
 
   error(message: string, error?: unknown, ...args: unknown[]): void {
     console.error(`[ERROR] ${message}`, error, ...args);
+    // TODO: Integrate Sentry.captureException() for error tracking
   }
 
   log(level: LogLevel, message: string, ...args: unknown[]): void {

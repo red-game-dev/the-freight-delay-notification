@@ -4,6 +4,7 @@
  */
 
 import { setAuditContext } from "@/app/api/middleware/auditContext";
+import { logger } from "@/core/base/utils/Logger";
 import { Result } from "@/core/base/utils/Result";
 import { createApiHandler } from "@/core/infrastructure/http";
 import { listWorkflowsQuerySchema } from "@/core/schemas/workflow";
@@ -154,7 +155,7 @@ export const GET = createApiHandler(async (request) => {
         } catch (err) {
           // Workflow doesn't exist in Temporal or error fetching it
           // It may still exist in database, so we'll show it from there
-          console.warn(
+          logger.warn(
             `Failed to fetch workflow ${workflowId} from Temporal:`,
             err,
           );
@@ -223,10 +224,10 @@ export const GET = createApiHandler(async (request) => {
     await db.listWorkflowExecutions(1000),
     [],
   );
-  console.log(
+  logger.info(
     `[Workflows API] Found ${dbWorkflows.length} workflows in database`,
   );
-  console.log(
+  logger.info(
     `[Workflows API] DB workflow statuses:`,
     dbWorkflows.map((w) => ({ id: w.workflow_id, status: w.status })),
   );
