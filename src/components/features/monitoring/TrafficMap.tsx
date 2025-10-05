@@ -17,9 +17,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Select } from "@/components/ui/Select";
+import { TrafficControlPanel } from "@/components/ui/TrafficControlPanel";
 import type {
   TrafficCondition,
   TrafficConditionFilter,
@@ -58,6 +56,10 @@ interface TrafficMapProps {
   routes: Route[];
   trafficSnapshots: TrafficSnapshot[];
   selectedRouteId?: string;
+  /** External traffic filter from parent component */
+  externalTrafficFilter?: TrafficConditionFilter;
+  /** Callback when traffic filter changes */
+  onTrafficFilterChange?: (filter: TrafficConditionFilter) => void;
 }
 
 const mapContainerStyle = {
@@ -74,18 +76,31 @@ export function TrafficMap({
   routes,
   trafficSnapshots,
   selectedRouteId,
+  externalTrafficFilter,
+  onTrafficFilterChange,
 }: TrafficMapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult[]>(
     [],
   );
   const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
-  const [showTrafficLayer, setShowTrafficLayer] = useState(true);
+  const [showTrafficLayer, setShowTrafficLayer] = useState(false); // Default off
   const [selectedRoute, setSelectedRoute] = useState<string | null>(
     selectedRouteId || null,
   );
-  const [trafficFilter, setTrafficFilter] =
+  // Use external filter if provided, otherwise use internal state
+  const [internalTrafficFilter, setInternalTrafficFilter] =
     useState<TrafficConditionFilter>("all");
+  const trafficFilter = externalTrafficFilter ?? internalTrafficFilter;
+
+  // Handle filter changes - notify parent if callback provided
+  const handleTrafficFilterChange = (filter: TrafficConditionFilter) => {
+    if (onTrafficFilterChange) {
+      onTrafficFilterChange(filter);
+    } else {
+      setInternalTrafficFilter(filter);
+    }
+  };
 
   const { isLoaded, loadError } = useGoogleMaps();
 
@@ -357,128 +372,29 @@ export function TrafficMap({
 
   return (
     <div className="relative">
-      {/* Debug Info */}
+      {/* Debug Info - Bottom Right to not block controls */}
       {clientEnv.isDevelopment && (
-        <div className="absolute top-4 right-4 z-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg shadow-lg p-2 text-xs max-w-xs">
-          <p className="font-bold">🐛 Debug Info:</p>
-          <p>Total Routes: {routes.length}</p>
-          <p>Traffic Snapshots: {trafficSnapshots.length}</p>
-          <p>Valid Routes: {routePolylines.length}</p>
-          <p>Filter: {trafficFilter}</p>
-          <p>🟢 Light: {trafficCounts.light}</p>
-          <p>🟡 Moderate: {trafficCounts.moderate}</p>
-          <p>🟠 Heavy: {trafficCounts.heavy}</p>
-          <p>🔴 Severe: {trafficCounts.severe}</p>
+        <div className="absolute bottom-4 right-4 z-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg shadow-lg p-2 text-xs max-w-[200px] opacity-75 hover:opacity-100 transition-opacity">
+          <p className="font-bold text-[10px]">🐛 Debug</p>
+          <p className="text-[10px]">Routes: {routes.length}</p>
+          <p className="text-[10px]">Snapshots: {trafficSnapshots.length}</p>
+          <p className="text-[10px]">Valid: {routePolylines.length}</p>
+          <p className="text-[10px]">Filter: {trafficFilter}</p>
+          <p className="text-[10px]">🟢{trafficCounts.light} 🟡{trafficCounts.moderate} 🟠{trafficCounts.heavy} 🔴{trafficCounts.severe}</p>
         </div>
       )}
 
-      {/* Traffic Layer Controls */}
-      <div className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 space-y-3 max-w-xs">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3">
-          <Checkbox
-            label="Live Traffic Layer"
-            checked={showTrafficLayer}
-            onChange={(e) => setShowTrafficLayer(e.target.checked)}
-          />
-          {selectedRoute && (
-            <Button
-              size="sm"
-              onClick={() => setSelectedRoute(null)}
-              className="text-xs"
-            >
-              Show All
-            </Button>
-          )}
-        </div>
-
-        {/* Route Count & Filter */}
-        <div className="text-xs pt-2 border-t space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="font-semibold">
-              {selectedRoute
-                ? "Route Details"
-                : `${routePolylines.length} of ${routes.length} Routes`}
-            </p>
-          </div>
-
-          {!selectedRoute && (
-            <Select
-              label="Filter by Traffic:"
-              value={trafficFilter}
-              onChange={(e) =>
-                setTrafficFilter(e.target.value as TrafficConditionFilter)
-              }
-              size="sm"
-              fullWidth
-              options={[
-                { value: "all", label: `All Traffic (${routes.length})` },
-                { value: "severe", label: "🔴 Severe Only" },
-                { value: "heavy", label: "🟠 Heavy Only" },
-                { value: "moderate", label: "🟡 Moderate Only" },
-                { value: "light", label: "🟢 Light Only" },
-              ]}
-            />
-          )}
-
-          {!selectedRoute && routePolylines.length > 0 && (
-            <p className="text-xs text-gray-600 italic">
-              Sorted by severity (worst first)
-            </p>
-          )}
-        </div>
-
-        {/* Traffic Legend */}
-        <div className="text-xs pt-2 border-t">
-          <p className="font-semibold mb-2">Traffic Conditions:</p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={trafficFilter === "light" ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setTrafficFilter("light")}
-              className="justify-start text-xs h-auto py-1.5"
-            >
-              <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-              Light
-            </Button>
-            <Button
-              variant={trafficFilter === "moderate" ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setTrafficFilter("moderate")}
-              className="justify-start text-xs h-auto py-1.5"
-            >
-              <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
-              Moderate
-            </Button>
-            <Button
-              variant={trafficFilter === "heavy" ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setTrafficFilter("heavy")}
-              className="justify-start text-xs h-auto py-1.5"
-            >
-              <div className="w-3 h-3 bg-orange-500 rounded mr-2"></div>
-              Heavy
-            </Button>
-            <Button
-              variant={trafficFilter === "severe" ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setTrafficFilter("severe")}
-              className="justify-start text-xs h-auto py-1.5"
-            >
-              <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-              Severe
-            </Button>
-          </div>
-          <Button
-            variant={trafficFilter === "all" ? "primary" : "outline"}
-            size="sm"
-            onClick={() => setTrafficFilter("all")}
-            className="mt-2 w-full text-xs"
-          >
-            Show All Traffic
-          </Button>
-        </div>
-      </div>
+      {/* Traffic Layer Controls - Bottom Left to avoid blocking Google Maps controls */}
+      <TrafficControlPanel
+        showTrafficLayer={showTrafficLayer}
+        onTrafficLayerChange={setShowTrafficLayer}
+        trafficFilter={trafficFilter}
+        onTrafficFilterChange={handleTrafficFilterChange}
+        selectedRoute={selectedRoute}
+        onRouteSelectionChange={setSelectedRoute}
+        totalRoutes={routes.length}
+        visibleRoutes={routePolylines.length}
+      />
 
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
@@ -493,11 +409,11 @@ export function TrafficMap({
           zoomControl: true,
         }}
       >
-        {/* Google's real-time traffic layer overlay */}
+        {/* Google's real-time traffic layer overlay - only when enabled */}
         {showTrafficLayer && <TrafficLayer />}
 
-        {/* Simple polylines for ALL routes (no API quota usage) */}
-        {!selectedRoute &&
+        {/* Simple polylines for ALL routes (no API quota usage) - only when traffic layer enabled */}
+        {showTrafficLayer && !selectedRoute &&
           routePolylines.map(({ id, path, color }) => (
             <Polyline
               key={id}

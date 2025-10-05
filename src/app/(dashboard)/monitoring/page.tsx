@@ -90,7 +90,7 @@ export default function MonitoringPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <PageHeader
           title="Route Monitoring"
           description="Real-time traffic monitoring and delay detection"
@@ -152,6 +152,8 @@ export default function MonitoringPage() {
               routes={routes}
               trafficSnapshots={trafficSnapshots || []}
               selectedRouteId={routes[0]?.id}
+              externalTrafficFilter={filter}
+              onTrafficFilterChange={setFilter}
             />
           ) : (
             <Alert variant="info">
