@@ -36,7 +36,7 @@
     "temporal:stop": "docker stop temporal-dev-server && docker rm temporal-dev-server",
     "temporal:logs": "docker logs -f temporal-dev-server",
     "temporal:test": "tsx scripts/test-temporal-connection.ts",
-    "temporal:worker": "tsx src/workflows/worker.ts",
+    "temporal:worker": "tsx --env-file=.env.local src/workflows/worker.ts",
     "temporal:terminate": "tsx scripts/terminate-workflow.ts",
     "test:workflow": "tsx scripts/test-complete-workflow.ts",
     "test:workflow:custom": "tsx scripts/test-complete-workflow.ts -- --threshold 5",

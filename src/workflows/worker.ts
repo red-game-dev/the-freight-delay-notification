@@ -1,14 +1,12 @@
 /**
  * Temporal Worker Entry Point
  * This runs the worker process that executes workflows and activities
+ *
+ * Environment variables are loaded by tsx via --env-file=.env.local flag (see package.json)
  */
 
-import { config } from "dotenv";
 import { logger } from "../core/base/utils/Logger";
 import { startWorker } from "../infrastructure/temporal/TemporalWorker";
-
-// Load environment variables from .env.local
-config({ path: ".env.local" });
 
 async function main() {
   logger.info("========================================");
