@@ -118,19 +118,19 @@ export const Pagination: FC<PaginationProps> = ({
 
   return (
     <nav
-      className={cn("flex items-center justify-between gap-4", className)}
+      className={cn("flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 overflow-x-auto", className)}
       aria-label="Pagination Navigation"
     >
       {/* Items info */}
       {showItemsInfo && itemRange && (
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground text-center sm:text-left">
           Showing {itemRange.start}-{itemRange.end} of {totalItems}
         </div>
       )}
 
       {/* Pagination controls */}
-      <div className="flex items-center gap-1">
-        {/* First page button */}
+      <div className="flex items-center gap-1 justify-center sm:justify-start flex-wrap overflow-x-auto">
+        {/* First page button - hidden on mobile */}
         {showFirstLast && (
           <Button
             variant="ghost"
@@ -138,6 +138,7 @@ export const Pagination: FC<PaginationProps> = ({
             onClick={() => handlePageClick(1)}
             disabled={currentPage === 1 || disabled}
             aria-label="Go to first page"
+            className="hidden sm:inline-flex"
           >
             <ChevronsLeft className="h-4 w-4" />
           </Button>
@@ -150,13 +151,14 @@ export const Pagination: FC<PaginationProps> = ({
           onClick={() => handlePageClick(currentPage - 1)}
           disabled={currentPage === 1 || disabled}
           aria-label="Go to previous page"
+          className="flex-shrink-0"
         >
           <ChevronLeft className="h-4 w-4" />
-          <span className="hidden sm:inline ml-1">Previous</span>
+          <span className="hidden md:inline ml-1">Previous</span>
         </Button>
 
-        {/* Page numbers */}
-        <div className="flex items-center gap-1">
+        {/* Page numbers - reduced on mobile */}
+        <div className="flex items-center gap-1 overflow-x-auto">
           {pageNumbers.map((page, index) => {
             if (page === "ellipsis") {
               // Create a unique key based on the previous page number
@@ -164,7 +166,7 @@ export const Pagination: FC<PaginationProps> = ({
               return (
                 <span
                   key={`ellipsis-after-${prevPage}`}
-                  className="px-3 py-2 text-muted-foreground"
+                  className="px-2 sm:px-3 py-2 text-muted-foreground hidden sm:inline"
                   aria-hidden="true"
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -181,12 +183,21 @@ export const Pagination: FC<PaginationProps> = ({
                 disabled={disabled}
                 aria-label={`Go to page ${page}`}
                 aria-current={page === currentPage ? "page" : undefined}
-                className={cn("min-w-[40px]")}
+                className={cn(
+                  "min-w-[36px] sm:min-w-[40px] flex-shrink-0",
+                  // Hide non-current pages on very small screens
+                  page !== currentPage && "hidden sm:inline-flex"
+                )}
               >
                 {page}
               </Button>
             );
           })}
+        </div>
+
+        {/* Current page indicator on mobile (when page numbers are hidden) */}
+        <div className="sm:hidden px-3 py-2 text-sm text-muted-foreground">
+          {currentPage} / {totalPages}
         </div>
 
         {/* Next page button */}
@@ -196,12 +207,13 @@ export const Pagination: FC<PaginationProps> = ({
           onClick={() => handlePageClick(currentPage + 1)}
           disabled={currentPage === totalPages || disabled}
           aria-label="Go to next page"
+          className="flex-shrink-0"
         >
-          <span className="hidden sm:inline mr-1">Next</span>
+          <span className="hidden md:inline mr-1">Next</span>
           <ChevronRight className="h-4 w-4" />
         </Button>
 
-        {/* Last page button */}
+        {/* Last page button - hidden on mobile */}
         {showFirstLast && (
           <Button
             variant="ghost"
@@ -209,6 +221,7 @@ export const Pagination: FC<PaginationProps> = ({
             onClick={() => handlePageClick(totalPages)}
             disabled={currentPage === totalPages || disabled}
             aria-label="Go to last page"
+            className="hidden sm:inline-flex"
           >
             <ChevronsRight className="h-4 w-4" />
           </Button>
@@ -217,7 +230,7 @@ export const Pagination: FC<PaginationProps> = ({
 
       {/* Page info (right side on larger screens) */}
       {!showItemsInfo && (
-        <div className="text-sm text-muted-foreground hidden sm:block">
+        <div className="text-sm text-muted-foreground hidden sm:block text-center sm:text-right">
           Page {currentPage} of {totalPages}
         </div>
       )}
