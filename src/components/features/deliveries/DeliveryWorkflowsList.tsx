@@ -60,8 +60,10 @@ export function DeliveryWorkflowsList({
 
   // Callback to refresh both workflows lists
   const handleCountdownComplete = () => {
-    refetchRunning();
-    refetchOther();
+    setTimeout(() => {
+      refetchRunning();
+      refetchOther();
+    }, 2000);
   };
 
   const runningWorkflows = runningResponse?.data || [];

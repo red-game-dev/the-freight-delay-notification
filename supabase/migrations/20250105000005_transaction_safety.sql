@@ -15,7 +15,9 @@ DECLARE
   new_count INTEGER;
 BEGIN
   UPDATE deliveries
-  SET checks_performed = checks_performed + 1
+  SET
+    checks_performed = checks_performed + 1,
+    updated_at = NOW() -- Update timestamp for accurate next check calculation
   WHERE id = delivery_uuid
   RETURNING checks_performed INTO new_count;
 

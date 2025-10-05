@@ -183,9 +183,11 @@ export function CountdownTimerInline({
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(
     calculateTimeRemaining(targetTime),
   );
+  const [completeCalled, setCompleteCalled] = useState(false);
 
   useEffect(() => {
     setTimeRemaining(calculateTimeRemaining(targetTime));
+    setCompleteCalled(false); // Reset when targetTime changes
 
     // Countdown timer (updates every second)
     const countdownInterval = setInterval(() => {
@@ -196,28 +198,13 @@ export function CountdownTimerInline({
     return () => clearInterval(countdownInterval);
   }, [targetTime]);
 
-  // Separate effect for polling when countdown reaches zero
+  // Call onComplete ONCE when countdown reaches zero (no polling!)
   useEffect(() => {
-    if (timeRemaining.total !== 0 || !onComplete) return;
+    if (timeRemaining.total !== 0 || completeCalled || !onComplete) return;
 
-    // Call immediately when countdown reaches zero
+    setCompleteCalled(true);
     onComplete();
-
-    // Then poll every 3 seconds while "Running now..." is displayed
-    const pollInterval = setInterval(() => {
-      onComplete();
-    }, 3000);
-
-    // Cleanup poll interval after 30 seconds or when targetTime changes
-    const timeout = setTimeout(() => {
-      clearInterval(pollInterval);
-    }, 30000);
-
-    return () => {
-      clearInterval(pollInterval);
-      clearTimeout(timeout);
-    };
-  }, [timeRemaining.total, onComplete]);
+  }, [timeRemaining.total, completeCalled, onComplete]);
 
   const colorVariant = getColorVariant(timeRemaining.total);
   const formattedTime = formatTimeRemaining(timeRemaining);

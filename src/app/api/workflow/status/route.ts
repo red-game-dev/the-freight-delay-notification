@@ -77,12 +77,17 @@ export const GET = createApiHandler(async (request) => {
           }
           // Continue without internal status - we'll use the error message
         } else {
-          return Result.fail(
-            new InfrastructureError(
-              `Failed to query workflow: ${getErrorMessage(queryError)}`,
-              { cause: queryError },
-            ),
+          // Log the actual error for debugging
+          logger.error(
+            `Failed to query workflow ${workflowId}:`,
+            getErrorMessage(queryError),
           );
+          logger.error("Query error details:", queryError);
+
+          // Return graceful failure instead of throwing
+          // This prevents spam when workflows are in bad state
+          error = `Failed to query workflow status: ${getErrorMessage(queryError)}`;
+          // Continue without internal status
         }
       }
     }
