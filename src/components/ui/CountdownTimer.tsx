@@ -178,20 +178,32 @@ export function CountdownTimerInline({
   prefix = "Next check",
   size = "sm",
   className,
+  onComplete,
 }: CountdownTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(
     calculateTimeRemaining(targetTime),
   );
+  const [completeFired, setCompleteFired] = useState(false);
 
   useEffect(() => {
     setTimeRemaining(calculateTimeRemaining(targetTime));
+    setCompleteFired(false);
 
     const interval = setInterval(() => {
-      setTimeRemaining(calculateTimeRemaining(targetTime));
+      const newTime = calculateTimeRemaining(targetTime);
+      setTimeRemaining(newTime);
+
+      // Call onComplete 25 seconds after countdown reaches zero (only once)
+      if (newTime.total === 0 && onComplete && !completeFired) {
+        setTimeout(() => {
+          onComplete();
+        }, 25000); // 25 seconds delay
+        setCompleteFired(true);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [targetTime]);
+  }, [targetTime, onComplete, completeFired]);
 
   const colorVariant = getColorVariant(timeRemaining.total);
   const formattedTime = formatTimeRemaining(timeRemaining);

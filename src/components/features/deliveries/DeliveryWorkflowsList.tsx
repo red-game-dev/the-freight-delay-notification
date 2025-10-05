@@ -38,6 +38,7 @@ export function DeliveryWorkflowsList({
     data: runningResponse,
     isLoading: runningLoading,
     error: runningError,
+    refetch: refetchRunning,
   } = useWorkflows({
     delivery_id: deliveryId,
     status: "running",
@@ -49,12 +50,19 @@ export function DeliveryWorkflowsList({
     data: otherResponse,
     isLoading: otherLoading,
     error: otherError,
+    refetch: refetchOther,
   } = useWorkflows({
     delivery_id: deliveryId,
     statusNot: "running",
     page: otherPage,
     limit: 10,
   });
+
+  // Callback to refresh both workflows lists
+  const handleCountdownComplete = () => {
+    refetchRunning();
+    refetchOther();
+  };
 
   const runningWorkflows = runningResponse?.data || [];
   const otherWorkflows = otherResponse?.data || [];
@@ -110,17 +118,17 @@ export function DeliveryWorkflowsList({
     return (
       <div
         key={workflow.id}
-        className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors overflow-hidden"
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-start gap-4 flex-col sm:flex-row sm:justify-between">
+          <div className="flex-1 min-w-0 w-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-1 overflow-hidden">
               <StatusIcon className="h-4 w-4 flex-shrink-0" />
-              <p className="font-mono text-sm truncate">
+              <p className="font-mono text-sm truncate min-w-0 flex-1">
                 {workflow.workflow_id}
               </p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
               <span>
                 Started {new Date(workflow.started_at).toLocaleString()}
               </span>
@@ -154,6 +162,7 @@ export function DeliveryWorkflowsList({
                           prefix="Next check"
                           size="xs"
                           showIcon={true}
+                          onComplete={handleCountdownComplete}
                         />
                       </>
                     )}
@@ -172,7 +181,7 @@ export function DeliveryWorkflowsList({
               </div>
             )}
           </div>
-          <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+          <Badge variant={statusInfo.variant} className="flex-shrink-0 sm:self-start">{statusInfo.label}</Badge>
         </div>
       </div>
     );

@@ -88,19 +88,19 @@ export function DeliveryNotificationsList({
               return (
                 <div
                   key={notification.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors overflow-hidden"
                 >
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-2">
-                      <ChannelIcon className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-start gap-4 mb-3 flex-col sm:flex-row sm:justify-between overflow-hidden">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0 overflow-hidden">
+                      <ChannelIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm font-medium">
                         {channelInfo.label}
                       </span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground truncate min-w-0">
                         to {notification.recipient}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                       {notification.delay_minutes !== undefined &&
                         notification.delay_minutes !== null && (
                           <Badge variant="warning">
@@ -115,19 +115,19 @@ export function DeliveryNotificationsList({
                   </div>
 
                   <div className="bg-gray-50 dark:bg-gray-900 rounded p-3 mb-2">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
                       {notification.message}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
                     <span>
                       {notification.sent_at
                         ? `Sent ${new Date(notification.sent_at).toLocaleString()}`
                         : `Created ${new Date(notification.created_at).toLocaleString()}`}
                     </span>
                     {notification.external_id && (
-                      <span className="font-mono">
+                      <span className="font-mono truncate">
                         ID: {notification.external_id}
                       </span>
                     )}
