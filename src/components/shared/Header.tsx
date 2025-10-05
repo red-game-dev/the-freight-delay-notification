@@ -33,7 +33,7 @@ const navigation = [
   { name: "Monitoring", href: ROUTES.MONITORING, icon: Activity },
   { name: "Notifications", href: ROUTES.NOTIFICATIONS, icon: Bell },
   { name: "Workflows", href: ROUTES.WORKFLOWS, icon: Workflow },
-  { name: "Workflows", href: ROUTES.WORKFLOWS, icon: Workflow },
+  { name: "Settings", href: ROUTES.SETTINGS, icon: Workflow },
   { name: "How to Use", href: ROUTES.HOW_TO_USE, icon: BookOpen },
 ];
 
