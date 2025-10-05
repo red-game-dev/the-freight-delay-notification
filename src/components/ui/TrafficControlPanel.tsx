@@ -84,7 +84,9 @@ export function TrafficControlPanel({
                 label="Filter by Traffic:"
                 value={trafficFilter}
                 onChange={(e) =>
-                  onTrafficFilterChange(e.target.value as TrafficConditionFilter)
+                  onTrafficFilterChange(
+                    e.target.value as TrafficConditionFilter,
+                  )
                 }
                 size="sm"
                 fullWidth

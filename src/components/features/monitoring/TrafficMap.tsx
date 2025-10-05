@@ -380,7 +380,10 @@ export function TrafficMap({
           <p className="text-[10px]">Snapshots: {trafficSnapshots.length}</p>
           <p className="text-[10px]">Valid: {routePolylines.length}</p>
           <p className="text-[10px]">Filter: {trafficFilter}</p>
-          <p className="text-[10px]">🟢{trafficCounts.light} 🟡{trafficCounts.moderate} 🟠{trafficCounts.heavy} 🔴{trafficCounts.severe}</p>
+          <p className="text-[10px]">
+            🟢{trafficCounts.light} 🟡{trafficCounts.moderate} 🟠
+            {trafficCounts.heavy} 🔴{trafficCounts.severe}
+          </p>
         </div>
       )}
 
@@ -413,7 +416,8 @@ export function TrafficMap({
         {showTrafficLayer && <TrafficLayer />}
 
         {/* Simple polylines for ALL routes (no API quota usage) - only when traffic layer enabled */}
-        {showTrafficLayer && !selectedRoute &&
+        {showTrafficLayer &&
+          !selectedRoute &&
           routePolylines.map(({ id, path, color }) => (
             <Polyline
               key={id}

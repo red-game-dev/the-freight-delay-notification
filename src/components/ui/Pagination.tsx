@@ -118,7 +118,10 @@ export const Pagination: FC<PaginationProps> = ({
 
   return (
     <nav
-      className={cn("flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 overflow-x-auto", className)}
+      className={cn(
+        "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 overflow-x-auto",
+        className,
+      )}
       aria-label="Pagination Navigation"
     >
       {/* Items info */}
@@ -186,7 +189,7 @@ export const Pagination: FC<PaginationProps> = ({
                 className={cn(
                   "min-w-[36px] sm:min-w-[40px] flex-shrink-0",
                   // Hide non-current pages on very small screens
-                  page !== currentPage && "hidden sm:inline-flex"
+                  page !== currentPage && "hidden sm:inline-flex",
                 )}
               >
                 {page}

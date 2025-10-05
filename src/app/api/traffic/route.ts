@@ -41,7 +41,7 @@ export const GET = createApiHandler(async (request) => {
 
   logger.info(
     "🚦 [Traffic API] Fetching traffic snapshots via DatabaseService",
-    { condition, page, limit }
+    { condition, page, limit },
   );
 
   // Fetch traffic snapshots
@@ -57,7 +57,7 @@ export const GET = createApiHandler(async (request) => {
 
   logger.info(
     `🚦 [Traffic API] Filtered ${filteredSnapshots.length} snapshots` +
-    (condition ? ` with condition: ${condition}` : "")
+      (condition ? ` with condition: ${condition}` : ""),
   );
 
   // Fetch deliveries by each status
@@ -132,10 +132,18 @@ export const GET = createApiHandler(async (request) => {
         // Counts by traffic condition (from ALL snapshots, not filtered)
         condition_counts: {
           all: snapshotsResult.value.length,
-          light: snapshotsResult.value.filter((s) => s.traffic_condition === "light").length,
-          moderate: snapshotsResult.value.filter((s) => s.traffic_condition === "moderate").length,
-          heavy: snapshotsResult.value.filter((s) => s.traffic_condition === "heavy").length,
-          severe: snapshotsResult.value.filter((s) => s.traffic_condition === "severe").length,
+          light: snapshotsResult.value.filter(
+            (s) => s.traffic_condition === "light",
+          ).length,
+          moderate: snapshotsResult.value.filter(
+            (s) => s.traffic_condition === "moderate",
+          ).length,
+          heavy: snapshotsResult.value.filter(
+            (s) => s.traffic_condition === "heavy",
+          ).length,
+          severe: snapshotsResult.value.filter(
+            (s) => s.traffic_condition === "severe",
+          ).length,
         },
       }
     : undefined;

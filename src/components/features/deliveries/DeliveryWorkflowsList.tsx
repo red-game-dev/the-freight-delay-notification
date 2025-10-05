@@ -181,7 +181,12 @@ export function DeliveryWorkflowsList({
               </div>
             )}
           </div>
-          <Badge variant={statusInfo.variant} className="flex-shrink-0 sm:self-start">{statusInfo.label}</Badge>
+          <Badge
+            variant={statusInfo.variant}
+            className="flex-shrink-0 sm:self-start"
+          >
+            {statusInfo.label}
+          </Badge>
         </div>
       </div>
     );

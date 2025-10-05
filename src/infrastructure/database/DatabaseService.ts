@@ -147,7 +147,10 @@ export class DatabaseService {
           );
         }
       } else {
-        logger.warn(`${operation} failed on secondary adapter ${i}:`, result.reason);
+        logger.warn(
+          `${operation} failed on secondary adapter ${i}:`,
+          result.reason,
+        );
       }
     }
 
