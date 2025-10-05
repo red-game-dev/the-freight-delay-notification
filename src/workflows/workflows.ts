@@ -37,7 +37,7 @@ import type {
 const {
   checkTrafficConditions,
   evaluateDelay,
-  generateAIMessage,
+  generateNotificationMessages,
   sendNotification,
 } = proxyActivities<typeof activities>(FAST_ACTIVITY_CONFIG);
 
@@ -174,17 +174,23 @@ export async function DelayNotificationWorkflow(
       }
     }
 
-    // Step 3: Generate AI Message (only if threshold exceeded)
+    // Step 3: Generate AI-enhanced notifications (only if threshold exceeded)
     if (!canceled && result.steps.delayEvaluation?.exceedsThreshold) {
       currentStep = "message_generation";
-      console.log("[Workflow] Step 3: Generating AI notification message...");
+      console.log("[Workflow] Step 3: Generating AI notification messages...");
+
+      // Get notification channel preferences from delivery metadata
+      const notificationChannels = (deliveryDetails.metadata
+        ?.notification_channels as ("email" | "sms")[]) || ["email", "sms"];
+
+      console.log(`[Workflow] Channels: ${notificationChannels.join(", ")}`);
 
       const estimatedArrival = new Date(
         new Date(input.scheduledTime).getTime() +
           (result.steps.trafficCheck?.delayMinutes || 0) * 60000,
       ).toISOString();
 
-      result.steps.messageGeneration = await generateAIMessage({
+      const messages = await generateNotificationMessages({
         deliveryId: input.deliveryId,
         trackingNumber: input.trackingNumber,
         customerId: input.customerId,
@@ -195,77 +201,96 @@ export async function DelayNotificationWorkflow(
           result.steps.trafficCheck?.trafficCondition || "unknown",
         estimatedArrival,
         originalArrival: input.scheduledTime,
+        useAI: true, // Enable AI generation (can be controlled via delivery settings)
+        channels: notificationChannels,
       });
 
-      console.log("[Workflow] AI message generated successfully");
+      result.steps.messageGeneration = messages;
+      console.log("[Workflow] Notification messages generated successfully");
     }
 
-    // Step 4: Send Notification (only if message was generated)
+    // Step 4: Send Notifications (only if messages were generated)
     if (!canceled && result.steps.messageGeneration) {
       currentStep = "notification_delivery";
-      console.log("[Workflow] Step 4: Sending notification to customer...");
+      console.log("[Workflow] Step 4: Sending notifications to customer...");
 
-      // Get notification channel preferences from delivery metadata
-      // Default to both email and SMS if not specified
-      const notificationChannels = (deliveryDetails.metadata
-        ?.notification_channels as ("email" | "sms")[]) || ["email", "sms"];
-      const shouldSendEmail = notificationChannels.includes("email");
-      const shouldSendSMS = notificationChannels.includes("sms");
+      const messages = result.steps.messageGeneration;
 
-      console.log(
-        `[Workflow] Notification channels from settings: ${notificationChannels.join(", ")}`,
-      );
+      // Send Email notification
+      if (messages.email && input.customerEmail) {
+        console.log("[Workflow] Sending email notification...");
 
-      result.steps.notificationDelivery = await sendNotification({
-        recipientEmail: shouldSendEmail ? input.customerEmail : undefined,
-        recipientPhone: shouldSendSMS ? input.customerPhone : undefined,
-        message: result.steps.messageGeneration.message,
-        subject: result.steps.messageGeneration.subject,
-        deliveryId: input.deliveryId,
-        priority:
-          result.steps.delayEvaluation?.severity === "severe"
-            ? "high"
-            : "normal",
-      });
-
-      console.log(
-        `[Workflow] Notification sent via ${result.steps.notificationDelivery.channel}`,
-      );
-
-      // Save notifications to database
-      if (
-        result.steps.notificationDelivery.emailResult &&
-        input.customerEmail
-      ) {
-        await saveNotification({
+        const emailResult = await sendNotification({
+          recipientEmail: input.customerEmail,
+          message: messages.email.body,
+          subject: messages.email.subject,
           deliveryId: input.deliveryId,
-          customerId: input.customerId,
-          channel: "email",
-          recipient: input.customerEmail,
-          message: result.steps.messageGeneration.message,
-          status: result.steps.notificationDelivery.emailResult.success
-            ? "sent"
-            : "failed",
-          messageId: result.steps.notificationDelivery.emailResult.messageId,
-          error: result.steps.notificationDelivery.emailResult.error,
-          delayMinutes: result.steps.trafficCheck?.delayMinutes || 0,
+          priority:
+            result.steps.delayEvaluation?.severity === "severe"
+              ? "high"
+              : "normal",
         });
+
+        // Save email notification to database
+        if (emailResult.emailResult) {
+          await saveNotification({
+            deliveryId: input.deliveryId,
+            customerId: input.customerId,
+            channel: "email",
+            recipient: input.customerEmail,
+            message: messages.email.body,
+            status: emailResult.emailResult.success ? "sent" : "failed",
+            messageId: emailResult.emailResult.messageId,
+            error: emailResult.emailResult.error,
+            delayMinutes: result.steps.trafficCheck?.delayMinutes || 0,
+          });
+        }
+
+        result.steps.notificationDelivery = emailResult;
+        console.log(`[Workflow] Email sent successfully`);
       }
 
-      if (result.steps.notificationDelivery.smsResult && input.customerPhone) {
-        await saveNotification({
+      // Send SMS notification
+      if (messages.sms && input.customerPhone) {
+        console.log("[Workflow] Sending SMS notification...");
+
+        const smsResult = await sendNotification({
+          recipientPhone: input.customerPhone,
+          message: messages.sms.message,
           deliveryId: input.deliveryId,
-          customerId: input.customerId,
-          channel: "sms",
-          recipient: input.customerPhone,
-          message: result.steps.messageGeneration.message,
-          status: result.steps.notificationDelivery.smsResult.success
-            ? "sent"
-            : "failed",
-          messageId: result.steps.notificationDelivery.smsResult.messageId,
-          error: result.steps.notificationDelivery.smsResult.error,
-          delayMinutes: result.steps.trafficCheck?.delayMinutes || 0,
+          priority:
+            result.steps.delayEvaluation?.severity === "severe"
+              ? "high"
+              : "normal",
         });
+
+        // Save SMS notification to database
+        if (smsResult.smsResult) {
+          await saveNotification({
+            deliveryId: input.deliveryId,
+            customerId: input.customerId,
+            channel: "sms",
+            recipient: input.customerPhone,
+            message: messages.sms.message,
+            status: smsResult.smsResult.success ? "sent" : "failed",
+            messageId: smsResult.smsResult.messageId,
+            error: smsResult.smsResult.error,
+            delayMinutes: result.steps.trafficCheck?.delayMinutes || 0,
+          });
+        }
+
+        // Merge notification delivery results
+        if (!result.steps.notificationDelivery) {
+          result.steps.notificationDelivery = smsResult;
+        } else {
+          result.steps.notificationDelivery.smsResult = smsResult.smsResult;
+          result.steps.notificationDelivery.sent = smsResult.sent;
+          if (smsResult.channel === "sms") {
+            result.steps.notificationDelivery.channel = "both";
+          }
+        }
+
+        console.log(`[Workflow] SMS sent successfully`);
       }
     }
 
@@ -569,17 +594,26 @@ export async function RecurringTrafficCheckWorkflow(
             status: "delayed",
           });
 
-          // Generate AI message (Step 3)
+          // Generate AI-enhanced notifications (Step 3)
           currentStep = "message_generation";
           console.log(
-            "[Recurring] Step 3: Generating AI notification message...",
+            "[Recurring] Step 3: Generating AI notification messages...",
           );
+
+          // Get notification channel preferences from delivery metadata
+          const notificationChannels = (deliveryDetails.metadata
+            ?.notification_channels as ("email" | "sms")[]) || ["email", "sms"];
+
+          console.log(
+            `[Recurring] Channels: ${notificationChannels.join(", ")}`,
+          );
+
           const estimatedArrival = new Date(
             new Date(input.scheduledTime).getTime() +
               result.steps.trafficCheck.delayMinutes * 60000,
           ).toISOString();
 
-          result.steps.messageGeneration = await generateAIMessage({
+          const messages = await generateNotificationMessages({
             deliveryId: input.deliveryId,
             trackingNumber: input.trackingNumber,
             customerId: input.customerId,
@@ -589,81 +623,96 @@ export async function RecurringTrafficCheckWorkflow(
             trafficCondition: result.steps.trafficCheck.trafficCondition,
             estimatedArrival,
             originalArrival: input.scheduledTime,
+            useAI: true, // Enable AI generation (can be controlled via delivery settings)
+            channels: notificationChannels,
           });
 
-          console.log("[Recurring] AI message generated successfully");
+          result.steps.messageGeneration = messages;
+          console.log(
+            "[Recurring] Notification messages generated successfully",
+          );
 
-          // Send notification (Step 4)
+          // Send notifications (Step 4)
           currentStep = "notification_delivery";
           console.log(
-            "[Recurring] Step 4: Sending notification to customer...",
+            "[Recurring] Step 4: Sending notifications to customer...",
           );
 
-          // Get notification channel preferences from delivery metadata
-          // Default to both email and SMS if not specified
-          const notificationChannels = (deliveryDetails.metadata
-            ?.notification_channels as ("email" | "sms")[]) || ["email", "sms"];
-          const shouldSendEmail = notificationChannels.includes("email");
-          const shouldSendSMS = notificationChannels.includes("sms");
+          // Send Email notification
+          if (messages.email && input.customerEmail) {
+            console.log("[Recurring] Sending email notification...");
 
-          console.log(
-            `[Recurring] Notification channels from settings: ${notificationChannels.join(", ")}`,
-          );
-
-          result.steps.notificationDelivery = await sendNotification({
-            recipientEmail: shouldSendEmail ? input.customerEmail : undefined,
-            recipientPhone: shouldSendSMS ? input.customerPhone : undefined,
-            message: result.steps.messageGeneration.message,
-            subject: result.steps.messageGeneration.subject,
-            deliveryId: input.deliveryId,
-            priority:
-              result.steps.delayEvaluation.severity === "severe"
-                ? "high"
-                : "normal",
-          });
-
-          console.log(
-            `[Recurring] Notification sent via ${result.steps.notificationDelivery.channel}`,
-          );
-
-          // Save notifications to database
-          if (
-            result.steps.notificationDelivery.emailResult &&
-            input.customerEmail
-          ) {
-            await saveNotification({
+            const emailResult = await sendNotification({
+              recipientEmail: input.customerEmail,
+              message: messages.email.body,
+              subject: messages.email.subject,
               deliveryId: input.deliveryId,
-              customerId: input.customerId,
-              channel: "email",
-              recipient: input.customerEmail,
-              message: result.steps.messageGeneration.message,
-              status: result.steps.notificationDelivery.emailResult.success
-                ? "sent"
-                : "failed",
-              messageId:
-                result.steps.notificationDelivery.emailResult.messageId,
-              error: result.steps.notificationDelivery.emailResult.error,
-              delayMinutes: result.steps.trafficCheck.delayMinutes,
+              priority:
+                result.steps.delayEvaluation.severity === "severe"
+                  ? "high"
+                  : "normal",
             });
+
+            // Save email notification to database
+            if (emailResult.emailResult) {
+              await saveNotification({
+                deliveryId: input.deliveryId,
+                customerId: input.customerId,
+                channel: "email",
+                recipient: input.customerEmail,
+                message: messages.email.body,
+                status: emailResult.emailResult.success ? "sent" : "failed",
+                messageId: emailResult.emailResult.messageId,
+                error: emailResult.emailResult.error,
+                delayMinutes: result.steps.trafficCheck.delayMinutes,
+              });
+            }
+
+            result.steps.notificationDelivery = emailResult;
+            console.log(`[Recurring] Email sent successfully`);
           }
 
-          if (
-            result.steps.notificationDelivery.smsResult &&
-            input.customerPhone
-          ) {
-            await saveNotification({
+          // Send SMS notification
+          if (messages.sms && input.customerPhone) {
+            console.log("[Recurring] Sending SMS notification...");
+
+            const smsResult = await sendNotification({
+              recipientPhone: input.customerPhone,
+              message: messages.sms.message,
               deliveryId: input.deliveryId,
-              customerId: input.customerId,
-              channel: "sms",
-              recipient: input.customerPhone,
-              message: result.steps.messageGeneration.message,
-              status: result.steps.notificationDelivery.smsResult.success
-                ? "sent"
-                : "failed",
-              messageId: result.steps.notificationDelivery.smsResult.messageId,
-              error: result.steps.notificationDelivery.smsResult.error,
-              delayMinutes: result.steps.trafficCheck.delayMinutes,
+              priority:
+                result.steps.delayEvaluation.severity === "severe"
+                  ? "high"
+                  : "normal",
             });
+
+            // Save SMS notification to database
+            if (smsResult.smsResult) {
+              await saveNotification({
+                deliveryId: input.deliveryId,
+                customerId: input.customerId,
+                channel: "sms",
+                recipient: input.customerPhone,
+                message: messages.sms.message,
+                status: smsResult.smsResult.success ? "sent" : "failed",
+                messageId: smsResult.smsResult.messageId,
+                error: smsResult.smsResult.error,
+                delayMinutes: result.steps.trafficCheck.delayMinutes,
+              });
+            }
+
+            // Merge notification delivery results
+            if (!result.steps.notificationDelivery) {
+              result.steps.notificationDelivery = smsResult;
+            } else {
+              result.steps.notificationDelivery.smsResult = smsResult.smsResult;
+              result.steps.notificationDelivery.sent = smsResult.sent;
+              if (smsResult.channel === "sms") {
+                result.steps.notificationDelivery.channel = "both";
+              }
+            }
+
+            console.log(`[Recurring] SMS sent successfully`);
           }
         } else {
           console.log(

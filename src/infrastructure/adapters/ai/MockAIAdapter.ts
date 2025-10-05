@@ -7,8 +7,8 @@ import { logger } from "@/core/base/utils/Logger";
 import { type Result, success } from "../../../core/base/utils/Result";
 import type {
   AIAdapter,
-  GeneratedMessage,
-  MessageGenerationInput,
+  AIGenerationInput,
+  AIGenerationResult,
 } from "./AIAdapter.interface";
 
 export class MockAIAdapter implements AIAdapter {
@@ -19,56 +19,31 @@ export class MockAIAdapter implements AIAdapter {
     return true; // Always available for testing
   }
 
-  async generateMessage(
-    input: MessageGenerationInput,
-  ): Promise<Result<GeneratedMessage>> {
-    logger.info(
-      `🤖 [Mock AI] Generating mock message for delivery ${input.deliveryId}`,
-    );
-    logger.info(`   Delay: ${input.delayMinutes} minutes`);
-    logger.info(`   Traffic: ${input.trafficCondition}`);
+  /**
+   * Generic text generation (returns simple templated response)
+   */
+  async generateText(
+    input: AIGenerationInput,
+  ): Promise<Result<AIGenerationResult>> {
+    const contextLog = input.context
+      ? ` (${input.context.type || "unknown"} - ${input.context.deliveryId || "no-id"})`
+      : "";
+    logger.info(`🤖 [${this.providerName}] Generating mock text${contextLog}`);
 
     // Simulate AI processing delay
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const message = this.createMockMessage(input);
-    const subject = this.generateSubject(input);
+    // Simple template: Just echo the prompt with a prefix
+    const text = `[Mock AI Response] ${input.prompt.substring(0, 200)}...`;
 
-    logger.info(`✅ [Mock AI] Mock message generated successfully`);
-    logger.info(`   Subject: ${subject}`);
+    logger.info(`✅ [${this.providerName}] Mock text generated`);
 
     return success({
-      message,
-      subject,
+      text,
       model: "mock-template",
-      tokens: message.length, // Mock token count
+      tokens: text.length,
       generatedAt: new Date(),
+      fallbackUsed: true,
     });
-  }
-
-  private createMockMessage(input: MessageGenerationInput): string {
-    const deliveryRef = input.trackingNumber || input.deliveryId;
-    const newETA = new Date(input.estimatedArrival).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    // SMS-friendly short message (under 160 characters) with route
-    // Note: Using plain string template instead of structured object (e.g., JSON) since the message
-    // is sent directly to customers without further manipulation. For scenarios requiring post-processing
-    // like translation, A/B testing, or dynamic formatting, a structured approach would be better.
-    return `${input.origin}→${input.destination} - ${deliveryRef}: ${input.delayMinutes}min delay, ${input.trafficCondition} traffic. ETA ${newETA}`;
-  }
-
-  private generateSubject(input: MessageGenerationInput): string {
-    const deliveryRef = input.trackingNumber || input.deliveryId;
-    // Shorter subject lines
-    if (input.delayMinutes > 60) {
-      return `Traffic Delay: ${input.delayMinutes}min - ${deliveryRef}`;
-    } else if (input.delayMinutes > 30) {
-      return `Delay: ${input.delayMinutes}min - ${deliveryRef}`;
-    } else {
-      return `Minor delay - ${deliveryRef}`;
-    }
   }
 }

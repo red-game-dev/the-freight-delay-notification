@@ -27,6 +27,13 @@ import {
   createNextWorkflowId,
 } from "@/core/utils/workflowUtils";
 import { AIService } from "@/infrastructure/adapters/ai/AIService";
+import {
+  buildEmailFallback,
+  buildEmailPrompt,
+  buildEmailSubject,
+  buildSMSFallback,
+  buildSMSPrompt,
+} from "@/infrastructure/adapters/ai/prompts/NotificationPromptBuilder";
 import { NotificationService } from "@/infrastructure/adapters/notifications/NotificationService";
 import { getDatabaseService } from "@/infrastructure/database/DatabaseService";
 import { TrafficService } from "../infrastructure/adapters/traffic/TrafficService";
@@ -34,8 +41,8 @@ import type {
   CheckTrafficInput,
   DelayEvaluationResult,
   EvaluateDelayInput,
-  GenerateMessageInput,
-  MessageGenerationResult,
+  GeneratedNotificationMessages,
+  GenerateNotificationInput,
   NotificationResult,
   SendNotificationInput,
   TrafficCheckResult,
@@ -165,17 +172,31 @@ export async function evaluateDelay(
   };
 }
 
-// Step 3: Generate AI Message
-export async function generateAIMessage(
-  input: GenerateMessageInput,
-): Promise<MessageGenerationResult> {
+/**
+ * Step 3: Generate AI-Enhanced Notifications
+ * Generates per-channel messages (email & SMS) with optional AI
+ *
+ * @param input - Notification context with AI control flag
+ * @returns Generated messages for each requested channel
+ */
+export async function generateNotificationMessages(
+  input: GenerateNotificationInput,
+): Promise<GeneratedNotificationMessages> {
   logger.info(
-    `[Step 3] Generating AI message for delivery ${input.deliveryId}`,
+    `[Step 3] Generating notification messages for delivery ${input.deliveryId}`,
+  );
+  logger.info(`   Channels: ${input.channels.join(", ")}`);
+  logger.info(
+    `   Use AI: ${input.useAI !== false ? "Yes" : "No (templates only)"}`,
   );
 
   const aiService = new AIService();
+  const result: GeneratedNotificationMessages = {
+    generatedAt: getCurrentISOTimestamp(),
+  };
 
-  const result = await aiService.generateMessage({
+  // Build notification context for prompt builder
+  const context = {
     deliveryId: input.deliveryId,
     trackingNumber: input.trackingNumber,
     customerId: input.customerId,
@@ -185,28 +206,105 @@ export async function generateAIMessage(
     trafficCondition: input.trafficCondition,
     estimatedArrival: input.estimatedArrival,
     originalArrival: input.originalArrival,
-  });
+  };
 
-  if (result.success) {
-    return {
-      message: result.value.message,
-      subject:
-        result.value.subject ||
-        `Delivery Update: ${input.delayMinutes}-minute delay`,
-      model: result.value.model,
-      tokens: result.value.tokens,
-      generatedAt: result.value.generatedAt.toISOString(),
-      fallbackUsed:
-        result.value.model === "mock-template" ||
-        result.value.model === "fallback-template",
-    };
+  // Generate EMAIL message
+  if (input.channels.includes("email")) {
+    logger.info("   Generating email message...");
+
+    if (input.useAI !== false) {
+      // Try AI generation
+      const emailPrompt = buildEmailPrompt(context);
+      const aiResult = await aiService.generateText({
+        prompt: emailPrompt.prompt,
+        systemPrompt: emailPrompt.systemPrompt,
+        maxTokens: 300,
+        temperature: 0.7,
+        context: {
+          deliveryId: input.deliveryId,
+          type: "email",
+        },
+      });
+
+      if (aiResult.success) {
+        result.email = {
+          subject: buildEmailSubject(context),
+          body: aiResult.value.text,
+          model: aiResult.value.model,
+          tokens: aiResult.value.tokens,
+          aiGenerated: true,
+        };
+        logger.info(`   ✅ Email generated with AI (${aiResult.value.model})`);
+      } else {
+        // Fallback to template
+        logger.warn(`   ⚠️ AI failed for email, using template`);
+        result.email = {
+          subject: buildEmailSubject(context),
+          body: buildEmailFallback(context),
+          aiGenerated: false,
+        };
+      }
+    } else {
+      // Use template (AI disabled)
+      result.email = {
+        subject: buildEmailSubject(context),
+        body: buildEmailFallback(context),
+        aiGenerated: false,
+      };
+      logger.info(`   ✅ Email generated with template (AI disabled)`);
+    }
   }
 
-  // This shouldn't happen with MockAIAdapter as last resort
-  throw new InfrastructureError(
-    `AI message generation failed: ${result.error.message}`,
-    { error: result.error },
-  );
+  // Generate SMS message
+  if (input.channels.includes("sms")) {
+    logger.info("   Generating SMS message...");
+
+    if (input.useAI !== false) {
+      // Try AI generation
+      const smsPrompt = buildSMSPrompt(context);
+      const aiResult = await aiService.generateText({
+        prompt: smsPrompt.prompt,
+        systemPrompt: smsPrompt.systemPrompt,
+        maxTokens: 30, // Ultra-short for SMS (60 char limit, Twilio trial adds ~40 char prefix)
+        temperature: 0.7,
+        context: {
+          deliveryId: input.deliveryId,
+          type: "sms",
+        },
+      });
+
+      if (aiResult.success) {
+        // Ensure SMS is max 60 chars (truncate if needed for Twilio trial)
+        const smsMessage = aiResult.value.text.substring(0, 60);
+        result.sms = {
+          message: smsMessage,
+          model: aiResult.value.model,
+          tokens: aiResult.value.tokens,
+          aiGenerated: true,
+        };
+        logger.info(
+          `   ✅ SMS generated with AI (${aiResult.value.model}, ${smsMessage.length} chars)`,
+        );
+      } else {
+        // Fallback to template
+        logger.warn(`   ⚠️ AI failed for SMS, using template`);
+        result.sms = {
+          message: buildSMSFallback(context),
+          aiGenerated: false,
+        };
+      }
+    } else {
+      // Use template (AI disabled)
+      result.sms = {
+        message: buildSMSFallback(context),
+        aiGenerated: false,
+      };
+      logger.info(`   ✅ SMS generated with template (AI disabled)`);
+    }
+  }
+
+  logger.info(`✅ [Step 3] Notification messages generated successfully`);
+  return result;
 }
 
 // Step 4: Send Notification

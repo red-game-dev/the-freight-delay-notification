@@ -10,8 +10,8 @@ import { failure, type Result } from "../../../core/base/utils/Result";
 import { env } from "../../config/EnvValidator";
 import type {
   AIAdapter,
-  GeneratedMessage,
-  MessageGenerationInput,
+  AIGenerationInput,
+  AIGenerationResult,
 } from "./AIAdapter.interface";
 import { MockAIAdapter } from "./MockAIAdapter";
 import { OpenAIAdapter } from "./OpenAIAdapter";
@@ -52,20 +52,25 @@ export class AIService {
   }
 
   /**
-   * Generate AI message with automatic fallback
+   * Generic text generation with automatic fallback
+   * Use this for any AI text generation task with custom prompts
+   *
+   * @param input - Prompt and generation parameters
+   * @returns Generated text or error
    */
-  async generateMessage(
-    input: MessageGenerationInput,
-  ): Promise<Result<GeneratedMessage>> {
+  async generateText(
+    input: AIGenerationInput,
+  ): Promise<Result<AIGenerationResult>> {
     if (this.adapters.length === 0) {
       return failure(
         new InfrastructureError("No AI adapters available", { input }),
       );
     }
 
-    logger.info(
-      `\n🤖 [AIService] Generating message for delivery ${input.deliveryId}...`,
-    );
+    const contextLog = input.context
+      ? ` for ${input.context.type || "unknown"} (${input.context.deliveryId || "no-id"})`
+      : "";
+    logger.info(`\n🤖 [AIService] Generating text${contextLog}...`);
     logger.info(
       `   Trying ${this.adapters.length} adapter(s) in priority order`,
     );
@@ -76,11 +81,11 @@ export class AIService {
     for (const adapter of this.adapters) {
       logger.info(`\n🔄 [AIService] Trying ${adapter.providerName}...`);
 
-      const result = await adapter.generateMessage(input);
+      const result = await adapter.generateText(input);
 
       if (result.success) {
         logger.info(
-          `✅ [AIService] Successfully generated message via ${adapter.providerName}`,
+          `✅ [AIService] Successfully generated text via ${adapter.providerName}`,
         );
         return result;
       }
@@ -98,7 +103,7 @@ export class AIService {
       });
     }
 
-    // All adapters failed (this should never happen with MockAIAdapter as fallback)
+    // All adapters failed
     logger.error("❌ [AIService] All AI adapters failed");
 
     return failure(

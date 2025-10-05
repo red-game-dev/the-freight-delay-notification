@@ -12,7 +12,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../../queryKeys";
-import type { Delivery } from "../types";
 import { getDelivery } from "./getDelivery";
 
 export function useDelivery(id: string) {

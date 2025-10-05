@@ -83,8 +83,12 @@ export interface DelayEvaluationResult {
   requiresNotification: boolean;
 }
 
-// Step 3: AI Message Generation Activity Types
-export interface GenerateMessageInput {
+/**
+ * Step 3: AI-enhanced notification generation
+ * Supports per-channel messages (email vs SMS) with optional AI
+ */
+export interface GenerateNotificationInput {
+  // Delivery context
   deliveryId: string;
   trackingNumber?: string;
   customerId: string;
@@ -94,15 +98,27 @@ export interface GenerateMessageInput {
   trafficCondition: string;
   estimatedArrival: string;
   originalArrival: string;
+
+  // AI control
+  useAI?: boolean; // If false, use template fallbacks
+  channels: ("email" | "sms")[]; // Which channels to generate messages for
 }
 
-export interface MessageGenerationResult {
-  message: string;
-  subject?: string;
-  model: string; // GPT-4o-mini or fallback
-  tokens?: number;
+export interface GeneratedNotificationMessages {
+  email?: {
+    subject: string;
+    body: string;
+    model?: string;
+    tokens?: number;
+    aiGenerated: boolean;
+  };
+  sms?: {
+    message: string;
+    model?: string;
+    tokens?: number;
+    aiGenerated: boolean;
+  };
   generatedAt: string;
-  fallbackUsed: boolean;
 }
 
 // Step 4: Notification Delivery Activity Types
