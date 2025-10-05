@@ -133,20 +133,21 @@ export class DatabaseService {
 
     const primaryData = primaryResult.value.result;
 
-    // Log secondary adapter results
+    // Log secondary adapter results (non-critical failures)
     for (let i = 1; i < results.length; i++) {
       const result = results[i];
       if (result.status === "fulfilled") {
         if (result.value.result.success) {
           logger.info(`${operation} succeeded on ${result.value.adapter}`);
         } else {
-          logger.error(
-            `${operation} failed on ${result.value.adapter}:`,
+          // Secondary adapter failures are non-critical (e.g., Mock doesn't have production data)
+          logger.warn(
+            `${operation} failed on secondary adapter ${result.value.adapter}:`,
             result.value.result.error.message,
           );
         }
       } else {
-        logger.error(`${operation} failed on adapter ${i}:`, result.reason);
+        logger.warn(`${operation} failed on secondary adapter ${i}:`, result.reason);
       }
     }
 
