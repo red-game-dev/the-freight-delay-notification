@@ -157,7 +157,7 @@ export default function DeliveryDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -167,9 +167,9 @@ export default function DeliveryDetailPage() {
           >
             Back
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
                 {delivery.tracking_number}
               </h1>
               <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
@@ -180,7 +180,7 @@ export default function DeliveryDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link href={`/deliveries/${delivery.id}/edit`}>
             <Button
               variant="outline"
@@ -359,9 +359,13 @@ export default function DeliveryDetailPage() {
       )}
 
       {/* Workflows and Notifications History */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <DeliveryWorkflowsList deliveryId={delivery.id} />
-        <DeliveryNotificationsList deliveryId={delivery.id} />
+      <div className="grid gap-6 md:grid-cols-2 overflow-hidden">
+        <div className="min-w-0 overflow-hidden">
+          <DeliveryWorkflowsList deliveryId={delivery.id} />
+        </div>
+        <div className="min-w-0 overflow-hidden">
+          <DeliveryNotificationsList deliveryId={delivery.id} />
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}
