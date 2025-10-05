@@ -38,6 +38,13 @@ export interface TrafficStats {
   total: number;
   delayed: number;
   avg_delay: number;
+  condition_counts?: {
+    all: number;
+    light: number;
+    moderate: number;
+    heavy: number;
+    severe: number;
+  };
 }
 
 export interface TrafficSnapshotResponse

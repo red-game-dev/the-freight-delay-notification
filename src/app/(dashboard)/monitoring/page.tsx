@@ -41,7 +41,7 @@ import type {
 import type { TrafficConditionFilter } from "@/core/types";
 import { buildGoogleMapsDirectionsUrl } from "@/core/utils/mapsUtils";
 import { getDeliveryStatusVariant } from "@/core/utils/statusUtils";
-import { countByCondition, enrichSnapshot } from "@/core/utils/trafficUtils";
+import { enrichSnapshot } from "@/core/utils/trafficUtils";
 import { useExpandedItems } from "@/stores";
 
 export default function MonitoringPage() {
@@ -55,7 +55,7 @@ export default function MonitoringPage() {
   const { data: routes, isLoading: routesLoading } = useRoutes();
   const routeMap = useRouteMap(routes);
 
-  // Fetch filtered traffic snapshots for display
+  // Fetch filtered traffic snapshots for display with stats
   const { data: trafficResponse, isLoading: trafficLoading } =
     useTrafficSnapshots({
       page: page.toString(),
@@ -64,15 +64,7 @@ export default function MonitoringPage() {
       ...(filter !== "all" && { condition: filter }),
     });
 
-  // Fetch all traffic snapshots (no filter) for accurate counts in filter buttons
-  const { data: allTrafficResponse } = useTrafficSnapshots({
-    page: "1",
-    limit: "1000",
-    includeStats: "false",
-  });
-
   const trafficSnapshots: TrafficSnapshot[] = trafficResponse?.data || [];
-  const allTrafficSnapshots: TrafficSnapshot[] = allTrafficResponse?.data || [];
   const trafficPagination = trafficResponse?.pagination;
   const trafficStats = trafficResponse?.stats;
 
@@ -87,10 +79,14 @@ export default function MonitoringPage() {
   // No need for frontend filtering anymore - API handles it
   const filteredSnapshots = trafficSnapshots;
 
-  // Count by traffic condition from ALL snapshots (for accurate filter button counts)
+  // Use condition counts from API stats
   const conditionCounts = useMemo(() => {
-    return countByCondition(allTrafficSnapshots);
-  }, [allTrafficSnapshots]);
+    if (trafficStats?.condition_counts) {
+      return trafficStats.condition_counts;
+    }
+    // Fallback to empty counts if stats not available
+    return { all: 0, light: 0, moderate: 0, heavy: 0, severe: 0 };
+  }, [trafficStats]);
 
   return (
     <div className="space-y-6">

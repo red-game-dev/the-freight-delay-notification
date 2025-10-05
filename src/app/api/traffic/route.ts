@@ -129,6 +129,14 @@ export const GET = createApiHandler(async (request) => {
                 ) / sanitizedSnapshots.length,
               )
             : 0,
+        // Counts by traffic condition (from ALL snapshots, not filtered)
+        condition_counts: {
+          all: snapshotsResult.value.length,
+          light: snapshotsResult.value.filter((s) => s.traffic_condition === "light").length,
+          moderate: snapshotsResult.value.filter((s) => s.traffic_condition === "moderate").length,
+          heavy: snapshotsResult.value.filter((s) => s.traffic_condition === "heavy").length,
+          severe: snapshotsResult.value.filter((s) => s.traffic_condition === "severe").length,
+        },
       }
     : undefined;
 
