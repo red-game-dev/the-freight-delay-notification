@@ -2,8 +2,8 @@ name: Traffic Check Cron
 
 on:
   schedule:
-    # Run every 10 minutes
-    - cron: '*/10 * * * *'
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
 
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
