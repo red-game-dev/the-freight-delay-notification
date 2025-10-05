@@ -157,7 +157,7 @@ export interface DelayNotificationWorkflowResult {
   steps: {
     trafficCheck?: TrafficCheckResult;
     delayEvaluation?: DelayEvaluationResult;
-    messageGeneration?: MessageGenerationResult;
+    messageGeneration?: GeneratedNotificationMessages;
     notificationDelivery?: NotificationResult;
   };
   success: boolean;
