@@ -12,7 +12,7 @@ import { ViewModeSwitcher } from "@/components/ui/ViewModeSwitcher";
 export default function WorkflowsPage() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Workflows
@@ -21,7 +21,9 @@ export default function WorkflowsPage() {
             Monitor Temporal workflow executions and status
           </p>
         </div>
-        <ViewModeSwitcher pageKey="workflows" />
+        <div className="flex-shrink-0">
+          <ViewModeSwitcher pageKey="workflows" />
+        </div>
       </div>
 
       <WorkflowStatus />

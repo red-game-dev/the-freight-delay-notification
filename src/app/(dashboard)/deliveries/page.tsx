@@ -15,7 +15,7 @@ import { ViewModeSwitcher } from "@/components/ui/ViewModeSwitcher";
 export default function DeliveriesPage() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Deliveries
@@ -24,7 +24,7 @@ export default function DeliveriesPage() {
             Monitor and manage all freight deliveries
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <ViewModeSwitcher pageKey="deliveries" />
           <Link href="/deliveries/new">
             <Button leftIcon={<Plus className="h-4 w-4" />}>
