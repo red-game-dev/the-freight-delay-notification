@@ -40,6 +40,7 @@ import type {
 } from "@/core/infrastructure/http/services/traffic/queries/listTrafficSnapshots";
 import type { TrafficConditionFilter } from "@/core/types";
 import { buildGoogleMapsDirectionsUrl } from "@/core/utils/mapsUtils";
+import { getRelativeTimeString } from "@/core/utils/dateUtils";
 import { getDeliveryStatusVariant } from "@/core/utils/statusUtils";
 import { enrichSnapshot } from "@/core/utils/trafficUtils";
 import { useExpandedItems } from "@/stores";
@@ -341,7 +342,7 @@ export default function MonitoringPage() {
                             </span>
                           )}
                           <span className="text-muted-foreground">
-                            {new Date(enriched.snapshot_at).toLocaleString()}
+                            Last checked: {getRelativeTimeString(enriched.snapshot_at)}
                           </span>
                         </div>
 
@@ -467,9 +468,13 @@ export default function MonitoringPage() {
                       </span>
                     </div>
 
+                    <div className="text-xs text-muted-foreground pt-1">
+                      Last checked: {getRelativeTimeString(enriched.snapshot_at)}
+                    </div>
+
                     {snapshot.affected_deliveries &&
                       snapshot.affected_deliveries.length > 0 && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
                           <Package className="h-3 w-3" />
                           <span>
                             {snapshot.affected_deliveries.length} affected
@@ -511,6 +516,9 @@ export default function MonitoringPage() {
                         </div>
                         <div className="text-xs text-muted-foreground truncate">
                           → {route?.destination_address || "Unknown"}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
+                          {getRelativeTimeString(enriched.snapshot_at)}
                         </div>
                       </div>
                     </div>

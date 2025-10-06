@@ -24,6 +24,48 @@ export function getCurrentISOTimestamp(): string {
   return new Date().toISOString();
 }
 
+// ===== Relative Time Formatting =====
+
+/**
+ * Get relative time string (e.g., "5 mins ago", "2 hours ago")
+ */
+export function getRelativeTimeString(date: Date | string): string {
+  const now = new Date();
+  const then = typeof date === "string" ? new Date(date) : date;
+  const diffMs = now.getTime() - then.getTime();
+  const diffMins = Math.floor(diffMs / TIME_CONSTANTS.MILLISECONDS_PER_MINUTE);
+  const diffHours = Math.floor(diffMins / TIME_CONSTANTS.MINUTES_PER_HOUR);
+  const diffDays = Math.floor(diffHours / TIME_CONSTANTS.HOURS_PER_DAY);
+
+  if (diffMins < 1) {
+    return "Just now";
+  }
+  if (diffMins < 60) {
+    return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  }
+  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+}
+
+/**
+ * Format timestamp as locale string
+ */
+export function formatTimestamp(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return dateObj.toLocaleString();
+}
+
+/**
+ * Get timestamp with relative time (e.g., "10/6/2025, 3:30 PM (31 mins ago)")
+ */
+export function getTimestampWithRelative(date: Date | string): string {
+  const relative = getRelativeTimeString(date);
+  const absolute = formatTimestamp(date);
+  return `${absolute} (${relative})`;
+}
+
 // ===== Date Arithmetic =====
 
 /**
