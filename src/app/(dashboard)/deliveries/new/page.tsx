@@ -286,7 +286,9 @@ export default function NewDeliveryPage() {
                 />
                 <p className="text-xs text-muted-foreground ml-[calc(2.75rem)]">
                   When enabled, the system will immediately check for traffic
-                  delays after creating this delivery
+                  delays after creating this delivery. If disabled for
+                  non-recurring workflows, you'll need to manually click "Check
+                  Traffic & Notify" to trigger the check.
                 </p>
               </div>
             </FormField>
