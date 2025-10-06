@@ -6,7 +6,6 @@
 "use client";
 
 import {
-  AlertCircle,
   ArrowLeft,
   Clock,
   Edit,
@@ -226,7 +225,6 @@ export default function DeliveryDetailPage() {
 
       {/* Info about live traffic fetching */}
       <InfoBox variant="info" className="flex items-start gap-2">
-        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
         <div className="flex-1 text-sm">
           <strong>Real-time traffic check:</strong> Clicking "Check Traffic &
           Notify" fetches current traffic conditions directly from Google Maps
