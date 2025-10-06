@@ -999,6 +999,6 @@ This project was built for the **Freight Delay Notification Exercise** as a demo
 
 ---
 
-**Questions?** Check the [docs](./docs) or create an issue in the repository.
+**Questions?** Email me at [red.pace.dev@gmail.com](mailto:red.pace.dev@gmail.com).
 
 **License**: MIT
