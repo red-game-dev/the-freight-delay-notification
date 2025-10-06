@@ -1,6 +1,24 @@
 /**
  * Test Complete 4-Step Workflow
- * Tests the entire PDF workflow from traffic check to notification delivery
+ * Tests the entire PDF exercise workflow from traffic check to notification delivery
+ *
+ * This script validates all 4 workflow requirements from the PDF:
+ *
+ * Step 1: Fetch traffic data for a specified route (calculates delay in minutes)
+ * Step 2: Check if delay exceeds threshold (e.g., 30 minutes)
+ *         - If delay > threshold → proceed to Step 3
+ *         - If delay ≤ threshold → do nothing further
+ * Step 3: Generate friendly customer message using AI (gpt-4o-mini)
+ *         - Separate prompts for email vs SMS (60 char SMS limit)
+ *         - Falls back to templates if AI fails
+ * Step 4: Send notification to customer via email/SMS
+ *         - SendGrid for email, Twilio for SMS
+ *         - Mock adapters available for testing without API keys
+ *
+ * Usage:
+ *   pnpm run test:workflow                    # Default: Times Square → JFK, 30 min threshold
+ *   pnpm run test:workflow -- --threshold 5   # Custom threshold
+ *   pnpm run test:workflow -- --origin "Lisbon, Portugal" --destination "Porto, Portugal"
  */
 
 import { Client, Connection } from "@temporalio/client";
@@ -18,6 +36,7 @@ function parseArgs() {
     origin: process.env.TEST_ORIGIN || "Times Square, Manhattan, NY",
     destination: process.env.TEST_DESTINATION || "JFK Airport, Queens, NY",
     threshold: parseInt(process.env.TEST_THRESHOLD || "30", 10),
+    name: process.env.TEST_NAME || "Test Customer",
     email: process.env.TEST_EMAIL || "test@example.com",
     phone: process.env.TEST_PHONE || "+1234567890",
   };
@@ -43,7 +62,13 @@ async function testCompleteWorkflow() {
   const options = parseArgs();
 
   logger.info("🧪 Testing Complete 4-Step PDF Workflow");
-  logger.info("==========================================\n");
+  logger.info("==========================================");
+  logger.info("This test validates the exercise requirements:");
+  logger.info("  ✓ Step 1: Fetch traffic data (Google Maps/Mapbox)");
+  logger.info("  ✓ Step 2: Check delay vs threshold");
+  logger.info("  ✓ Step 3: Generate AI message (gpt-4o-mini)");
+  logger.info("  ✓ Step 4: Send email/SMS notification");
+  logger.info("");
 
   try {
     // Connect to Temporal
@@ -84,6 +109,7 @@ async function testCompleteWorkflow() {
       `   Route: ${workflowInput.origin.address} → ${workflowInput.destination.address}`,
     );
     logger.info(`   Threshold: ${workflowInput.thresholdMinutes} minutes`);
+    logger.info(`   Customer: ${options.name}`);
     logger.info(`   Email: ${workflowInput.customerEmail}`);
     logger.info(`   Phone: ${workflowInput.customerPhone}`);
     logger.info("");
@@ -148,18 +174,37 @@ async function testCompleteWorkflow() {
 
     if (result.steps.messageGeneration) {
       logger.info("\n🤖 Step 3: AI Message Generation");
-      logger.info(`   Model: ${result.steps.messageGeneration.model}`);
-      logger.info(`   Subject: ${result.steps.messageGeneration.subject}`);
-      logger.info(
-        `   Fallback Used: ${result.steps.messageGeneration.fallbackUsed ? "YES" : "NO"}`,
-      );
-      if (result.steps.messageGeneration.tokens) {
-        logger.info(`   Tokens: ${result.steps.messageGeneration.tokens}`);
+
+      if (result.steps.messageGeneration.email) {
+        const email = result.steps.messageGeneration.email;
+        logger.info("\n   📧 Email Message:");
+        logger.info(`      Subject: ${email.subject}`);
+        logger.info(`      AI Generated: ${email.aiGenerated ? "YES" : "NO"}`);
+        if (email.model) {
+          logger.info(`      Model: ${email.model}`);
+        }
+        if (email.tokens) {
+          logger.info(`      Tokens: ${email.tokens}`);
+        }
+        logger.info(`\n      Body Preview:`);
+        logger.info(`      ${email.body.substring(0, 150)}...`);
       }
-      logger.info(`\n   Message Preview:`);
-      logger.info(
-        `   ${result.steps.messageGeneration.message.substring(0, 200)}...`,
-      );
+
+      if (result.steps.messageGeneration.sms) {
+        const sms = result.steps.messageGeneration.sms;
+        logger.info("\n   📱 SMS Message:");
+        logger.info(`      AI Generated: ${sms.aiGenerated ? "YES" : "NO"}`);
+        if (sms.model) {
+          logger.info(`      Model: ${sms.model}`);
+        }
+        if (sms.tokens) {
+          logger.info(`      Tokens: ${sms.tokens}`);
+        }
+        logger.info(`\n      Message: "${sms.message}"`);
+        logger.info(`      Length: ${sms.message.length} characters`);
+      }
+
+      logger.info(`\n   Generated At: ${result.steps.messageGeneration.generatedAt}`);
     }
 
     if (result.steps.notificationDelivery) {
@@ -208,9 +253,13 @@ async function testCompleteWorkflow() {
     const message = error instanceof Error ? error.message : String(error);
     logger.error("\n❌ Workflow test failed:", message);
     logger.error("\nMake sure:");
-    logger.error("  1. Temporal server is running: npm run temporal");
-    logger.error("  2. Worker is running: npm run temporal:worker");
-    logger.error("  3. API keys are configured in .env.local\n");
+    logger.error("  1. Temporal server is running: pnpm run temporal");
+    logger.error("  2. Worker is running: pnpm run temporal:worker");
+    logger.error("  3. API keys are configured in .env.local");
+    logger.error("\n💡 Testing without API keys? Enable mock adapters in .env.local:");
+    logger.error("     FORCE_TRAFFIC_MOCK_ADAPTER=true");
+    logger.error("     FORCE_AI_MOCK_ADAPTER=true");
+    logger.error("     FORCE_NOTIFICATION_MOCK_ADAPTER=true\n");
     process.exit(1);
   }
 }
