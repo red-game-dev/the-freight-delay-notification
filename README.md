@@ -8,10 +8,14 @@ A production-ready TypeScript application that monitors traffic delays on freigh
 
 **Production App**: [https://the-freight-delay-notification.vercel.app](https://the-freight-delay-notification.vercel.app)
 
+**⚠️ SMS Notification Limitation**: The production app uses Twilio trial credits for SMS notifications. If trial quota is exhausted, SMS delivery may fail (email notifications will still work). This is expected for a demo deployment and would be resolved with a paid Twilio account in production.
+
+**💡 Want to test without limits?** Run the app locally with your own API keys (see [Quick Start](#-quick-start) below). The web UI provides full functionality for creating deliveries and triggering workflows. For quick command-line testing, use `pnpm run test:workflow` or `pnpm run test:route:ny` (see [Testing Commands](#testing-commands) below).
+
 **Deployment Architecture**:
 - 🚀 **Frontend & API**: Deployed on Vercel (serverless)
 - ⚙️ **Temporal Workers**: Running on Railway (long-running processes)
-- ⏰ **Traffic Cron Jobs**: GitHub Actions (scheduled every 30 min)
+- ⏰ **Traffic Cron Jobs**: GitHub Actions (scheduled every 10 min)
 
 ## 📋 Exercise Requirements Status
 
@@ -232,14 +236,35 @@ pnpm run temporal:terminate  # Terminate running workflow (interactive)
 ```
 
 ### Testing Commands
+
+**Primary Testing**: Use the web UI at `http://localhost:3000` to create deliveries and trigger workflows with full functionality.
+
+**Command-Line Testing** (optional, for quick validation):
+
 ```bash
+# Unit/Integration Tests
 pnpm run test                # Run all tests
 pnpm run test:watch          # Run tests in watch mode
 pnpm run test:coverage       # Generate coverage report
-pnpm run test:workflow       # Test complete delay notification workflow
+
+# Workflow Tests (requires Temporal server + worker running)
+pnpm run test:workflow       # Test complete 4-step workflow
+pnpm run test:workflow:custom -- --threshold 5  # Custom threshold
 pnpm run test:route:la       # Test LA route (Downtown → LAX)
 pnpm run test:route:ny       # Test NY route (Times Square → JFK)
 pnpm run test:route:sf       # Test SF route (Downtown → San Jose)
+```
+
+**Required for workflow tests** - Add to `.env.local`:
+```bash
+TEST_EMAIL=your-email@example.com
+TEST_NAME="Your Name"
+TEST_PHONE=+1234567890
+
+# Optional: Use mock adapters to test without API keys
+FORCE_TRAFFIC_MOCK_ADAPTER=true
+FORCE_AI_MOCK_ADAPTER=true
+FORCE_NOTIFICATION_MOCK_ADAPTER=true
 ```
 
 ### Database Commands
@@ -445,16 +470,17 @@ class TrafficService {
 - ✅ **Customer data**: Email, phone, delivery history - valuable for business analytics and future outreach (would require user consent/opt-in in production)
 
 **Cost Savings Example**:
-- Without DB: 100 deliveries × 10 checks/day = 1,000 API calls/day
-- With DB: Check DB first → Only call API if data is stale (>30 min old)
-- Result: Reduced to ~100 API calls/day (10x cost reduction)
+- Without DB: Background monitoring would need constant API calls
+- With DB: Cron job fetches once every 10 min, stores in DB
+- Dashboard shows cached data (saves thousands of API calls)
+- Result: Only ~144 API calls/day for monitoring (vs continuous polling)
 
 **How It Works**:
-1. **Cron job** runs every 30 minutes (GitHub Action)
-2. Checks Supabase for recent traffic data (< 30 min old)
-3. If fresh data exists → use cached data
-4. If stale → call Google Maps/Mapbox API → save to DB
-5. All workflows query DB first, API second
+1. **Cron job** runs every 10 minutes (GitHub Actions scheduled workflow)
+2. Fetches fresh traffic data from Google Maps/Mapbox API
+3. Saves traffic snapshots to database for monitoring dashboard
+4. **Dashboard/Monitoring UI** displays cached data (refreshed every 10 min)
+5. **User-triggered workflows** ALWAYS fetch live API data (ignore cache for real-time accuracy)
 
 **Why Supabase Specifically**:
 - ✅ PostgreSQL (production-grade relational DB)
@@ -463,9 +489,14 @@ class TrafficService {
 - ✅ Managed infrastructure (no DB ops overhead)
 - ✅ Generous free tier (500MB DB, 2GB bandwidth)
 
-**Trade-off**: 30-minute cache means traffic data can be slightly stale. But for freight deliveries (hours/days long), this is acceptable vs hitting expensive API limits.
+**Key Design Decision**:
+- ✅ **Monitoring dashboard** = Cached data (10-min refresh) for cost efficiency
+- ✅ **User-triggered workflows** = Live API data for real-time accuracy
+- ✅ **Recurring workflows** = Live API data on each check (per PDF requirements)
 
-**Code**: See `src/infrastructure/database/` for Supabase client and `scripts/run-traffic-cron.ts` for cron job logic.
+**Trade-off**: Dashboard shows 10-minute cached data which may differ from live conditions. When users trigger "Check Traffic & Notify", the workflow fetches fresh API data, so notification decisions are always based on current traffic, not cached snapshots.
+
+**Code**: See `src/infrastructure/database/` for Supabase client, `scripts/run-traffic-cron.ts` for cron job, and `src/workflows/activities.ts:52` for live traffic fetching in workflows.
 
 ## 🐛 Issues Encountered & Solutions
 
@@ -773,7 +804,7 @@ pnpm run db:migrate
 **Production Architecture** (Current Deployment):
 - **Vercel**: Next.js frontend, API routes (serverless)
 - **Railway**: Temporal workers (long-running processes)
-- **GitHub Actions**: Traffic monitoring cron jobs (every 30 min)
+- **GitHub Actions**: Traffic monitoring cron jobs (every 10 min)
 - **Supabase**: PostgreSQL database (managed)
 
 See [DEPLOYMENT_FLOW.md](./DEPLOYMENT_FLOW.md) for complete deployment guide.
