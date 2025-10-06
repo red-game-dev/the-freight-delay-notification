@@ -264,9 +264,7 @@ export class DatabaseService {
   }
 
   async deleteRoute(id: string) {
-    return this.writeToAll("deleteRoute", (adapter) =>
-      adapter.deleteRoute(id),
-    );
+    return this.writeToAll("deleteRoute", (adapter) => adapter.deleteRoute(id));
   }
 
   async listRoutes(limit?: number, offset?: number) {

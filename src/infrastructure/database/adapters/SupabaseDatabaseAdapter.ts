@@ -1173,14 +1173,14 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
   ): Promise<Result<TrafficSnapshot>> {
     try {
       // 1. Get the most recent snapshot for this route
-      const { data: recentSnapshot, error: queryError } = await this
-        .ensureClient()
-        .from("traffic_snapshots")
-        .select("*")
-        .eq("route_id", input.route_id)
-        .order("snapshot_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: recentSnapshot, error: queryError } =
+        await this.ensureClient()
+          .from("traffic_snapshots")
+          .select("*")
+          .eq("route_id", input.route_id)
+          .order("snapshot_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
       if (queryError) {
         logger.error(
@@ -1212,7 +1212,10 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
             `[DB] Updating existing snapshot ${recentSnapshot.id} (similar traffic within 10 min)`,
           );
 
-          const dbInput: Omit<CreateTrafficSnapshotInput, "incident_location"> & {
+          const dbInput: Omit<
+            CreateTrafficSnapshotInput,
+            "incident_location"
+          > & {
             incident_location?: string;
           } = {
             ...input,

@@ -93,7 +93,9 @@ async function testCompleteWorkflow() {
       });
 
       if (!customerResult.success) {
-        throw new Error(`Failed to create customer: ${customerResult.error.message}`);
+        throw new Error(
+          `Failed to create customer: ${customerResult.error.message}`,
+        );
       }
 
       customerId = customerResult.value.id;
@@ -103,7 +105,7 @@ async function testCompleteWorkflow() {
     // 2. Create test route (routes are typically unique per origin/destination)
     const routeResult = await db.createRoute({
       origin_address: options.origin,
-      origin_coords: { x: 40.758896, y: -73.985130 }, // Times Square coords (will be geocoded in real scenario)
+      origin_coords: { x: 40.758896, y: -73.98513 }, // Times Square coords (will be geocoded in real scenario)
       destination_address: options.destination,
       destination_coords: { x: 40.6413, y: -73.7781 }, // JFK coords
       distance_meters: 26000, // ~26km
@@ -131,12 +133,16 @@ async function testCompleteWorkflow() {
     });
 
     if (!deliveryResult.success) {
-      throw new Error(`Failed to create delivery: ${deliveryResult.error.message}`);
+      throw new Error(
+        `Failed to create delivery: ${deliveryResult.error.message}`,
+      );
     }
 
     deliveryId = deliveryResult.value.id;
     logger.info(`   ✅ Delivery created: ${deliveryId}`);
-    logger.info(`   ✅ Tracking number: ${deliveryResult.value.tracking_number}`);
+    logger.info(
+      `   ✅ Tracking number: ${deliveryResult.value.tracking_number}`,
+    );
     logger.info("");
 
     // Connect to Temporal
@@ -154,9 +160,9 @@ async function testCompleteWorkflow() {
 
     // Prepare workflow input with real database IDs
     const workflowInput: DelayNotificationWorkflowInput = {
-      deliveryId: deliveryId!,
-      routeId: routeId!,
-      customerId: customerId!,
+      deliveryId: deliveryId as string,
+      routeId: routeId as string,
+      customerId: customerId as string,
       customerEmail: options.email,
       customerPhone: options.phone,
       origin: {
@@ -279,7 +285,9 @@ async function testCompleteWorkflow() {
         logger.info(`      ────────────────────────`);
       }
 
-      logger.info(`\n   Generated At: ${result.steps.messageGeneration.generatedAt}`);
+      logger.info(
+        `\n   Generated At: ${result.steps.messageGeneration.generatedAt}`,
+      );
     }
 
     if (result.steps.notificationDelivery) {
@@ -329,7 +337,9 @@ async function testCompleteWorkflow() {
       if (deleteDeliveryResult.success) {
         logger.info(`   ✅ Deleted delivery: ${deliveryId}`);
       } else {
-        logger.warn(`   ⚠️  Failed to delete delivery: ${deleteDeliveryResult.error.message}`);
+        logger.warn(
+          `   ⚠️  Failed to delete delivery: ${deleteDeliveryResult.error.message}`,
+        );
       }
     }
     if (routeId) {
@@ -337,7 +347,9 @@ async function testCompleteWorkflow() {
       if (deleteRouteResult.success) {
         logger.info(`   ✅ Deleted route: ${routeId}`);
       } else {
-        logger.warn(`   ⚠️  Failed to delete route: ${deleteRouteResult.error.message}`);
+        logger.warn(
+          `   ⚠️  Failed to delete route: ${deleteRouteResult.error.message}`,
+        );
       }
     }
     logger.info("✅ Cleanup complete\n");
@@ -351,7 +363,9 @@ async function testCompleteWorkflow() {
     logger.error("  1. Temporal server is running: pnpm run temporal");
     logger.error("  2. Worker is running: pnpm run temporal:worker");
     logger.error("  3. API keys are configured in .env.local");
-    logger.error("\n💡 Testing without API keys? Enable mock adapters in .env.local:");
+    logger.error(
+      "\n💡 Testing without API keys? Enable mock adapters in .env.local:",
+    );
     logger.error("     FORCE_TRAFFIC_MOCK_ADAPTER=true");
     logger.error("     FORCE_AI_MOCK_ADAPTER=true");
     logger.error("     FORCE_NOTIFICATION_MOCK_ADAPTER=true\n");

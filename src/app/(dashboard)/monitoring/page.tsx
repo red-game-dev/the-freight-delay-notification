@@ -39,8 +39,8 @@ import type {
   TrafficSnapshot,
 } from "@/core/infrastructure/http/services/traffic/queries/listTrafficSnapshots";
 import type { TrafficConditionFilter } from "@/core/types";
-import { buildGoogleMapsDirectionsUrl } from "@/core/utils/mapsUtils";
 import { getRelativeTimeString } from "@/core/utils/dateUtils";
+import { buildGoogleMapsDirectionsUrl } from "@/core/utils/mapsUtils";
 import { getDeliveryStatusVariant } from "@/core/utils/statusUtils";
 import { enrichSnapshot } from "@/core/utils/trafficUtils";
 import { useExpandedItems } from "@/stores";
@@ -342,7 +342,8 @@ export default function MonitoringPage() {
                             </span>
                           )}
                           <span className="text-muted-foreground">
-                            Last checked: {getRelativeTimeString(enriched.snapshot_at)}
+                            Last checked:{" "}
+                            {getRelativeTimeString(enriched.snapshot_at)}
                           </span>
                         </div>
 
@@ -469,7 +470,8 @@ export default function MonitoringPage() {
                     </div>
 
                     <div className="text-xs text-muted-foreground pt-1">
-                      Last checked: {getRelativeTimeString(enriched.snapshot_at)}
+                      Last checked:{" "}
+                      {getRelativeTimeString(enriched.snapshot_at)}
                     </div>
 
                     {snapshot.affected_deliveries &&

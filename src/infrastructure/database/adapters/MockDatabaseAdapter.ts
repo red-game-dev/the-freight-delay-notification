@@ -748,9 +748,7 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
   async deleteRoute(id: string): Promise<Result<void>> {
     try {
       if (!this.routes.has(id)) {
-        return failure(
-          new InfrastructureError(`Mock: Route not found: ${id}`),
-        );
+        return failure(new InfrastructureError(`Mock: Route not found: ${id}`));
       }
       this.routes.delete(id);
       return success(undefined);
