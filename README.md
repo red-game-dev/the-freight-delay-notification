@@ -202,7 +202,9 @@ pnpm run health:check          # Health check server
 pnpm run temporal:test
 
 # Test complete workflow
-pnpm run test:workflow
+pnpm run test:workflow                  # Default threshold (30 min)
+pnpm run test:workflow:withNotification # Low threshold - notification sent
+pnpm run test:workflow:noNotification   # High threshold - no notification
 
 # Test specific routes
 pnpm run test:route:ny    # NYC: Times Square → JFK Airport
@@ -248,11 +250,12 @@ pnpm run test:watch          # Run tests in watch mode
 pnpm run test:coverage       # Generate coverage report
 
 # Workflow Tests (requires Temporal server + worker running)
-pnpm run test:workflow       # Test complete 4-step workflow
-pnpm run test:workflow:custom -- --threshold 5  # Custom threshold
-pnpm run test:route:la       # Test LA route (Downtown → LAX)
-pnpm run test:route:ny       # Test NY route (Times Square → JFK)
-pnpm run test:route:sf       # Test SF route (Downtown → San Jose)
+pnpm run test:workflow                  # Test complete 4-step workflow (default 30 min threshold)
+pnpm run test:workflow:withNotification # Test with low threshold (5 min) - notification SENT
+pnpm run test:workflow:noNotification   # Test with high threshold (90 min) - NO notification
+pnpm run test:route:la                  # Test LA route (Downtown → LAX)
+pnpm run test:route:ny                  # Test NY route (Times Square → JFK)
+pnpm run test:route:sf                  # Test SF route (Downtown → San Jose)
 ```
 
 **Required for workflow tests** - Add to `.env.local`:
@@ -952,11 +955,12 @@ See [DEPLOYMENT_FLOW.md](./DEPLOYMENT_FLOW.md) for complete deployment guide.
 # Run all tests
 pnpm test
 
-# Test complete workflow
+# Test complete workflow (default threshold)
 pnpm run test:workflow
 
-# Test with custom threshold
-pnpm run test:workflow:custom -- --threshold 5
+# Test with notification scenarios
+pnpm run test:workflow:withNotification  # Low threshold - notification sent
+pnpm run test:workflow:noNotification    # High threshold - no notification
 
 # Test specific routes
 pnpm run test:route:ny    # NYC: Times Square → JFK

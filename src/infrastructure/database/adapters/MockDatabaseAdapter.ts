@@ -644,6 +644,24 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     }
   }
 
+  async deleteCustomer(id: string): Promise<Result<void>> {
+    try {
+      if (!this.customers.has(id)) {
+        return failure(
+          new InfrastructureError(`Mock: Customer not found: ${id}`),
+        );
+      }
+      this.customers.delete(id);
+      return success(undefined);
+    } catch (error: unknown) {
+      return failure(
+        new InfrastructureError(
+          `Mock: Failed to delete customer: ${getErrorMessage(error)}`,
+        ),
+      );
+    }
+  }
+
   async listCustomers(limit = 100, offset = 0): Promise<Result<Customer[]>> {
     try {
       const customers = Array.from(this.customers.values()).slice(
@@ -722,6 +740,24 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       return failure(
         new InfrastructureError(
           `Mock: Failed to update route: ${getErrorMessage(error)}`,
+        ),
+      );
+    }
+  }
+
+  async deleteRoute(id: string): Promise<Result<void>> {
+    try {
+      if (!this.routes.has(id)) {
+        return failure(
+          new InfrastructureError(`Mock: Route not found: ${id}`),
+        );
+      }
+      this.routes.delete(id);
+      return success(undefined);
+    } catch (error: unknown) {
+      return failure(
+        new InfrastructureError(
+          `Mock: Failed to delete route: ${getErrorMessage(error)}`,
         ),
       );
     }
@@ -855,6 +891,24 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
       return failure(
         new InfrastructureError(
           `Mock: Failed to update delivery: ${getErrorMessage(error)}`,
+        ),
+      );
+    }
+  }
+
+  async deleteDelivery(id: string): Promise<Result<void>> {
+    try {
+      if (!this.deliveries.has(id)) {
+        return failure(
+          new InfrastructureError(`Mock: Delivery not found: ${id}`),
+        );
+      }
+      this.deliveries.delete(id);
+      return success(undefined);
+    } catch (error: unknown) {
+      return failure(
+        new InfrastructureError(
+          `Mock: Failed to delete delivery: ${getErrorMessage(error)}`,
         ),
       );
     }

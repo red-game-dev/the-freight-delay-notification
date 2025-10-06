@@ -24,6 +24,7 @@
 import { Client, Connection } from "@temporalio/client";
 import { config } from "dotenv";
 import { logger } from "../src/core/base/utils/Logger";
+import { getDatabaseService } from "../src/infrastructure/database";
 import type { DelayNotificationWorkflowInput } from "../src/workflows/types";
 
 // Load .env.local file
@@ -70,7 +71,74 @@ async function testCompleteWorkflow() {
   logger.info("  ✓ Step 4: Send email/SMS notification");
   logger.info("");
 
+  let customerId: string | undefined;
+  let routeId: string | undefined;
+  let deliveryId: string | undefined;
+  const db = getDatabaseService();
+
   try {
+    // Step 0: Create test data in database
+    logger.info("📦 Creating test data in database...");
+
+    // 1. Check if customer exists, create if not
+    const existingCustomerResult = await db.getCustomerByEmail(options.email);
+    if (existingCustomerResult.success && existingCustomerResult.value) {
+      customerId = existingCustomerResult.value.id;
+      logger.info(`   ♻️  Using existing customer: ${customerId}`);
+    } else {
+      const customerResult = await db.createCustomer({
+        email: options.email,
+        phone: options.phone,
+        name: options.name,
+      });
+
+      if (!customerResult.success) {
+        throw new Error(`Failed to create customer: ${customerResult.error.message}`);
+      }
+
+      customerId = customerResult.value.id;
+      logger.info(`   ✅ Customer created: ${customerId}`);
+    }
+
+    // 2. Create test route (routes are typically unique per origin/destination)
+    const routeResult = await db.createRoute({
+      origin_address: options.origin,
+      origin_coords: { x: 40.758896, y: -73.985130 }, // Times Square coords (will be geocoded in real scenario)
+      destination_address: options.destination,
+      destination_coords: { x: 40.6413, y: -73.7781 }, // JFK coords
+      distance_meters: 26000, // ~26km
+      normal_duration_seconds: 1800, // 30 min normal
+    });
+
+    if (!routeResult.success) {
+      throw new Error(`Failed to create route: ${routeResult.error.message}`);
+    }
+
+    routeId = routeResult.value.id;
+    logger.info(`   ✅ Route created: ${routeId}`);
+
+    // 3. Create test delivery with unique tracking number
+    const trackingNumber = `TEST-${Date.now()}`;
+    const deliveryResult = await db.createDelivery({
+      tracking_number: trackingNumber,
+      customer_id: customerId,
+      route_id: routeId,
+      scheduled_delivery: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+      delay_threshold_minutes: options.threshold,
+      auto_check_traffic: true,
+      enable_recurring_checks: false,
+      status: "pending",
+    });
+
+    if (!deliveryResult.success) {
+      throw new Error(`Failed to create delivery: ${deliveryResult.error.message}`);
+    }
+
+    deliveryId = deliveryResult.value.id;
+    logger.info(`   ✅ Delivery created: ${deliveryId}`);
+    logger.info(`   ✅ Tracking number: ${deliveryResult.value.tracking_number}`);
+    logger.info("");
+
     // Connect to Temporal
     logger.info("📡 Connecting to Temporal server...");
     const connection = await Connection.connect({
@@ -84,11 +152,11 @@ async function testCompleteWorkflow() {
 
     logger.info("✅ Connected to Temporal\n");
 
-    // Prepare workflow input
+    // Prepare workflow input with real database IDs
     const workflowInput: DelayNotificationWorkflowInput = {
-      deliveryId: `TEST-${Date.now()}`,
-      routeId: "ROUTE-001",
-      customerId: "CUSTOMER-123",
+      deliveryId: deliveryId!,
+      routeId: routeId!,
+      customerId: customerId!,
       customerEmail: options.email,
       customerPhone: options.phone,
       origin: {
@@ -186,8 +254,13 @@ async function testCompleteWorkflow() {
         if (email.tokens) {
           logger.info(`      Tokens: ${email.tokens}`);
         }
-        logger.info(`\n      Body Preview:`);
-        logger.info(`      ${email.body.substring(0, 150)}...`);
+        logger.info(`\n      ─── Full Email Body ───`);
+        // Split email body into lines for better readability
+        const emailLines = email.body.split("\n");
+        emailLines.forEach((line) => {
+          logger.info(`      ${line}`);
+        });
+        logger.info(`      ─────────────────────────`);
       }
 
       if (result.steps.messageGeneration.sms) {
@@ -200,8 +273,10 @@ async function testCompleteWorkflow() {
         if (sms.tokens) {
           logger.info(`      Tokens: ${sms.tokens}`);
         }
-        logger.info(`\n      Message: "${sms.message}"`);
         logger.info(`      Length: ${sms.message.length} characters`);
+        logger.info(`\n      ─── Full SMS Message ───`);
+        logger.info(`      ${sms.message}`);
+        logger.info(`      ────────────────────────`);
       }
 
       logger.info(`\n   Generated At: ${result.steps.messageGeneration.generatedAt}`);
@@ -247,6 +322,26 @@ async function testCompleteWorkflow() {
       `   View in Temporal UI: http://localhost:8233/namespaces/default/workflows/${handle.workflowId}\n`,
     );
 
+    // Cleanup test data
+    logger.info("🧹 Cleaning up test data...");
+    if (deliveryId) {
+      const deleteDeliveryResult = await db.deleteDelivery(deliveryId);
+      if (deleteDeliveryResult.success) {
+        logger.info(`   ✅ Deleted delivery: ${deliveryId}`);
+      } else {
+        logger.warn(`   ⚠️  Failed to delete delivery: ${deleteDeliveryResult.error.message}`);
+      }
+    }
+    if (routeId) {
+      const deleteRouteResult = await db.deleteRoute(routeId);
+      if (deleteRouteResult.success) {
+        logger.info(`   ✅ Deleted route: ${routeId}`);
+      } else {
+        logger.warn(`   ⚠️  Failed to delete route: ${deleteRouteResult.error.message}`);
+      }
+    }
+    logger.info("✅ Cleanup complete\n");
+
     await connection.close();
     process.exit(0);
   } catch (error) {
@@ -260,6 +355,14 @@ async function testCompleteWorkflow() {
     logger.error("     FORCE_TRAFFIC_MOCK_ADAPTER=true");
     logger.error("     FORCE_AI_MOCK_ADAPTER=true");
     logger.error("     FORCE_NOTIFICATION_MOCK_ADAPTER=true\n");
+
+    // Note: Test data may remain in database after failure
+    if (deliveryId) {
+      logger.error("⚠️  Test delivery may remain in database:");
+      logger.error(`   Delivery ID: ${deliveryId}`);
+      logger.error("   You can manually cancel it from the UI or database\n");
+    }
+
     process.exit(1);
   }
 }

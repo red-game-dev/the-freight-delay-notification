@@ -228,6 +228,12 @@ export class DatabaseService {
     );
   }
 
+  async deleteCustomer(id: string) {
+    return this.writeToAll("deleteCustomer", (adapter) =>
+      adapter.deleteCustomer(id),
+    );
+  }
+
   async listCustomers(limit?: number, offset?: number) {
     return this.readWithFallback("listCustomers", (adapter) =>
       adapter.listCustomers(limit, offset),
@@ -254,6 +260,12 @@ export class DatabaseService {
   ) {
     return this.writeToAll("updateRoute", (adapter) =>
       adapter.updateRoute(id, input),
+    );
+  }
+
+  async deleteRoute(id: string) {
+    return this.writeToAll("deleteRoute", (adapter) =>
+      adapter.deleteRoute(id),
     );
   }
 
@@ -291,6 +303,12 @@ export class DatabaseService {
   ) {
     return this.writeToAll("updateDelivery", (adapter) =>
       adapter.updateDelivery(id, input),
+    );
+  }
+
+  async deleteDelivery(id: string) {
+    return this.writeToAll("deleteDelivery", (adapter) =>
+      adapter.deleteDelivery(id),
     );
   }
 

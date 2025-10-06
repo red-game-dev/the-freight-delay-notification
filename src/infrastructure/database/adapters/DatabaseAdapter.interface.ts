@@ -49,12 +49,14 @@ export interface DatabaseAdapter {
     id: string,
     input: Partial<CreateCustomerInput>,
   ): Promise<Result<Customer>>;
+  deleteCustomer(id: string): Promise<Result<void>>;
   listCustomers(limit?: number, offset?: number): Promise<Result<Customer[]>>;
 
   // ===== Route Operations =====
   getRouteById(id: string): Promise<Result<Route | null>>;
   createRoute(input: CreateRouteInput): Promise<Result<Route>>;
   updateRoute(id: string, input: UpdateRouteInput): Promise<Result<Route>>;
+  deleteRoute(id: string): Promise<Result<void>>;
   listRoutes(limit?: number, offset?: number): Promise<Result<Route[]>>;
 
   // ===== Delivery Operations =====
@@ -67,6 +69,7 @@ export interface DatabaseAdapter {
     id: string,
     input: UpdateDeliveryInput,
   ): Promise<Result<Delivery>>;
+  deleteDelivery(id: string): Promise<Result<void>>;
   listDeliveries(limit?: number, offset?: number): Promise<Result<Delivery[]>>;
   listDeliveriesByCustomer(
     customerId: string,

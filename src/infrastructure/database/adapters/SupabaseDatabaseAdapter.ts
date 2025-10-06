@@ -242,6 +242,33 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     }
   }
 
+  async deleteCustomer(id: string): Promise<Result<void>> {
+    try {
+      const { error } = await this.ensureClient()
+        .from("customers")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        return failure(
+          new InfrastructureError(
+            `Failed to delete customer: ${getErrorMessage(error)}`,
+            { error },
+          ),
+        );
+      }
+
+      return success(undefined);
+    } catch (error: unknown) {
+      return failure(
+        new InfrastructureError(
+          `Failed to delete customer: ${getErrorMessage(error)}`,
+          { error },
+        ),
+      );
+    }
+  }
+
   async listCustomers(limit = 10, offset = 0): Promise<Result<Customer[]>> {
     try {
       const { data, error } = await this.ensureClient()
@@ -427,6 +454,33 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       return failure(
         new InfrastructureError(
           `Failed to update route: ${getErrorMessage(error)}`,
+          { error },
+        ),
+      );
+    }
+  }
+
+  async deleteRoute(id: string): Promise<Result<void>> {
+    try {
+      const { error } = await this.ensureClient()
+        .from("routes")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        return failure(
+          new InfrastructureError(
+            `Failed to delete route: ${getErrorMessage(error)}`,
+            { error },
+          ),
+        );
+      }
+
+      return success(undefined);
+    } catch (error: unknown) {
+      return failure(
+        new InfrastructureError(
+          `Failed to delete route: ${getErrorMessage(error)}`,
           { error },
         ),
       );
@@ -696,6 +750,33 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
       return failure(
         new InfrastructureError(
           `Failed to update delivery: ${getErrorMessage(error)}`,
+          { error },
+        ),
+      );
+    }
+  }
+
+  async deleteDelivery(id: string): Promise<Result<void>> {
+    try {
+      const { error } = await this.ensureClient()
+        .from("deliveries")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        return failure(
+          new InfrastructureError(
+            `Failed to delete delivery: ${getErrorMessage(error)}`,
+            { error },
+          ),
+        );
+      }
+
+      return success(undefined);
+    } catch (error: unknown) {
+      return failure(
+        new InfrastructureError(
+          `Failed to delete delivery: ${getErrorMessage(error)}`,
           { error },
         ),
       );
