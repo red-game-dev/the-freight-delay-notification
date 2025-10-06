@@ -914,14 +914,7 @@ module.exports = {
 
 ## 📚 Additional Documentation
 
-Comprehensive docs are available in `/docs`:
-
-- **[Requirements Checklist](./docs/REQUIREMENTS_CHECKLIST.md)** - Detailed validation against exercise PDF
-- **[Deployment Guide](./DEPLOYMENT_FLOW.md)** - Vercel + Railway/AWS deployment
-- **[Traffic API Setup](./docs/TRAFFIC_API_SETUP.md)** - Configure Google Maps/Mapbox
-- **[AI Message Generation](./docs/AI_MESSAGE_GENERATION.md)** - OpenAI integration details
-- **[Database Schema](./supabase/README.md)** - Supabase tables and migrations
-- **[PRD](./PRD.md)** - Full product requirements document
+- **[Problem-Solving Approach](./docs/PROBLEM_SOLVING.md)** - How we approached challenges, what didn't work, assumptions made
 
 ## 🚀 Deployment
 
