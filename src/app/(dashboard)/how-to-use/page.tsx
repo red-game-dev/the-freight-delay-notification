@@ -219,7 +219,7 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">Monitoring Features</h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                <li>View real-time traffic updates for all routes</li>
+                <li>View traffic updates for all routes (refreshed every 10 minutes)</li>
                 <li>See current delay duration for each route</li>
                 <li>Track when traffic data was last updated</li>
                 <li>View historical traffic patterns</li>
@@ -254,10 +254,11 @@ export default function HowToUsePage() {
             <div>
               <h3 className="font-semibold mb-2">Automatic Notifications</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                When delays are detected, the system automatically generates
-                personalized notification messages using AI and sends them to
-                customers via email and SMS. All notifications are logged and
-                can be reviewed in the Notifications page.
+                When delays are detected, the system follows a 4-step workflow:
+                (1) checks traffic conditions, (2) evaluates if delay exceeds
+                threshold, (3) generates personalized messages using AI with
+                customer name and route details, and (4) sends via email and SMS.
+                All notifications are logged and can be reviewed.
               </p>
             </div>
 
@@ -469,6 +470,30 @@ export default function HowToUsePage() {
           </div>
         </Card>
       </div>
+
+      {/* Demo Limitations */}
+      <Card className="mb-6 p-6 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+          Demo Limitations
+        </h2>
+        <ul className="space-y-2 text-sm">
+          <li className="flex gap-2">
+            <Bell className="h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+            <span>
+              <strong>SMS notifications:</strong> Currently using Twilio trial credits.
+              If quota is exhausted, SMS may fail (email still works). Would use paid account in production.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <MapPin className="h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+            <span>
+              <strong>Traffic data:</strong> Using Google Maps free tier (2,500 requests/day).
+              Dashboard shows cached data (10 min refresh), workflows use live data.
+            </span>
+          </li>
+        </ul>
+      </Card>
 
       {/* Tips and Best Practices */}
       <Card className="p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
