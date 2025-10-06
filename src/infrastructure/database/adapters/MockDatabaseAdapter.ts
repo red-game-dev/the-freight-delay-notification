@@ -1073,6 +1073,13 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     }
   }
 
+  async upsertTrafficSnapshot(
+    input: CreateTrafficSnapshotInput,
+  ): Promise<Result<TrafficSnapshot>> {
+    // Mock implementation just creates new snapshot
+    return this.createTrafficSnapshot(input);
+  }
+
   async listTrafficSnapshots(
     limit = 100,
     offset = 0,

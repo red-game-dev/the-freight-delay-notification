@@ -470,7 +470,7 @@ export async function saveTrafficSnapshot(input: {
       };
     }
 
-    const result = await db.createTrafficSnapshot({
+    const result = await db.upsertTrafficSnapshot({
       route_id: input.routeId,
       traffic_condition: input.trafficCondition,
       delay_minutes: input.delayMinutes,

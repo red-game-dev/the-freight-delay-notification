@@ -196,8 +196,8 @@ export const GET = createApiHandler(async (request: NextRequest) => {
           );
         }
 
-        // 5. Save traffic snapshot to database (historical log)
-        const snapshotResult = await db.createTrafficSnapshot({
+        // 5. Save traffic snapshot to database (smart upsert - updates if recent & similar, creates if changed)
+        const snapshotResult = await db.upsertTrafficSnapshot({
           route_id: route.id,
           traffic_condition: trafficData.trafficCondition,
           delay_minutes: trafficData.delayMinutes,

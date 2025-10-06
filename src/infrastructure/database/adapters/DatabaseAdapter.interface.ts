@@ -102,6 +102,9 @@ export interface DatabaseAdapter {
   createTrafficSnapshot(
     input: CreateTrafficSnapshotInput,
   ): Promise<Result<TrafficSnapshot>>;
+  upsertTrafficSnapshot(
+    input: CreateTrafficSnapshotInput,
+  ): Promise<Result<TrafficSnapshot>>;
   listTrafficSnapshots(
     limit?: number,
     offset?: number,

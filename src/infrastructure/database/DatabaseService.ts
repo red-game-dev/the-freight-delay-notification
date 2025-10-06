@@ -365,6 +365,14 @@ export class DatabaseService {
     );
   }
 
+  async upsertTrafficSnapshot(
+    input: Parameters<DatabaseAdapter["upsertTrafficSnapshot"]>[0],
+  ) {
+    return this.writeToAll("upsertTrafficSnapshot", (adapter) =>
+      adapter.upsertTrafficSnapshot(input),
+    );
+  }
+
   async listTrafficSnapshots(limit?: number, offset?: number) {
     return this.readWithFallback("listTrafficSnapshots", (adapter) =>
       adapter.listTrafficSnapshots(limit, offset),

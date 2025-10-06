@@ -1087,6 +1087,93 @@ export class SupabaseDatabaseAdapter implements DatabaseAdapter {
     }
   }
 
+  async upsertTrafficSnapshot(
+    input: CreateTrafficSnapshotInput,
+  ): Promise<Result<TrafficSnapshot>> {
+    try {
+      // 1. Get the most recent snapshot for this route
+      const { data: recentSnapshot, error: queryError } = await this
+        .ensureClient()
+        .from("traffic_snapshots")
+        .select("*")
+        .eq("route_id", input.route_id)
+        .order("snapshot_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (queryError) {
+        logger.error(
+          `Failed to query recent snapshot: ${getErrorMessage(queryError)}`,
+        );
+        // If query fails, fallback to creating new snapshot
+        return this.createTrafficSnapshot(input);
+      }
+
+      // 2. Decide whether to update or insert
+      const now = new Date();
+      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+
+      if (recentSnapshot) {
+        const snapshotTime = new Date(recentSnapshot.snapshot_at);
+        const isRecent = snapshotTime >= tenMinutesAgo;
+
+        // Check if traffic conditions have changed significantly
+        const delayDiff = Math.abs(
+          recentSnapshot.delay_minutes - input.delay_minutes,
+        );
+        const conditionChanged =
+          recentSnapshot.traffic_condition !== input.traffic_condition;
+
+        // If snapshot is recent (< 10 min) AND traffic is similar (< 5 min diff, same condition)
+        // → UPDATE existing snapshot
+        if (isRecent && delayDiff < 5 && !conditionChanged) {
+          logger.info(
+            `[DB] Updating existing snapshot ${recentSnapshot.id} (similar traffic within 10 min)`,
+          );
+
+          const dbInput: Omit<CreateTrafficSnapshotInput, "incident_location"> & {
+            incident_location?: string;
+          } = {
+            ...input,
+            incident_location: input.incident_location
+              ? this.coordinatesToPoint(input.incident_location)
+              : undefined,
+          };
+
+          const { data, error } = await this.ensureClient()
+            .from("traffic_snapshots")
+            .update({
+              ...dbInput,
+              snapshot_at: now.toISOString(), // Update timestamp
+            })
+            .eq("id", recentSnapshot.id)
+            .select()
+            .single();
+
+          if (error) {
+            logger.error(
+              `Failed to update snapshot, creating new one: ${getErrorMessage(error)}`,
+            );
+            return this.createTrafficSnapshot(input);
+          }
+
+          return success(data as TrafficSnapshot);
+        }
+      }
+
+      // 3. If no recent snapshot OR traffic changed significantly → INSERT new snapshot
+      logger.info(
+        `[DB] Creating new snapshot for route ${input.route_id} (traffic changed or no recent snapshot)`,
+      );
+      return this.createTrafficSnapshot(input);
+    } catch (error: unknown) {
+      logger.error(
+        `Upsert failed, falling back to insert: ${getErrorMessage(error)}`,
+      );
+      return this.createTrafficSnapshot(input);
+    }
+  }
+
   async listTrafficSnapshots(
     limit = 100,
     offset = 0,
