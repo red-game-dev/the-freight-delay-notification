@@ -257,7 +257,7 @@ async function testCompleteWorkflow() {
         logger.info(`\n      ─── Full Email Body ───`);
         // Split email body into lines for better readability
         const emailLines = email.body.split("\n");
-        emailLines.forEach((line) => {
+        emailLines.forEach((line: string) => {
           logger.info(`      ${line}`);
         });
         logger.info(`      ─────────────────────────`);

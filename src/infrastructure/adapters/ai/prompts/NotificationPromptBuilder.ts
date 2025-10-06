@@ -7,6 +7,8 @@ export interface NotificationContext {
   deliveryId: string;
   trackingNumber?: string;
   customerId: string;
+  customerName?: string;
+  customerEmail?: string;
   origin: string;
   destination: string;
   delayMinutes: number;
@@ -14,6 +16,14 @@ export interface NotificationContext {
   estimatedArrival: string;
   originalArrival: string;
 }
+
+// Company information for notifications
+const COMPANY_INFO = {
+  name: "Freight Delay Notification System",
+  supportEmail: "support@freight-notifications.com",
+  supportPhone: "+1-800-FREIGHT",
+  website: "https://the-freight-delay-notification.vercel.app",
+};
 
 /**
  * Build prompt for SMS notifications (ultra-short, max 60 chars)
@@ -77,11 +87,16 @@ export function buildEmailPrompt(context: NotificationContext): {
     minute: "2-digit",
   });
 
+  const customerGreeting = context.customerName
+    ? `Dear ${context.customerName}`
+    : "Dear Valued Customer";
+
   return {
     systemPrompt:
       "You are a professional freight delivery notification system. Generate friendly, informative delay notifications for email. Be courteous, clear, and provide helpful details. Use a warm but professional tone.",
     prompt: `Generate a professional email notification about a traffic delay:
 
+Customer Name: ${context.customerName || "Valued Customer"}
 Route: ${context.origin} → ${context.destination}
 Tracking Number: ${deliveryRef}
 Delay: ${context.delayMinutes} minutes
@@ -89,14 +104,26 @@ Traffic Condition: ${context.trafficCondition}
 Original ETA: ${originalETA}
 Revised ETA: ${newETA}
 
+Company Information:
+- Name: ${COMPANY_INFO.name}
+- Support Email: ${COMPANY_INFO.supportEmail}
+- Support Phone: ${COMPANY_INFO.supportPhone}
+- Website: ${COMPANY_INFO.website}
+
 Create an email body (2-3 paragraphs, max 300 words) that:
-1. Opens with a friendly greeting
+1. Opens with "${customerGreeting},"
 2. Explains the delay situation clearly
 3. Provides the new estimated arrival time
 4. Mentions the traffic condition causing the delay
 5. Apologizes for the inconvenience
-6. Offers contact information if they have questions
-7. Closes professionally
+6. Offers REAL contact information (use company info above - NO placeholders like [insert contact])
+7. Closes with:
+   "Best regards,
+   ${COMPANY_INFO.name} Team
+   ${COMPANY_INFO.supportEmail}
+   ${COMPANY_INFO.website}"
+
+IMPORTANT: Use the actual customer name and company details provided. DO NOT use placeholders like [Your Name], [Your Company], [insert contact information], etc.
 
 Keep the tone warm and customer-friendly while being informative.`,
   };
@@ -150,17 +177,32 @@ export function buildEmailFallback(context: NotificationContext): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+  const originalETA = new Date(context.originalArrival).toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const customerGreeting = context.customerName
+    ? `Dear ${context.customerName}`
+    : "Dear Valued Customer";
 
-  return `Dear Customer,
+  return `${customerGreeting},
 
 We wanted to inform you that your delivery (Tracking: ${deliveryRef}) from ${context.origin} to ${context.destination} is experiencing a ${context.delayMinutes}-minute delay due to ${context.trafficCondition} traffic conditions.
 
-Your new estimated arrival time is ${newETA}.
+Originally scheduled for arrival at ${originalETA}, your revised estimated time of arrival is now ${newETA}.
 
-We apologize for any inconvenience this may cause. If you have any questions or concerns, please don't hesitate to contact our support team.
+We sincerely apologize for any inconvenience this may cause. If you have any questions or need assistance, please contact our support team:
+
+Email: ${COMPANY_INFO.supportEmail}
+Phone: ${COMPANY_INFO.supportPhone}
+Website: ${COMPANY_INFO.website}
 
 Thank you for your patience and understanding.
 
 Best regards,
-Freight Delivery Team`;
+${COMPANY_INFO.name} Team
+${COMPANY_INFO.supportEmail}
+${COMPANY_INFO.website}`;
 }

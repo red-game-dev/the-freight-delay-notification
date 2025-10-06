@@ -200,6 +200,8 @@ export async function generateNotificationMessages(
     deliveryId: input.deliveryId,
     trackingNumber: input.trackingNumber,
     customerId: input.customerId,
+    customerName: input.customerName,
+    customerEmail: input.customerEmail,
     origin: input.origin,
     destination: input.destination,
     delayMinutes: input.delayMinutes,
@@ -892,6 +894,8 @@ export async function getDeliveryDetails(input: {
     minDelayChangeThreshold: number;
     minHoursBetweenNotifications: number;
     metadata?: Record<string, unknown>;
+    customer_name?: string;
+    customer_email?: string;
   };
 }> {
   logger.info(`[Database] Fetching delivery details for ${input.deliveryId}`);
@@ -917,6 +921,8 @@ export async function getDeliveryDetails(input: {
           minHoursBetweenNotifications:
             delivery.min_hours_between_notifications ?? 1.0,
           metadata: delivery.metadata,
+          customer_name: delivery.customer_name,
+          customer_email: delivery.customer_email,
         },
       };
     } else {

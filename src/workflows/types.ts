@@ -92,6 +92,8 @@ export interface GenerateNotificationInput {
   deliveryId: string;
   trackingNumber?: string;
   customerId: string;
+  customerName?: string;
+  customerEmail?: string;
   origin: string;
   destination: string;
   delayMinutes: number;
